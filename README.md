@@ -43,8 +43,8 @@
 
 **1. Clone the repository:**
 ```bash
-git clone https://github.com/your-org/kmsetjen-dpd-ri.git
-cd kmsetjen-dpd-ri
+git clone https://github.com/khaz-dev/KMSetjen-DPD-RI.git
+cd KMSetjen-DPD-RI
 ```
 
 **2. Backend setup:**
@@ -346,8 +346,8 @@ This project is **100% Open Source** under the MIT License. See [LICENSE](LICENS
 ## 🙌 Support
 
 - 📖 **Documentation**: Check [docs/README.md](docs/README.md)
-- 🐛 **Report Bugs**: [GitHub Issues](https://github.com/your-org/kmsetjen/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/your-org/kmsetjen/discussions)
+- 🐛 **Report Bugs**: [GitHub Issues](https://github.com/khaz-dev/KMSetjen-DPD-RI/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/khaz-dev/KMSetjen-DPD-RI/discussions)
 - 📧 **Email**: support@example.com
 
 ---

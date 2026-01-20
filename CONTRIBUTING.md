@@ -28,8 +28,8 @@ We are committed to providing a welcoming and inspiring community for all. Pleas
 
 **2. Clone your fork**
 ```bash
-git clone https://github.com/YOUR-USERNAME/kmsetjen-dpd-ri.git
-cd kmsetjen-dpd-ri
+git clone https://github.com/YOUR-USERNAME/KMSetjen-DPD-RI.git
+cd KMSetjen-DPD-RI
 ```
 
 **3. Add upstream remote**
@@ -294,7 +294,7 @@ def create_article(title: str, content: str, author: User) -> Article:
 
 ### Before Creating an Issue
 
-1. Check if the bug already exists in [Issues](https://github.com/your-org/kmsetjen/issues)
+1. Check if the bug already exists in [Issues](https://github.com/khaz-dev/KMSetjen-DPD-RI/issues)
 2. Reproduce the bug consistently
 3. Gather information about your environment
 
@@ -476,7 +476,7 @@ Your PR will be merged when it:
 ## 🤔 Questions?
 
 - Check the [FAQ](docs/FAQ.md)
-- Browse existing [Discussions](https://github.com/your-org/kmsetjen/discussions)
+- Browse existing [Discussions](https://github.com/khaz-dev/KMSetjen-DPD-RI/discussions)
 - Create a new Discussion if you can't find answers
 - Join our community chat (if available)
 

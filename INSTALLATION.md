@@ -69,12 +69,12 @@ git --version           # Should be 2.30+
 
 ```bash
 # Clone from GitHub
-git clone https://github.com/your-org/kmsetjen-dpd-ri.git
-cd kmsetjen-dpd-ri
+git clone https://github.com/khaz-dev/KMSetjen-DPD-RI.git
+cd KMSetjen-DPD-RI
 
 # Or use SSH
-git clone git@github.com:your-org/kmsetjen-dpd-ri.git
-cd kmsetjen-dpd-ri
+git clone git@github.com:khaz-dev/KMSetjen-DPD-RI.git
+cd KMSetjen-DPD-RI
 ```
 
 ### Step 2: Backend Setup
@@ -303,8 +303,8 @@ sudo mkdir -p /var/www/kmsetjen
 sudo chown $USER:$USER /var/www/kmsetjen
 cd /var/www/kmsetjen
 
-git clone https://github.com/your-org/kmsetjen-dpd-ri.git
-cd kmsetjen-dpd-ri
+git clone https://github.com/khaz-dev/KMSetjen-DPD-RI.git
+cd KMSetjen-DPD-RI
 ```
 
 ### Step 3: Backend Setup
@@ -625,8 +625,8 @@ python manage.py test apps.articles.tests.ArticleTestCase
 ## Need Help?
 
 - 📖 **Documentation**: [docs/README.md](docs/README.md)
-- 🐛 **Report Issues**: [GitHub Issues](https://github.com/your-org/kmsetjen/issues)
-- 💬 **Ask Questions**: [GitHub Discussions](https://github.com/your-org/kmsetjen/discussions)
+- 🐛 **Report Issues**: [GitHub Issues](https://github.com/khaz-dev/KMSetjen-DPD-RI/issues)
+- 💬 **Ask Questions**: [GitHub Discussions](https://github.com/khaz-dev/KMSetjen-DPD-RI/discussions)
 
 ---
 
