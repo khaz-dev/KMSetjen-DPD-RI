@@ -1,0 +1,310 @@
+import axios from 'axios';
+
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
+
+// Create axios instance for AUTHENTICATED requests (with JWT token)
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 30000, // 30 seconds timeout
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Create axios instance for PUBLIC requests (no JWT token)
+const publicClient = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 30000, // 30 seconds timeout
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add authorization header with JWT token to authenticated requests
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.debug(`[API] Added Authorization header for: ${config.method.toUpperCase()} ${config.url}`);
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Handle token expiration
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      // Only log as warning if not the /auth/me/ endpoint (which is checked on app init)
+      if (!originalRequest.url.includes('/auth/me/')) {
+        console.warn(`[API] 401 Unauthorized for: ${originalRequest.method.toUpperCase()} ${originalRequest.url}`);
+      }
+      originalRequest._retry = true;
+
+      try {
+        const refreshToken = localStorage.getItem('refresh_token');
+        if (refreshToken) {
+          const response = await axios.post(`${API_BASE_URL}/auth/token/refresh/`, {
+            refresh: refreshToken,
+          });
+          const { access } = response.data;
+          localStorage.setItem('access_token', access);
+          originalRequest.headers.Authorization = `Bearer ${access}`;
+          return apiClient(originalRequest);
+        } else {
+          // No refresh token available, treat as authentication failure
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          // Only redirect if not already on login page or auth-related endpoints
+          if (window.location.pathname !== '/login' && !originalRequest.url.includes('/auth/')) {
+            console.debug('[API] Redirecting to login due to authentication failure');
+            window.location.href = '/login';
+          }
+        }
+      } catch (refreshError) {
+        console.error('[API] Token refresh failed:', refreshError.response?.status, refreshError.message);
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        // Only redirect if not already on login page or auth-related endpoints
+        if (window.location.pathname !== '/login' && !originalRequest.url.includes('/auth/')) {
+          console.debug('[API] Redirecting to login due to token refresh failure');
+          window.location.href = '/login';
+        }
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+// Authentication Service
+export const authService = {
+  login: function(emailOrCreds, password) {
+    // Support both old signature (username, password) and new signature (object)
+    if (typeof emailOrCreds === 'string') {
+      // Old signature: login(username, password)
+      return apiClient.post('/auth/token/', { username: emailOrCreds, password });
+    } else {
+      // New signature: login({ email, password, captcha_token })
+      return apiClient.post('/auth/token/', emailOrCreds);
+    }
+  },
+  
+  getMe: () =>
+    apiClient.get('/auth/me/'),
+  
+  updateProfile: (data) =>
+    apiClient.post('/auth/update-profile/', data),
+  
+  changePassword: (oldPassword, newPassword) =>
+    apiClient.post('/auth/change-password/', {
+      old_password: oldPassword,
+      new_password: newPassword,
+    }),
+  
+  logout: () =>
+    apiClient.post('/auth/logout/'),
+
+  // SSO endpoints
+  ssoCallback: (code, state, redirectUri) =>
+    publicClient.post('/auth/sso/callback/', {
+      code,
+      state,
+      redirect_uri: redirectUri,
+    }),
+
+  // Google OAuth endpoints (use publicClient to avoid Bearer token)
+  googleCallback: (code, state) =>
+    publicClient.post('/auth/google/callback/', {
+      code,
+      state,
+    }),
+};
+
+// Public API Service (uses publicClient without authentication)
+export const publicAPI = {
+  // Articles
+  getArticles: (params) =>
+    publicClient.get('/v1/public/articles/', { params }),
+  
+  getArticle: (id) =>
+    publicClient.get(`/v1/public/articles/${id}/`),
+  
+  searchArticles: (query) =>
+    publicClient.get('/v1/public/articles/search/', { params: { search: query } }),
+  
+  getPopularArticles: () =>
+    publicClient.get('/v1/public/articles/popular/'),
+  
+  // Categories
+  getCategories: (params) =>
+    publicClient.get('/v1/public/categories/', { params }),
+  
+  getCategory: (id) =>
+    publicClient.get(`/v1/public/categories/${id}/`),
+  
+  // Tags
+  getTags: (params) =>
+    publicClient.get('/v1/public/tags/', { params }),
+  
+  getTag: (id) =>
+    publicClient.get(`/v1/public/tags/${id}/`),
+};
+
+// Internal API Service (Authenticated)
+export const internalAPI = {
+  // Articles - CRUD
+  getMyArticles: (params) =>
+    apiClient.get('/v1/internal/articles/', { params }),
+  
+  createArticle: (data) =>
+    apiClient.post('/v1/internal/articles/', data),
+  
+  getArticle: (id) =>
+    apiClient.get(`/v1/internal/articles/${id}/`),
+  
+  updateArticle: (id, data) =>
+    apiClient.patch(`/v1/internal/articles/${id}/`, data),
+  
+  deleteArticle: (id) =>
+    apiClient.delete(`/v1/internal/articles/${id}/`),
+  
+  // Article Workflow
+  submitReview: (id, data) =>
+    apiClient.post(`/v1/internal/articles/${id}/submit-review/`, data),
+  
+  approveArticle: (id) =>
+    apiClient.post(`/v1/internal/articles/${id}/approve/`),
+  
+  publishArticle: (id) =>
+    apiClient.post(`/v1/internal/articles/${id}/publish/`),
+  
+  rejectArticle: (id, data) =>
+    apiClient.post(`/v1/internal/articles/${id}/reject/`, data),
+  
+  archiveArticle: (id) =>
+    apiClient.post(`/v1/internal/articles/${id}/archive/`),
+  
+  // Slug Validation
+  checkSlug: (slug, excludeId = null) => {
+    const params = { slug };
+    if (excludeId) params.exclude_id = excludeId;
+    return apiClient.get('/v1/internal/articles/check-slug/', { params });
+  },
+
+  // File Management
+  uploadFile: (articleId, file, description = '') => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('original_filename', file.name);
+    formData.append('description_en', description);
+    formData.append('description_id', description);
+    return apiClient.post(`/v1/internal/articles/${articleId}/files/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+
+  getArticleFiles: (articleId) =>
+    apiClient.get(`/v1/internal/articles/${articleId}/files/`),
+
+  updateFile: (articleId, fileId, data) =>
+    apiClient.patch(`/v1/internal/articles/${articleId}/files/${fileId}/`, data),
+
+  deleteFile: (articleId, fileId) =>
+    apiClient.delete(`/v1/internal/articles/${articleId}/files/${fileId}/`),
+
+  reorderFiles: (articleId, fileIds) =>
+    apiClient.post(`/v1/internal/articles/${articleId}/files/reorder/`, { file_ids: fileIds }),
+
+  // Dashboard
+  getDashboard: () =>
+    apiClient.get('/v1/internal/articles/dashboard/'),
+};
+
+// Admin API Service (Admin-Only)
+export const adminAPI = {
+  // Users
+  getUsers: (params) =>
+    apiClient.get('/v1/admin/users/', { params }),
+  
+  createUser: (data) =>
+    apiClient.post('/v1/admin/users/', data),
+  
+  getUser: (id) =>
+    apiClient.get(`/v1/admin/users/${id}/`),
+  
+  updateUser: (id, data) =>
+    apiClient.patch(`/v1/admin/users/${id}/`, data),
+  
+  deleteUser: (id) =>
+    apiClient.delete(`/v1/admin/users/${id}/`),
+  
+  setUserPassword: (id, password) =>
+    apiClient.post(`/v1/admin/users/${id}/set-password/`, {
+      password,
+      password_confirm: password,
+    }),
+  
+  activateUser: (id) =>
+    apiClient.post(`/v1/admin/users/${id}/activate/`),
+  
+  deactivateUser: (id) =>
+    apiClient.post(`/v1/admin/users/${id}/deactivate/`),
+  
+  // Roles
+  getRoles: (params) =>
+    apiClient.get('/v1/admin/roles/', { params }),
+  
+  createRole: (data) =>
+    apiClient.post('/v1/admin/roles/', data),
+  
+  getRole: (id) =>
+    apiClient.get(`/v1/admin/roles/${id}/`),
+  
+  updateRole: (id, data) =>
+    apiClient.patch(`/v1/admin/roles/${id}/`, data),
+  
+  deleteRole: (id) =>
+    apiClient.delete(`/v1/admin/roles/${id}/`),
+  
+  addPermissionToRole: (id, permissionId) =>
+    apiClient.post(`/v1/admin/roles/${id}/add-permission/`, {
+      permission_id: permissionId,
+    }),
+  
+  removePermissionFromRole: (id, permissionId) =>
+    apiClient.post(`/v1/admin/roles/${id}/remove-permission/`, {
+      permission_id: permissionId,
+    }),
+  
+  // Permissions
+  getPermissions: (params) =>
+    apiClient.get('/v1/admin/permissions/', { params }),
+  
+  // Audit Logs
+  getAuditLogs: (params) =>
+    apiClient.get('/v1/admin/audit-logs/', { params }),
+  
+  filterAuditLogs: (filters) =>
+    apiClient.post('/v1/admin/audit-logs/filter/', filters),
+  
+  // Statistics
+  getStatistics: () =>
+    apiClient.get('/v1/admin/statistics/'),
+  
+  getUserStats: () =>
+    apiClient.get('/v1/admin/statistics/users/'),
+  
+  getArticleStats: () =>
+    apiClient.get('/v1/admin/statistics/articles/'),
+  
+  getAuditStats: () =>
+    apiClient.get('/v1/admin/statistics/audit/'),
+};
+
+export default apiClient;

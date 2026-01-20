@@ -1,0 +1,51 @@
+# File Upload 400 Error - Quick Summary
+
+## Problem
+File upload on `/editor/8` failed with **400 Bad Request** error
+
+## Root Cause
+Frontend was NOT sending the required `original_filename` field in the FormData request to the backend file upload endpoint.
+
+## Solution Applied
+
+### ✅ Frontend Fix (frontend/src/services/api.js)
+```diff
+uploadFile: (articleId, file, description = '') => {
+  const formData = new FormData();
+  formData.append('file', file);
++ formData.append('original_filename', file.name);
+  formData.append('description_en', description);
+  formData.append('description_id', description);
+```
+
+### ✅ Backend Enhancement (backend/apps/api/v1/internal/serializers.py)
+```diff
+def create(self, validated_data):
+  file_obj = validated_data.get('file')
+  if file_obj:
+    validated_data['file_size'] = file_obj.size
+    validated_data['mime_type'] = file_obj.content_type or 'application/octet-stream'
++   if not validated_data.get('original_filename'):
++     validated_data['original_filename'] = file_obj.name
+  
+  validated_data['uploaded_by'] = self.context['request'].user
+```
+
+## Changes Made
+1. **Frontend**: Added `original_filename` field to file upload FormData
+2. **Backend**: Enhanced serializer to auto-extract filename if missing (backward compatible)
+
+## Testing
+- ✅ Article 8 exists (verified via Django shell)
+- ✅ File model structure correct
+- ✅ Serializer updated
+- ✅ Frontend code updated
+
+## Next Steps
+1. Restart Django backend server
+2. Refresh browser
+3. Try uploading a file on `/editor/8`
+4. File should now upload successfully without 400 error
+
+## Expected Result
+Files can now be uploaded to articles. The `Unggah File` (Upload File) button on the Lampiran tab will work correctly.

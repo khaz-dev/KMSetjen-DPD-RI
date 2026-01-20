@@ -1,0 +1,36 @@
+"""
+Public API URL configuration.
+
+Endpoints:
+- GET /api/v1/public/articles/ - List published articles
+- GET /api/v1/public/articles/{id}/ - Article detail
+- POST /api/v1/public/articles/{id}/view/ - Record article view
+- GET /api/v1/public/articles/trending/ - Trending articles
+- GET /api/v1/public/articles/latest/ - Latest articles
+- GET /api/v1/public/articles/popular/ - Popular articles
+
+- GET /api/v1/public/categories/ - List categories
+- GET /api/v1/public/categories/{id}/ - Category detail
+
+- GET /api/v1/public/tags/ - List tags
+- GET /api/v1/public/tags/{id}/ - Tag detail
+- GET /api/v1/public/tags/{id}/articles/ - Articles with tag
+
+- POST /api/v1/public/contact/send-email/ - Send contact form email
+"""
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import ArticleViewSet, CategoryViewSet, TagViewSet
+from .contact import send_contact_email
+
+# Create router and register viewsets
+router = DefaultRouter()
+router.register(r'articles', ArticleViewSet, basename='article')
+router.register(r'categories', CategoryViewSet, basename='category')
+router.register(r'tags', TagViewSet, basename='tag')
+
+# Public API URLs
+urlpatterns = [
+    path('', include(router.urls)),
+    path('contact/send-email/', send_contact_email, name='send-contact-email'),
+]

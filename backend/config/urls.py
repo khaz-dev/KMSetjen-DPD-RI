@@ -1,0 +1,66 @@
+"""
+URL Configuration for KMSetjen DPD RI project.
+"""
+from django.contrib import admin
+from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+
+@require_http_methods(["GET"])
+def api_root(request):
+    """Root API endpoint with available endpoints"""
+    return JsonResponse({
+        'message': 'Welcome to KMSetjen DPD RI API',
+        'version': '1.0.0',
+        'available_endpoints': {
+            'admin': '/admin/',
+            'api_v1': '/api/v1/',
+            'authentication': '/api/auth/',
+            'health': '/health/',
+        }
+    })
+
+@require_http_methods(["GET"])
+def health_check(request):
+    """Health check endpoint"""
+    return JsonResponse({
+        'status': 'healthy',
+        'service': 'KMSetjen DPD RI API',
+        'version': '1.0.0'
+    })
+
+@require_http_methods(["GET"])
+def api_endpoint(request):
+    """API root endpoint showing available API versions"""
+    return JsonResponse({
+        'message': 'KMSetjen DPD RI REST API',
+        'version': '1.0.0',
+        'available_versions': {
+            'v1': '/api/v1/',
+        },
+        'authentication': '/api/auth/',
+    })
+
+urlpatterns = [
+    # Root API
+    path('', api_root, name='api-root'),
+    path('health/', health_check, name='health-check'),
+    
+    # API endpoint
+    path('api/', api_endpoint, name='api-endpoint'),
+    
+    # Django Admin
+    path('admin/', admin.site.urls),
+    
+    # API v1
+    path('api/v1/', include('apps.api.v1.urls')),
+    
+    # Authentication
+    path('api/auth/', include('apps.auth.urls')),
+]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -1,0 +1,330 @@
+/* Light Mode (Default) */
+:root[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #e9ecef;
+
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --text-tertiary: #adb5bd;
+
+  --border-color: #dee2e6;
+  --shadow: rgba(0, 0, 0, 0.1);
+
+  --navbar-bg: #ffffff;
+  --navbar-text: #212529;
+  --navbar-border: #dee2e6;
+
+  --card-bg: #ffffff;
+  --card-border: #dee2e6;
+  --card-text: #212529;
+
+  --form-bg: #ffffff;
+  --form-border: #dee2e6;
+  --form-text: #212529;
+
+  --btn-light-bg: #f8f9fa;
+  --btn-light-text: #212529;
+  --btn-light-border: #dee2e6;
+
+  --table-bg: #ffffff;
+  --table-border: #dee2e6;
+  --table-hover-bg: #f8f9fa;
+  --table-text: #212529;
+
+  --dropdown-bg: #ffffff;
+  --dropdown-hover-bg: #f8f9fa;
+  --dropdown-text: #212529;
+
+  --badge-bg: #e9ecef;
+  --badge-text: #212529;
+}
+
+/* Dark Mode */
+:root[data-theme="dark"] {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #3d3d3d;
+
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --text-tertiary: #808080;
+
+  --border-color: #404040;
+  --shadow: rgba(0, 0, 0, 0.3);
+
+  --navbar-bg: #242424;
+  --navbar-text: #ffffff;
+  --navbar-border: #404040;
+
+  --card-bg: #2d2d2d;
+  --card-border: #404040;
+  --card-text: #ffffff;
+
+  --form-bg: #2d2d2d;
+  --form-border: #404040;
+  --form-text: #ffffff;
+
+  --btn-light-bg: #3d3d3d;
+  --btn-light-text: #ffffff;
+  --btn-light-border: #404040;
+
+  --table-bg: #2d2d2d;
+  --table-border: #404040;
+  --table-hover-bg: #3d3d3d;
+  --table-text: #ffffff;
+
+  --dropdown-bg: #2d2d2d;
+  --dropdown-hover-bg: #3d3d3d;
+  --dropdown-text: #ffffff;
+
+  --badge-bg: #3d3d3d;
+  --badge-text: #ffffff;
+}
+
+/* Apply theme colors to all elements */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.navbar {
+  background-color: var(--navbar-bg) !important;
+  color: var(--navbar-text);
+  border-bottom: 1px solid var(--navbar-border);
+}
+
+.navbar-light .navbar-brand,
+.navbar-light .nav-link {
+  color: var(--text-primary) !important;
+}
+
+.navbar-light .nav-link:hover {
+  color: #007bff !important;
+}
+
+/* Ensure navbar is styled properly in dark mode */
+:root[data-theme="dark"] .navbar-custom {
+  background-color: var(--navbar-bg) !important;
+  border-bottom-color: var(--navbar-border) !important;
+}
+
+:root[data-theme="dark"] .navbar-light {
+  background-color: var(--navbar-bg) !important;
+}
+
+:root[data-theme="dark"] .navbar-light .navbar-brand {
+  color: var(--text-primary) !important;
+}
+
+:root[data-theme="dark"] .navbar-light .nav-link {
+  color: var(--text-primary) !important;
+}
+
+:root[data-theme="dark"] .navbar-light .nav-link:hover,
+:root[data-theme="dark"] .navbar-light .nav-link:focus {
+  color: #0d6efd !important;
+}
+
+.card {
+  background-color: var(--card-bg);
+  border-color: var(--card-border);
+  color: var(--card-text);
+}
+
+.btn-light {
+  background-color: var(--btn-light-bg);
+  color: var(--btn-light-text);
+  border-color: var(--btn-light-border);
+}
+
+.btn-light:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.form-control,
+.form-select {
+  background-color: var(--form-bg);
+  color: var(--form-text);
+  border-color: var(--form-border);
+}
+
+.form-control:focus,
+.form-select:focus {
+  background-color: var(--form-bg);
+  color: var(--form-text);
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.dropdown-menu {
+  background-color: var(--dropdown-bg);
+  border-color: var(--border-color);
+}
+
+.dropdown-item {
+  color: var(--dropdown-text);
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+  background-color: var(--dropdown-hover-bg);
+  color: var(--dropdown-text);
+}
+
+.table {
+  color: var(--table-text);
+  border-color: var(--table-border);
+  background-color: var(--table-bg);
+}
+
+.table thead th {
+  background-color: var(--bg-secondary);
+  color: var(--table-text);
+  border-color: var(--table-border);
+}
+
+.table tbody td {
+  border-color: var(--table-border);
+}
+
+.table tbody tr:hover {
+  background-color: var(--table-hover-bg);
+}
+
+.badge {
+  background-color: var(--badge-bg);
+  color: var(--badge-text);
+}
+
+.nav-button {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  margin: 0 0.25rem;
+  transition: color 0.2s ease;
+}
+
+.nav-button:hover {
+  color: #007bff;
+}
+
+.theme-toggle {
+  margin-left: 1rem;
+}
+
+.language-toggle {
+  min-width: 80px;
+  text-align: center;
+}
+
+.brand-logo {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.user-menu-toggle {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  color: var(--text-primary) !important;
+}
+
+/* Dropdown toggle arrow styling - color only, no distortion */
+.dropdown-toggle::after {
+  color: inherit;
+  opacity: 0.8;
+}
+
+/* Dark mode dropdown styling */
+:root[data-theme="dark"] .dropdown-toggle::after {
+  color: var(--text-primary) !important;
+  opacity: 1 !important;
+}
+
+:root[data-theme="dark"] .user-menu-toggle,
+:root[data-theme="dark"] .language-toggle {
+  color: var(--text-primary) !important;
+}
+
+/* Smooth transitions for theme switching */
+* {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Alert colors */
+.alert-danger {
+  background-color: rgba(220, 53, 69, 0.1);
+  border-color: #dc3545;
+  color: var(--text-primary);
+}
+
+.alert-success {
+  background-color: rgba(40, 167, 69, 0.1);
+  border-color: #28a745;
+  color: var(--text-primary);
+}
+
+.alert-warning {
+  background-color: rgba(255, 193, 7, 0.1);
+  border-color: #ffc107;
+  color: var(--text-primary);
+}
+
+.alert-info {
+  background-color: rgba(23, 162, 184, 0.1);
+  border-color: #17a2b8;
+  color: var(--text-primary);
+}
+
+/* Footer styling */
+.footer {
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+/* Modal styling */
+.modal-content {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.modal-header {
+  background-color: var(--bg-secondary);
+  border-bottom-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.modal-footer {
+  background-color: var(--bg-secondary);
+  border-top-color: var(--border-color);
+}
+
+.btn-close {
+  filter: invert(1);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}

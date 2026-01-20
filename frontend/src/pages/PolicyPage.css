@@ -1,0 +1,372 @@
+/* Policy Page Styles (Privacy & Terms) */
+/* Updated: January 12, 2026 - Blue Gradient Theme */
+
+.policy-page {
+  min-height: 100vh;
+  background-color: #ffffff;
+  color: #212529;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark Mode using both class selector and data-theme attribute */
+.policy-page.dark-mode,
+[data-theme="dark"] .policy-page,
+.policy-page[data-theme="dark"] {
+  background-color: #1a1a1a;
+  color: #e8e8e8;
+}
+
+/* Header Section */
+.policy-header {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.policy-page.dark-mode .policy-header,
+[data-theme="dark"] .policy-page .policy-header {
+  background: linear-gradient(135deg, #003d99 0%, #001f4d 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.policy-header h1 {
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  color: #ffffff;
+}
+
+.policy-header .lead {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.98;
+  color: #ffffff;
+}
+
+.policy-header .text-muted {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Content Section */
+.policy-content {
+  background-color: inherit;
+  color: inherit;
+}
+
+/* Policy Sections */
+.policy-section {
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+}
+
+.policy-section h2 {
+  font-weight: 600;
+  color: #0056b3;
+  border-bottom: 3px solid #007bff;
+  padding-bottom: 0.75rem;
+  margin-bottom: 1.5rem;
+  font-size: 1.75rem;
+}
+
+.policy-page.dark-mode .policy-section h2,
+[data-theme="dark"] .policy-page .policy-section h2 {
+  color: #5dade2;
+  border-bottom-color: #0b7dda;
+}
+
+.policy-section h5 {
+  font-weight: 600;
+  color: #495057;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+}
+
+.policy-page.dark-mode .policy-section h5,
+[data-theme="dark"] .policy-page .policy-section h5 {
+  color: #b0bec5;
+}
+
+/* Paragraphs and Lists */
+.policy-section p {
+  line-height: 1.8;
+  font-size: 1.025rem;
+  margin-bottom: 1rem;
+  color: inherit;
+}
+
+.policy-section ul {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.policy-section ul li {
+  line-height: 1.8;
+  margin-bottom: 0.75rem;
+  color: inherit;
+}
+
+.policy-page.dark-mode .policy-section p,
+.policy-page.dark-mode .policy-section ul li,
+[data-theme="dark"] .policy-page .policy-section p,
+[data-theme="dark"] .policy-page .policy-section ul li {
+  color: #d0d0d0;
+}
+
+/* Contact Section */
+.contact-section {
+  background-color: #f8f9fa;
+  padding: 2rem;
+  border-left: 5px solid #007bff;
+  border-radius: 0.25rem;
+  margin-top: 2rem;
+}
+
+.policy-page.dark-mode .contact-section,
+[data-theme="dark"] .policy-page .contact-section {
+  background-color: #252525;
+  border-left-color: #0b7dda;
+}
+
+.contact-section h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #007bff;
+}
+
+.policy-page.dark-mode .contact-section h2,
+[data-theme="dark"] .policy-page .contact-section h2 {
+  border-bottom-color: #0b7dda;
+}
+
+.contact-section ul li {
+  margin-bottom: 0.75rem;
+  line-height: 1.8;
+}
+
+.contact-section ul li strong {
+  color: #0056b3;
+  font-weight: 600;
+}
+
+.policy-page.dark-mode .contact-section ul li strong,
+[data-theme="dark"] .policy-page .contact-section ul li strong {
+  color: #5dade2;
+}
+
+.contact-section ul li a {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.contact-section ul li a:hover {
+  color: #0056b3;
+  text-decoration: underline;
+}
+
+.policy-page.dark-mode .contact-section ul li a,
+[data-theme="dark"] .policy-page .contact-section ul li a {
+  color: #0b7dda;
+}
+
+.policy-page.dark-mode .contact-section ul li a:hover,
+[data-theme="dark"] .policy-page .contact-section ul li a:hover {
+  color: #5dade2;
+}
+
+/* Horizontal Rule */
+.policy-section hr,
+.policy-content hr {
+  border: none;
+  border-top: 2px solid #dee2e6;
+  margin: 2rem 0;
+}
+
+.policy-page.dark-mode .policy-section hr,
+.policy-page.dark-mode .policy-content hr,
+[data-theme="dark"] .policy-page .policy-section hr,
+[data-theme="dark"] .policy-page .policy-content hr {
+  border-top-color: #3a3a3a;
+}
+
+/* Text Muted */
+.text-muted {
+  color: #6c757d;
+}
+
+.policy-page.dark-mode .text-muted,
+[data-theme="dark"] .policy-page .text-muted {
+  color: #888 !important;
+}
+
+/* Small Text */
+.policy-content p.small,
+.policy-content p small {
+  font-size: 0.95rem;
+  color: #6c757d;
+}
+
+.policy-page.dark-mode .policy-content p.small,
+.policy-page.dark-mode .policy-content p small,
+[data-theme="dark"] .policy-page .policy-content p.small,
+[data-theme="dark"] .policy-page .policy-content p small {
+  color: #888;
+}
+
+/* Links */
+a {
+  color: #007bff;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: #0056b3;
+  text-decoration: underline;
+}
+
+.policy-page.dark-mode a,
+[data-theme="dark"] .policy-page a {
+  color: #0b7dda;
+}
+
+.policy-page.dark-mode a:hover,
+[data-theme="dark"] .policy-page a:hover {
+  color: #5dade2;
+}
+
+/* Emphasis Text */
+strong {
+  font-weight: 600;
+  color: #212529;
+}
+
+.policy-page.dark-mode strong,
+[data-theme="dark"] .policy-page strong {
+  color: #e0e0e0;
+}
+
+/* Table of Contents (if needed) */
+.toc {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-left: 4px solid #007bff;
+  border-radius: 0.25rem;
+  margin-bottom: 2rem;
+}
+
+.policy-page.dark-mode .toc,
+[data-theme="dark"] .policy-page .toc {
+  background-color: #252525;
+  border-left-color: #0b7dda;
+}
+
+.toc ul {
+  list-style: none;
+  margin-left: 0;
+}
+
+.toc ul li {
+  margin-bottom: 0.5rem;
+}
+
+.toc ul li a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.toc ul li a:hover {
+  text-decoration: underline;
+}
+
+.policy-page.dark-mode .toc ul li a,
+[data-theme="dark"] .policy-page .toc ul li a {
+  color: #e53935;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .policy-header h1 {
+    font-size: 2rem;
+  }
+
+  .policy-header .lead {
+    font-size: 1.1rem;
+  }
+
+  .policy-section h2 {
+    font-size: 1.4rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .policy-section {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+  }
+
+  .contact-section {
+    padding: 1.5rem;
+  }
+
+  .policy-section ul {
+    margin-left: 1rem;
+  }
+
+  .policy-section ul li {
+    font-size: 0.95rem;
+  }
+
+  .policy-section p {
+    font-size: 0.95rem;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .policy-header {
+    background: none;
+    color: #212529;
+    border-bottom: 1px solid #dee2e6;
+    padding: 1rem 0;
+  }
+
+  .policy-header h1,
+  .policy-header .lead {
+    color: #212529;
+    text-shadow: none;
+  }
+
+  .policy-section {
+    page-break-inside: avoid;
+  }
+
+  .policy-section h2 {
+    page-break-after: avoid;
+  }
+
+  .contact-section {
+    background: none;
+    border: none;
+    padding: 1rem 0;
+  }
+}
+
+/* Global Dark Mode Overrides */
+[data-theme="dark"] .policy-page p {
+  color: #d8d8d8;
+}
+
+[data-theme="dark"] .policy-page h1,
+[data-theme="dark"] .policy-page h2,
+[data-theme="dark"] .policy-page h3,
+[data-theme="dark"] .policy-page h4,
+[data-theme="dark"] .policy-page h5,
+[data-theme="dark"] .policy-page h6 {
+  color: #e8e8e8;
+}
+
+[data-theme="dark"] .policy-page .lead {
+  color: #ffffff;
+}

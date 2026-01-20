@@ -1,0 +1,220 @@
+.settings-page {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: calc(100vh - 60px);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.settings-header {
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 2rem;
+}
+
+.settings-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.settings-header p {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+}
+
+/* Settings Card */
+.settings-card {
+  border: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.settings-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.settings-card-header {
+  background-color: var(--section-bg);
+  border-bottom: 1px solid var(--border-color);
+  padding: 1.25rem;
+}
+
+.settings-card-header h5 {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.settings-card .card-body {
+  padding: 1.5rem;
+}
+
+.settings-card .form-label {
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.settings-card .form-select,
+.settings-card .form-control {
+  background-color: var(--form-bg);
+  color: var(--form-text);
+  border: 1px solid var(--form-border);
+  padding: 0.625rem 0.875rem;
+  transition: all 0.3s ease;
+}
+
+.settings-card .form-select:focus,
+.settings-card .form-control:focus {
+  background-color: var(--form-bg);
+  color: var(--form-text);
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.settings-card .form-text {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-top: 0.375rem;
+}
+
+/* Account Info */
+.account-info {
+  padding: 1rem 0;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1rem;
+}
+
+.account-info p {
+  margin-bottom: 1rem;
+}
+
+/* Info Card */
+.settings-info-card {
+  border: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 80px;
+}
+
+.settings-info-header {
+  background-color: var(--section-bg);
+  border-bottom: 1px solid var(--border-color);
+  padding: 1rem;
+}
+
+.settings-info-header h6 {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin: 0;
+}
+
+.settings-info-card .card-body {
+  padding: 1rem;
+}
+
+.settings-info-card p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 0;
+}
+
+/* Button Styling */
+.settings-card .btn {
+  transition: all 0.3s ease;
+}
+
+.settings-card .btn-primary {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.settings-card .btn-primary:hover {
+  background-color: #0b5ed7;
+  border-color: #0a58ca;
+}
+
+/* Dark Mode */
+[data-theme="dark"] .settings-page {
+  --bg-primary: #1a1a1a;
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --card-bg: #2d2d2d;
+  --form-bg: #3a3a3a;
+  --form-text: #ffffff;
+  --form-border: #4a4a4a;
+  --section-bg: #252525;
+  --border-color: #3a3a3a;
+}
+
+[data-theme="dark"] .settings-card-header h5 {
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .settings-card-header {
+  background-color: #252525;
+  border-bottom: 1px solid #3a3a3a;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .settings-card .form-select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+  background-color: #3a3a3a;
+}
+
+[data-theme="dark"] .settings-card .form-select:focus {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+}
+
+[data-theme="dark"] .settings-card .form-select option {
+  background-color: #2d2d2d;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .settings-info-header h6 {
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .settings-info-header {
+  background-color: #252525;
+  border-bottom: 1px solid #3a3a3a;
+  color: #ffffff !important;
+}
+
+/* Responsive */
+@media (max-width: 991px) {
+  .settings-info-card {
+    position: static;
+    margin-top: 2rem;
+  }
+
+  .settings-header h1 {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .settings-header {
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .settings-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .settings-card {
+    margin-bottom: 1rem;
+  }
+
+  .settings-card-header {
+    padding: 1rem;
+  }
+
+  .settings-card .card-body {
+    padding: 1rem;
+  }
+}

@@ -1,0 +1,303 @@
+/* About Page Styles */
+
+.about-page {
+  min-height: 100vh;
+  background-color: #ffffff;
+  color: #212529;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark Mode using both class selector and data-theme attribute */
+.about-page.dark-mode,
+[data-theme="dark"] .about-page,
+.about-page[data-theme="dark"] {
+  background-color: #1a1a1a;
+  color: #e8e8e8;
+}
+
+/* Header Section */
+.about-header {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.about-page.dark-mode .about-header,
+[data-theme="dark"] .about-page .about-header {
+  background: linear-gradient(135deg, #003d99 0%, #001f4d 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.about-header h1 {
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  color: #ffffff;
+}
+
+.about-header .lead {
+  font-size: 1.25rem;
+  margin-bottom: 0;
+  opacity: 0.98;
+  color: #ffffff;
+}
+
+/* Content Section */
+.about-content {
+  background-color: inherit;
+  color: inherit;
+}
+
+.about-content h2 {
+  font-weight: 600;
+  color: #0056b3;
+  border-bottom: 3px solid #007bff;
+  padding-bottom: 0.75rem;
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+}
+
+.about-page.dark-mode .about-content h2,
+[data-theme="dark"] .about-page .about-content h2 {
+  color: #5dade2;
+  border-bottom-color: #3498db;
+}
+
+.about-content p {
+  line-height: 1.8;
+  font-size: 1.05rem;
+  margin-bottom: 1rem;
+  color: #212529;
+}
+
+.about-page.dark-mode .about-content p,
+[data-theme="dark"] .about-page .about-content p {
+  color: #d8d8d8;
+}
+
+/* Features List */
+.features-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.feature-item {
+  padding: 1.5rem;
+  background-color: #f5f7fa;
+  border-left: 5px solid #007bff;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+  color: #212529;
+}
+
+.feature-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+  transform: translateX(4px);
+  background-color: #eef4fb;
+}
+
+.about-page.dark-mode .feature-item,
+[data-theme="dark"] .about-page .feature-item {
+  background-color: #262626;
+  border-left-color: #3498db;
+  color: #e8e8e8;
+}
+
+.about-page.dark-mode .feature-item:hover,
+[data-theme="dark"] .about-page .feature-item:hover {
+  background-color: #2e2e2e;
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.feature-item h5 {
+  color: #0056b3;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+}
+
+.about-page.dark-mode .feature-item h5,
+[data-theme="dark"] .about-page .feature-item h5 {
+  color: #5dade2;
+}
+
+.feature-item .text-muted {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: #555555;
+}
+
+.about-page.dark-mode .feature-item .text-muted,
+[data-theme="dark"] .about-page .feature-item .text-muted {
+  color: #b0b0b0 !important;
+}
+
+/* Contact Section */
+.bg-light-section {
+  background-color: #f0f4f8 !important;
+  border: 2px solid #e0e7f1 !important;
+  border-radius: 0.5rem;
+  padding: 2rem !important;
+}
+
+.about-page.dark-mode .bg-light-section,
+[data-theme="dark"] .about-page .bg-light-section,
+[data-theme="dark"] .bg-light-section {
+  background-color: #252525 !important;
+  border-color: #3a3a3a !important;
+}
+
+/* Override Bootstrap's rounded utility in dark mode */
+[data-theme="dark"] .about-page .rounded {
+  background-color: transparent;
+}
+
+.about-content .bg-light-section h2 {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.about-content ul {
+  margin-left: 0;
+  padding-left: 1.5rem;
+}
+
+.about-content ul li {
+  font-size: 1rem;
+  color: #212529;
+  line-height: 1.9;
+  margin-bottom: 0.75rem;
+}
+
+.about-page.dark-mode .about-content ul li,
+[data-theme="dark"] .about-page .about-content ul li,
+[data-theme="dark"] .about-content ul li {
+  color: #d8d8d8 !important;
+}
+
+.about-content ul li a {
+  color: #0056b3;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.about-content ul li a:hover {
+  color: #003a82;
+  text-decoration: underline;
+  border-bottom-color: #0056b3;
+}
+
+.about-page.dark-mode .about-content ul li a,
+[data-theme="dark"] .about-page .about-content ul li a,
+[data-theme="dark"] .about-content ul li a {
+  color: #5dade2 !important;
+}
+
+.about-page.dark-mode .about-content ul li a:hover,
+[data-theme="dark"] .about-page .about-content ul li a:hover,
+[data-theme="dark"] .about-content ul li a:hover {
+  color: #85c1e9 !important;
+  border-bottom-color: #5dade2 !important;
+}
+
+.about-content strong {
+  color: #0056b3;
+  font-weight: 700;
+}
+
+.about-page.dark-mode .about-content strong,
+[data-theme="dark"] .about-page .about-content strong,
+[data-theme="dark"] .about-content strong {
+  color: #5dade2 !important;
+  font-weight: 700;
+}
+
+/* Text Muted */
+.text-muted {
+  color: #6c757d;
+}
+
+.about-page.dark-mode .text-muted,
+[data-theme="dark"] .about-page .text-muted {
+  color: #a8a8a8 !important;
+}
+
+.about-page .lead {
+  color: #ffffff;
+}
+
+/* Global dark mode overrides for Bootstrap utilities */
+[data-theme="dark"] .about-page p {
+  color: #d8d8d8;
+}
+
+[data-theme="dark"] .about-page h1,
+[data-theme="dark"] .about-page h2,
+[data-theme="dark"] .about-page h3,
+[data-theme="dark"] .about-page h4,
+[data-theme="dark"] .about-page h5 {
+  color: #e8e8e8;
+}
+
+[data-theme="dark"] .about-page ul li {
+  color: #d8d8d8;
+}
+
+[data-theme="dark"] .about-page a {
+  color: #5dade2;
+}
+
+[data-theme="dark"] .about-page a:hover {
+  color: #85c1e9;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .about-header h1 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .about-header .lead {
+    font-size: 1.1rem;
+  }
+
+  .about-content h2 {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .about-content p {
+    font-size: 0.95rem;
+  }
+
+  .features-list {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .feature-item {
+    padding: 1.25rem;
+  }
+
+  .feature-item h5 {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .feature-item:hover {
+    transform: translateX(2px);
+  }
+
+  .bg-light-section {
+    padding: 1.5rem !important;
+    margin-top: 1.5rem;
+  }
+
+  .about-content ul li {
+    font-size: 0.95rem;
+  }
+}
