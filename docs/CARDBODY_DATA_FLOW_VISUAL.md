@@ -2,7 +2,7 @@
 
 ### Your Question
 ```
-URL: http://localhost:3000/articles/6
+URL: http://localhost:5175/articles/6
 Location: card-body in sidebar
 Question: Real data or static?
 ```
@@ -178,7 +178,7 @@ Every value displayed comes directly from PostgreSQL database record #6.
 
 2. **Check API Response:**
    ```bash
-   curl http://localhost:8000/api/v1/public/articles/6/
+   curl http://localhost:8002/api/v1/public/articles/6/
    ```
    Result: Contains status, updated_at, access_level in JSON
 
@@ -191,7 +191,7 @@ Every value displayed comes directly from PostgreSQL database record #6.
 
 4. **Check Card Display:**
    ```
-   On page: http://localhost:3000/articles/6
+   On page: http://localhost:5175/articles/6
    Sidebar card shows: Status, Last Updated, Access Level
    All values match database record #6
    ```

@@ -107,11 +107,11 @@ Frontend displays: Articles sorted by most liked first
 
 2. **Test Endpoints:**
    ```bash
-   curl "http://localhost:8000/api/v1/public/articles/?ordering=-like_count"
+   curl "http://localhost:8002/api/v1/public/articles/?ordering=-like_count"
    ```
 
 3. **Verify Frontend:**
-   - Go to http://localhost:3000/articles
+   - Go to http://localhost:5175/articles
    - Check sort dropdown has 4 options
    - Select "Paling Banyak Disukai"
    - Verify articles load and sort correctly

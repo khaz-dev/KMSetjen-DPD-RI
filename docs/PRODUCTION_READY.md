@@ -261,7 +261,7 @@ cp .env.example .env  # Create .env with production values
 
 ### Step 2: Create Database Backup (Production)
 ```bash
-docker-compose exec -T postgres pg_dump -U postgres kms_db > backups/backup_$(date +%Y%m%d_%H%M%S).sql
+docker-compose exec -T postgres pg_dump -U postgres kmsdb > backups/backup_$(date +%Y%m%d_%H%M%S).sql
 ```
 
 ### Step 3: Deploy Application
@@ -288,7 +288,7 @@ docker-compose logs -f
 docker-compose exec django pytest tests/models/ tests/security/ -q
 
 # Access application
-curl http://localhost:8000/
+curl http://localhost:8002/
 ```
 
 ### Step 5: Post-Deployment Verification
@@ -347,7 +347,7 @@ curl http://localhost:8000/
 docker-compose down
 
 # 2. Restore database backup
-docker-compose exec -T postgres psql -U postgres kms_db < backups/backup_YYYYMMDD_HHMMSS.sql
+docker-compose exec -T postgres psql -U postgres kmsdb < backups/backup_YYYYMMDD_HHMMSS.sql
 
 # 3. Restart previous version
 docker-compose up -d

@@ -98,7 +98,7 @@ npm start
 
 ### Step 2: Navigate to Editor
 ```
-http://localhost:3000/editor
+http://localhost:5175/editor
 ```
 
 ### Step 3: Create Article

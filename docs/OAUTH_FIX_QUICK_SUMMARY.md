@@ -6,7 +6,7 @@
 
 ### Problem #1: 400 Bad Request on OAuth Callback
 ```
-api.js:125 POST http://localhost:8000/api/auth/google/callback/ 400 (Bad Request)
+api.js:125 POST http://localhost:8002/api/auth/google/callback/ 400 (Bad Request)
 ```
 
 **Root Cause**: Frontend was sending `Authorization: Bearer undefined` header  

@@ -361,11 +361,11 @@ LIMIT 20;
 
 4. **Test API Endpoint:**
    ```bash
-   curl "http://localhost:8000/api/v1/public/articles/?ordering=-like_count"
+   curl "http://localhost:8002/api/v1/public/articles/?ordering=-like_count"
    ```
 
 5. **Verify Frontend:**
-   - Navigate to http://localhost:3000/articles
+   - Navigate to http://localhost:5175/articles
    - Check sort dropdown has 4 options
    - Select "Paling Banyak Disukai"
    - Verify articles load correctly

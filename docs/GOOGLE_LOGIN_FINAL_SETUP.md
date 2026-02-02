@@ -82,8 +82,8 @@
    - Set name: `KMS DPD RI Local Development`
 
 5. Add Authorized Redirect URIs:
-   - `http://localhost:3000/google/callback` (development)
-   - `http://localhost:3000` (testing)
+   - `http://localhost:5175/google/callback` (development)
+   - `http://localhost:5175` (testing)
 
 6. Click **Create**
 7. Copy **Client ID** (looks like: `1234567890-abc...xyz.apps.googleusercontent.com`)
@@ -106,7 +106,7 @@ Edit `backend/.env` - Replace the placeholder values:
 ```env
 GOOGLE_CLIENT_ID=YOUR_CLIENT_ID_HERE
 GOOGLE_CLIENT_SECRET=YOUR_CLIENT_SECRET_HERE
-GOOGLE_REDIRECT_URI=http://localhost:3000/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:5175/google/callback
 ```
 
 ### Step 4: Restart Servers
@@ -123,7 +123,7 @@ npm start
 
 ### Step 5: Test
 
-1. Go to `http://localhost:3000/login`
+1. Go to `http://localhost:5175/login`
 2. Look for **"Masuk dengan Google"** button below the SSO button
 3. Click the button
 4. Log in with your Google account
@@ -160,9 +160,9 @@ cat .env.local   # Mac/Linux
 1. Verify backend is running: `python manage.py runserver`
 2. Check `/api/auth/google/callback/` endpoint exists:
    ```bash
-   curl -X POST http://localhost:8000/api/auth/google/callback/ \
+   curl -X POST http://localhost:8002/api/auth/google/callback/ \
      -H "Content-Type: application/json" \
-     -d '{"code":"test","state":"test","redirect_uri":"http://localhost:3000/google/callback"}'
+     -d '{"code":"test","state":"test","redirect_uri":"http://localhost:5175/google/callback"}'
    ```
    
 3. Should return error about code (that's OK), not 404
@@ -178,7 +178,7 @@ cat .env.local   # Mac/Linux
    GOOGLE_CLIENT_SECRET=correct?
    ```
 2. Check credentials match Google Cloud Console
-3. Verify Redirect URI matches: `http://localhost:3000/google/callback`
+3. Verify Redirect URI matches: `http://localhost:5175/google/callback`
 
 ### Issue: "Email not provided by Google"
 
@@ -206,7 +206,7 @@ cat .env.local   # Mac/Linux
 **Solution**:
 1. Check `backend/.env`:
    ```
-   CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+   CORS_ALLOWED_ORIGINS=http://localhost:5175,http://127.0.0.1:5175
    ```
 2. Verify `corsheaders` app is in `INSTALLED_APPS` in settings
 3. Restart backend server
@@ -242,18 +242,18 @@ cat .env.local   # Mac/Linux
 
 ### Test 1: Frontend Only (No Backend)
 1. Set `REACT_APP_GOOGLE_CLIENT_ID` in `frontend/.env.local`
-2. Go to `http://localhost:3000/login`
+2. Go to `http://localhost:5175/login`
 3. **Expected**: "Masuk dengan Google" button appears
 4. Click button
 5. **Expected**: Redirected to Google login page
 6. Approve scopes
-7. **Expected**: Redirected to `http://localhost:3000/google/callback`
+7. **Expected**: Redirected to `http://localhost:5175/google/callback`
 8. **Expected**: Error page (backend not responding yet - OK)
 
 ### Test 2: Complete End-to-End
 1. Complete all setup steps in "Quick Start"
 2. Both frontend and backend running
-3. Go to `http://localhost:3000/login`
+3. Go to `http://localhost:5175/login`
 4. Click "Masuk dengan Google"
 5. Log in with Google account
 6. Approve scopes

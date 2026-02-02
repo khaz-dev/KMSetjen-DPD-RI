@@ -85,7 +85,7 @@
 
 ### 🎬 Live Testing
 
-1. **Navigate to:** http://localhost:3000/articles
+1. **Navigate to:** http://localhost:5175/articles
 
 2. **Select Sort Options from Dropdown:**
    - **Terbaru** (Newest) - Articles reorder by date, date metric highlighted
@@ -184,7 +184,7 @@ When you select "Paling Banyak Disukai":
 ## Next Steps
 
 1. **Refresh Browser** - Clear cache (Ctrl+Shift+R)
-2. **Visit Articles Page** - http://localhost:3000/articles
+2. **Visit Articles Page** - http://localhost:5175/articles
 3. **Try Each Sort** - Click dropdown and select each option
 4. **Verify Changes** - Watch articles reorder and highlight different metrics
 5. **Test Language** - Switch between Indonesian/English to see translations
@@ -206,5 +206,5 @@ When you select "Paling Banyak Disukai":
 - Bilingual support ✅
 
 ✅ **Ready to Test**
-The system is now fully prepared to demonstrate the complete sorting and meta-item reordering feature at http://localhost:3000/articles!
+The system is now fully prepared to demonstrate the complete sorting and meta-item reordering feature at http://localhost:5175/articles!
 

@@ -66,8 +66,8 @@ npm run dev
 
 **4. Access the application:**
 - Frontend: http://localhost:3769
-- Backend API: http://localhost:8000/api
-- Admin panel: http://localhost:8000/admin
+- Backend API: http://localhost:8002/api
+- Admin panel: http://localhost:8002/admin
 
 👉 **[Full installation guide →](INSTALLATION.md)**
 
@@ -204,7 +204,7 @@ python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python manage.py migrate
-python manage.py runserver 0.0.0.0:8000
+python manage.py runserver 0.0.0.0:8002
 ```
 
 **Frontend (new terminal):**
@@ -221,7 +221,7 @@ npm run dev
 cd backend
 python manage.py createsuperuser
 
-# Access at http://localhost:8000/admin
+# Access at http://localhost:8002/admin
 ```
 
 ### Option 2: Docker Deployment
@@ -231,9 +231,9 @@ python manage.py createsuperuser
 docker-compose up -d
 
 # Access at:
-# - Frontend: http://localhost:3000
-# - Backend: http://localhost:8000
-# - Admins: http://localhost:8000/admin
+# - Frontend: http://localhost:5175
+# - Backend: http://localhost:8002
+# - Admins: http://localhost:8002/admin
 ```
 
 👉 **[Full installation guide →](INSTALLATION.md)**
@@ -331,7 +331,7 @@ We welcome contributions! Here's how to get involved:
 ### Frontend Not Loading?
 - Clear browser cache (`Ctrl+Shift+Delete`)
 - Check network tab for API errors
-- Verify backend is running on port 8000
+- Verify backend is running on port 8002
 
 👉 **[Full troubleshooting guide →](docs/TROUBLESHOOTING.md)**
 
@@ -398,9 +398,9 @@ npm run dev
 ```
 
 **3. Access the System**
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000/api/v1/
-- Django Admin: http://localhost:8000/admin/
+- Frontend: http://localhost:5175
+- Backend API: http://localhost:8002/api/v1/
+- Django Admin: http://localhost:8002/admin/
 
 See [docs/04_INITIAL_SCAFFOLDING.md](docs/04_INITIAL_SCAFFOLDING.md) for detailed setup.
 
@@ -585,7 +585,7 @@ npm run dev
 npm run build
 
 # Serve with Nginx + Gunicorn
-gunicorn config.wsgi:application --workers 4 --bind 0.0.0.0:8000
+gunicorn config.wsgi:application --workers 4 --bind 0.0.0.0:8002
 ```
 
 See [docs/04_INITIAL_SCAFFOLDING.md](docs/04_INITIAL_SCAFFOLDING.md) for detailed deployment instructions.

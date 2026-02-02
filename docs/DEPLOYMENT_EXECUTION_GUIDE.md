@@ -71,7 +71,7 @@ chmod +x deploy.sh
 docker-compose ps
 
 # Check service health
-curl http://localhost:8000/health/
+curl http://localhost:8002/health/
 
 # Run quick tests
 docker-compose exec django pytest tests/models/ -q
@@ -86,7 +86,7 @@ docker-compose logs redis
 #### 4. **Database Verification**
 ```bash
 # Connect to database
-docker-compose exec postgres psql -U postgres -d kms_db
+docker-compose exec postgres psql -U postgres -d kmsdb
 
 # Check migrations
 SELECT name FROM django_migrations;
@@ -104,7 +104,7 @@ docker-compose exec django pytest tests/security/ -v
 curl -I https://staging.yourdomain.com
 
 # Check security headers
-curl -I http://localhost:8000 | grep -i "Strict-Transport-Security"
+curl -I http://localhost:8002 | grep -i "Strict-Transport-Security"
 ```
 
 ### Staging Validation Checklist
@@ -156,7 +156,7 @@ curl -I http://localhost:8000 | grep -i "Strict-Transport-Security"
 
 ```bash
 # 1. Backup existing database
-docker-compose exec postgres pg_dump -U postgres kms_db > production_backup_$(date +%Y%m%d_%H%M%S).sql
+docker-compose exec postgres pg_dump -U postgres kmsdb > production_backup_$(date +%Y%m%d_%H%M%S).sql
 
 # 2. Verify Git status
 git status
@@ -270,7 +270,7 @@ docker-compose down
 
 # 2. Restore database from backup
 docker-compose up -d postgres redis
-docker-compose exec -T postgres psql -U postgres -d kms_db < production_backup_YYYYMMDD_HHMMSS.sql
+docker-compose exec -T postgres psql -U postgres -d kmsdb < production_backup_YYYYMMDD_HHMMSS.sql
 
 # 3. Checkout previous version
 git checkout <previous-commit>

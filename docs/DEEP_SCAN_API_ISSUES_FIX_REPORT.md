@@ -32,9 +32,9 @@ path('articles/check-slug/', ArticleViewSet.as_view({'get': 'check_slug'}), name
 
 **Symptom:**
 - Browser console:
-  - `:8000/api/v1/public/articles/popular/` - 401 Unauthorized
-  - `:8000/api/v1/public/categories/` - 401 Unauthorized
-  - `:8000/api/v1/public/tags/` - 401 Unauthorized
+  - `:8002/api/v1/public/articles/popular/` - 401 Unauthorized
+  - `:8002/api/v1/public/categories/` - 401 Unauthorized
+  - `:8002/api/v1/public/tags/` - 401 Unauthorized
 
 **Root Cause:**
 - The frontend `apiClient` was adding JWT authorization header to ALL requests
@@ -76,7 +76,7 @@ apiClient.interceptors.request.use(
 ### 3. **SECONDARY: Auth Endpoint 401 Errors**
 
 **Symptom:**
-- Browser console: `:8000/api/auth/me/` - 401 Unauthorized
+- Browser console: `:8002/api/auth/me/` - 401 Unauthorized
 
 **Root Cause:**
 - This endpoint REQUIRES authentication (correct behavior)
@@ -107,7 +107,7 @@ apiClient.interceptors.request.use(
 
 ## Testing Checklist
 
-- [ ] Backend: Navigate to http://localhost:3000/editor
+- [ ] Backend: Navigate to http://localhost:5175/editor
 - [ ] Type in title field and verify slug auto-generates
 - [ ] Verify slug validation badge appears (checking, then valid)
 - [ ] Check browser console for no 404 errors on check-slug

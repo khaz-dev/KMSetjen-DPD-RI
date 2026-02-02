@@ -115,7 +115,7 @@ const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
   ```python
   GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID', default='')
   GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET', default='')
-  GOOGLE_REDIRECT_URI = env('GOOGLE_REDIRECT_URI', default='http://localhost:3000/google/callback')
+  GOOGLE_REDIRECT_URI = env('GOOGLE_REDIRECT_URI', default='http://localhost:5175/google/callback')
   ```
 
 **File: `backend/.env.example`**
@@ -212,7 +212,7 @@ File: `backend/.env`
 ```env
 GOOGLE_CLIENT_ID=YOUR_CLIENT_ID_HERE
 GOOGLE_CLIENT_SECRET=YOUR_CLIENT_SECRET_HERE
-GOOGLE_REDIRECT_URI=http://localhost:3000/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:5175/google/callback
 ```
 
 ### 4. Restart Servers (1 minute)
@@ -225,7 +225,7 @@ cd frontend && npm start
 ```
 
 ### 5. Test (1 minute)
-- Go to `http://localhost:3000/login`
+- Go to `http://localhost:5175/login`
 - See "Masuk dengan Google" button ✅
 - Click and login ✅
 
@@ -383,7 +383,7 @@ Day 2: You add credentials to .env files
   ↓
 Day 3: You restart frontend/backend
   ↓
-Day 4: User visits http://localhost:3000/login
+Day 4: User visits http://localhost:5175/login
   ↓
 CHANGES VISIBLE: "Masuk dengan Google" button appears!
   ↓
@@ -506,7 +506,7 @@ GOOGLE_CLIENT_SECRET=YOUR_SECRET
 
 3. Restart both servers
 
-4. Visit `http://localhost:3000/login`
+4. Visit `http://localhost:5175/login`
 
 5. **"Masuk dengan Google" button will appear** ✅
 

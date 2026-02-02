@@ -88,7 +88,7 @@
 
 ### Configuration (✅ Verified)
 ```
-✅ Redirect URI: http://localhost:3000/google/callback
+✅ Redirect URI: http://localhost:5175/google/callback
 ✅ Scopes: profile email openid
 ✅ Token Type: JWT (JSON Web Token)
 ✅ OAuth Flow: Authorization Code Flow (most secure)
@@ -129,8 +129,8 @@ Time: 2 minutes
 ```
 Type: Web application
 Name: KMSetjen DPD RI
-Origins: localhost:3000, localhost:8000
-Redirect: http://localhost:3000/google/callback
+Origins: localhost:5175, localhost:8002
+Redirect: http://localhost:5175/google/callback
 Time: 2 minutes
 ```
 
@@ -159,7 +159,7 @@ Time: 1 minute
 ```
 Terminal 1: cd backend && python manage.py runserver
 Terminal 2: cd frontend && npm start
-Browser: http://localhost:3000 → Click "Login with Google"
+Browser: http://localhost:5175 → Click "Login with Google"
 Time: 5 minutes
 ```
 

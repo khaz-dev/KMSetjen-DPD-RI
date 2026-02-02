@@ -2,7 +2,7 @@
 
 **Version:** 1.0.0  
 **Last Updated:** January 5, 2026  
-**Base URL:** `http://api.localhost:8000/api/v1`
+**Base URL:** `http://api.localhost:8002/api/v1`
 
 ---
 
@@ -47,7 +47,7 @@ Authorization: Bearer <your_jwt_token>
   
 **Request:**
 ```bash
-curl -X GET "http://api.localhost:8000/api/v1/admin/users/?page=1&search=john" \
+curl -X GET "http://api.localhost:8002/api/v1/admin/users/?page=1&search=john" \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -55,7 +55,7 @@ curl -X GET "http://api.localhost:8000/api/v1/admin/users/?page=1&search=john" \
 ```json
 {
   "count": 150,
-  "next": "http://api.localhost:8000/api/v1/admin/users/?page=2",
+  "next": "http://api.localhost:8002/api/v1/admin/users/?page=2",
   "previous": null,
   "results": [
     {
@@ -517,7 +517,7 @@ OR
 ```json
 {
   "count": 150,
-  "next": "http://api.localhost:8000/api/v1/endpoint/?page=2",
+  "next": "http://api.localhost:8002/api/v1/endpoint/?page=2",
   "previous": null,
   "results": [ ... ]
 }
@@ -600,11 +600,11 @@ When rate limit is exceeded:
 ### Using cURL
 ```bash
 # List users
-curl -X GET "http://api.localhost:8000/api/v1/admin/users/" \
+curl -X GET "http://api.localhost:8002/api/v1/admin/users/" \
   -H "Authorization: Bearer <token>"
 
 # Create user
-curl -X POST "http://api.localhost:8000/api/v1/admin/users/" \
+curl -X POST "http://api.localhost:8002/api/v1/admin/users/" \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"username": "new_user", "email": "test@example.com", "password": "Pass123!"}'
@@ -612,7 +612,7 @@ curl -X POST "http://api.localhost:8000/api/v1/admin/users/" \
 
 ### Using Postman
 1. Import the provided Postman collection
-2. Set environment variable: `base_url` = `http://api.localhost:8000/api/v1`
+2. Set environment variable: `base_url` = `http://api.localhost:8002/api/v1`
 3. Set environment variable: `token` = your JWT token
 4. Run requests with `{{base_url}}` and `Authorization: Bearer {{token}}`
 

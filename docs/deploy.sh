@@ -93,7 +93,7 @@ if [ "$ENVIRONMENT" == "production" ]; then
     log_warning "Production deployment detected - creating backup first"
     
     # Backup database
-    if docker-compose exec -T postgres pg_dump -U postgres kms_db > "$BACKUP_FILE" 2>&1; then
+    if docker-compose exec -T postgres pg_dump -U postgres kmsdb > "$BACKUP_FILE" 2>&1; then
         log_success "Database backup created: $BACKUP_FILE"
     else
         log_error "Database backup failed"
@@ -217,7 +217,7 @@ log_info "Running health checks..."
 
 # Check Django health
 log_info "Checking Django health..."
-if curl -f http://localhost:8000/health/ > /dev/null 2>&1; then
+if curl -f http://localhost:8002/health/ > /dev/null 2>&1; then
     log_success "Django is healthy"
 else
     log_error "Django health check failed"
@@ -282,7 +282,7 @@ Log File:           $LOG_FILE
 Services Started:
   - PostgreSQL      [RUNNING] :5432
   - Redis           [RUNNING] :6379
-  - Django          [RUNNING] :8000
+  - Django          [RUNNING] :8002
   - Frontend        [READY]   (if configured)
 
 Database:
@@ -334,9 +334,9 @@ echo -e "Log File:     ${BLUE}$LOG_FILE${NC}"
 echo -e "Backup:       ${BLUE}$BACKUP_FILE${NC}"
 echo ""
 echo -e "Access your application at:"
-echo -e "  Backend:  ${BLUE}http://localhost:8000${NC}"
-echo -e "  Admin:    ${BLUE}http://localhost:8000/admin${NC}"
-echo -e "  API:      ${BLUE}http://localhost:8000/api${NC}"
+echo -e "  Backend:  ${BLUE}http://localhost:8002${NC}"
+echo -e "  Admin:    ${BLUE}http://localhost:8002/admin${NC}"
+echo -e "  API:      ${BLUE}http://localhost:8002/api${NC}"
 echo ""
 
 exit 0

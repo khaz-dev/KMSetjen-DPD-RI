@@ -128,10 +128,10 @@ python manage.py migrate content
 **3. Verify Installation:**
 ```bash
 # Test API
-curl "http://localhost:8000/api/v1/public/articles/?ordering=-like_count"
+curl "http://localhost:8002/api/v1/public/articles/?ordering=-like_count"
 
 # Test Frontend
-# Visit http://localhost:3000/articles
+# Visit http://localhost:5175/articles
 # Check sort dropdown
 ```
 
@@ -257,7 +257,7 @@ python manage.py migrate content 0003
 ### If Sort Doesn't Work
 ```bash
 # Check API response
-curl "http://localhost:8000/api/v1/public/articles/?ordering=-like_count"
+curl "http://localhost:8002/api/v1/public/articles/?ordering=-like_count"
 
 # Verify field in response
 # Should include: "like_count": <number>

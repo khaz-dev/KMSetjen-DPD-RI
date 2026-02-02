@@ -135,7 +135,7 @@ table tbody td {
 
 ## 🎯 URL to Test
 ```
-http://localhost:3000/articles/6
+http://localhost:5175/articles/6
 ```
 
 ### Test Steps

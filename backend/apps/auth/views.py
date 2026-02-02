@@ -311,7 +311,7 @@ def google_callback(request):
     {
         "code": "authorization_code_from_google",
         "state": "csrf_state_token",
-        "redirect_uri": "http://localhost:3000/google/callback"
+        "redirect_uri": "http://localhost:5175/google/callback"
     }
     
     Response:
@@ -331,6 +331,12 @@ def google_callback(request):
         # Extract parameters from request
         code = request.data.get('code')
         state = request.data.get('state')
+        redirect_uri_from_frontend = request.data.get('redirect_uri')
+        
+        logger.info(f'[GoogleCallback] Request received:')
+        logger.info(f'[GoogleCallback] - redirect_uri from frontend: {redirect_uri_from_frontend}')
+        logger.info(f'[GoogleCallback] - code received: {code[:20] if code else "MISSING"}...')
+        logger.info(f'[GoogleCallback] - state received: {state[:20] if state else "MISSING"}...')
         
         # Validate required parameters
         if not code:
@@ -343,7 +349,7 @@ def google_callback(request):
         # Get Google OAuth configuration from Django settings
         google_client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
         google_client_secret = getattr(settings, 'GOOGLE_CLIENT_SECRET', '')
-        google_redirect_uri = getattr(settings, 'GOOGLE_REDIRECT_URI', 'http://localhost:3000/google/callback')
+        google_redirect_uri = getattr(settings, 'GOOGLE_REDIRECT_URI', 'http://localhost:5175/google/callback')
         
         if not google_client_id or not google_client_secret:
             logger.error('[GoogleCallback] Google OAuth not configured on server')
@@ -357,6 +363,11 @@ def google_callback(request):
         # ====================================================================
         # IMPORTANT: Use backend's configured redirect_uri, not frontend's
         # This must match the redirect_uri registered with Google
+        logger.info(f'[GoogleCallback] Exchanging code with parameters:')
+        logger.info(f'[GoogleCallback] - client_id: {google_client_id[:20]}...')
+        logger.info(f'[GoogleCallback] - redirect_uri: {google_redirect_uri}')
+        logger.info(f'[GoogleCallback] - code: {code[:20]}...')
+        
         token_response = requests.post(
             'https://oauth2.googleapis.com/token',
             data={

@@ -4,7 +4,7 @@
 
 **Error Log:**
 ```
-ArticleEditorPage.js:118  POST http://localhost:8000/api/v1/internal/articles/ 400 (Bad Request)
+ArticleEditorPage.js:118  POST http://localhost:8002/api/v1/internal/articles/ 400 (Bad Request)
 Save draft error: Error: save_draft_failed
 ```
 
@@ -193,7 +193,7 @@ Result:          ✓ Accepted and validated by validate_slug()
 
 **Test Procedure:**
 
-1. **Navigate to editor:** http://localhost:3000/editor
+1. **Navigate to editor:** http://localhost:5175/editor
 2. **Fill in article:**
    - Title: "Test Article"
    - Category: Select any category

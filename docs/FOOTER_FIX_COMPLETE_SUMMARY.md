@@ -328,7 +328,7 @@ When user switches language, all `{t()}` calls automatically get the Indonesian 
 6. `frontend/src/components/ReviewInterface.js` - See pattern for other components
 
 ### Test It Now:
-1. Open app (http://localhost:3000)
+1. Open app (http://localhost:5175)
 2. Scroll to footer
 3. Click 🌐 (globe icon) in top-right
 4. Select Indonesian

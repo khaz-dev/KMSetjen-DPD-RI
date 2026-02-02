@@ -284,7 +284,7 @@ backend/ (45+ files created)
 4. Run: python manage.py migrate
 5. Run: python manage.py createsuperuser
 6. Run: python manage.py runserver
-7. Visit: http://localhost:8000/admin/
+7. Visit: http://localhost:8002/admin/
 
 **Then in Phase 3:**
 - Implement public API endpoints (/api/v1/public/)

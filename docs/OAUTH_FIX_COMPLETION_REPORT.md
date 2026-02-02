@@ -80,13 +80,13 @@
 ## 🧪 Testing Checklist
 
 Before testing:
-- [ ] Frontend running on port 3769 or 3000
-- [ ] Backend running on port 8000
+- [ ] Frontend running on port 3769 or 5175
+- [ ] Backend running on port 8002
 - [ ] Browser DevTools ready (optional)
 - [ ] Google account available
 
 Testing steps:
-- [ ] Navigate to http://localhost:3769 (or 3000)
+- [ ] Navigate to http://localhost:3769 (or 5175)
 - [ ] Click "Masuk dengan Google" button
 - [ ] Log in with your Google account
 

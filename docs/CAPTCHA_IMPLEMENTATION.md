@@ -167,7 +167,7 @@ When disabled, CAPTCHA verification is skipped (useful for development).
 ### Manual Testing Steps
 1. Run frontend: `npm start`
 2. Run backend: `python manage.py runserver`
-3. Navigate to http://localhost:3000/login
+3. Navigate to http://localhost:5175/login
 4. Try to login with valid credentials
 5. Verify CAPTCHA prompt appears
 6. Complete CAPTCHA and login should succeed

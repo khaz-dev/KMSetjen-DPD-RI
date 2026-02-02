@@ -163,7 +163,7 @@ Time:        2.945 s
 - AdminDashboardPage.test.js: 8/8 ✅
 
 ### ✅ Frontend Server Status
-- Server started successfully on http://localhost:3000
+- Server started successfully on http://localhost:5175
 - No compilation errors
 - Hot reload working
 - All components rendering correctly

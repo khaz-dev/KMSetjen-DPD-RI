@@ -77,7 +77,7 @@ These steps require user action via Google Cloud Console:
 3. Delete current OAuth 2.0 application
 4. Create new OAuth 2.0 credentials:
    - Application type: Web Application
-   - Authorized redirect URIs: `http://localhost:3000/google/callback`
+   - Authorized redirect URIs: `http://localhost:5175/google/callback`
 5. Copy new Client ID and Secret
 6. Update in `backend/.env` and `frontend/.env.local`
 

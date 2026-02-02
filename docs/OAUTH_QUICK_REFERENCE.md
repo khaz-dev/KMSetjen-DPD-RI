@@ -36,14 +36,14 @@ Type: Web application
 Name: KMSetjen DPD RI
 
 JavaScript Origins:
-- http://localhost:3000
-- http://localhost:8000
-- http://127.0.0.1:3000
-- http://127.0.0.1:8000
+- http://localhost:5175
+- http://localhost:8002
+- http://127.0.0.1:5175
+- http://127.0.0.1:8002
 
 Redirect URIs:
-- http://localhost:3000/google/callback
-- http://127.0.0.1:3000/google/callback
+- http://localhost:5175/google/callback
+- http://127.0.0.1:5175/google/callback
 ```
 
 ### 6️⃣ Copy Credentials
@@ -98,7 +98,7 @@ npm start
 
 ### Browser
 ```
-1. Go to: http://localhost:3000
+1. Go to: http://localhost:5175
 2. Click: "Login with Google"
 3. Verify: Login works!
 ```
@@ -119,7 +119,7 @@ npm start
 
 | Mistake | Fix |
 |---------|-----|
-| Redirect URI doesn't match | Use EXACTLY: `http://localhost:3000/google/callback` |
+| Redirect URI doesn't match | Use EXACTLY: `http://localhost:5175/google/callback` |
 | Secret pasted in frontend | Frontend only gets Client ID, not Secret |
 | Client ID not matching | Must be same in both backend and frontend |
 | Scopes missing | Add `userinfo.email` and `userinfo.profile` in consent screen |

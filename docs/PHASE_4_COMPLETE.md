@@ -395,7 +395,7 @@ All operations logged with:
 
 **Create article:**
 ```bash
-curl -X POST http://localhost:8000/api/v1/internal/articles/ \
+curl -X POST http://localhost:8002/api/v1/internal/articles/ \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -409,7 +409,7 @@ curl -X POST http://localhost:8000/api/v1/internal/articles/ \
 
 **Update article:**
 ```bash
-curl -X PATCH http://localhost:8000/api/v1/internal/articles/1/ \
+curl -X PATCH http://localhost:8002/api/v1/internal/articles/1/ \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"title_en": "Updated"}'
@@ -417,7 +417,7 @@ curl -X PATCH http://localhost:8000/api/v1/internal/articles/1/ \
 
 **Submit for review:**
 ```bash
-curl -X POST http://localhost:8000/api/v1/internal/articles/1/submit-review/ \
+curl -X POST http://localhost:8002/api/v1/internal/articles/1/submit-review/ \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"comment": "Ready"}'
@@ -425,13 +425,13 @@ curl -X POST http://localhost:8000/api/v1/internal/articles/1/submit-review/ \
 
 **Get dashboard:**
 ```bash
-curl http://localhost:8000/api/v1/internal/articles/dashboard/ \
+curl http://localhost:8002/api/v1/internal/articles/dashboard/ \
   -H "Authorization: Bearer $TOKEN"
 ```
 
 **Login:**
 ```bash
-curl -X POST http://localhost:8000/api/auth/token/ \
+curl -X POST http://localhost:8002/api/auth/token/ \
   -H "Content-Type: application/json" \
   -d '{"username": "user", "password": "pass"}'
 ```

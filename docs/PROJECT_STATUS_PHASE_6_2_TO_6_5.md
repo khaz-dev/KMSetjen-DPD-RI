@@ -344,7 +344,7 @@ Successfully completed Phase 6.2 through 6.5 of the KMS frontend development. Th
 - Axios: https://axios-http.com
 
 ### API Documentation
-Backend API available at: `http://localhost:8000/api/`
+Backend API available at: `http://localhost:8002/api/`
 
 ### Development Setup
 ```bash

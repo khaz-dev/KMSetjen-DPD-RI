@@ -59,9 +59,9 @@ taskkill /F /PID <python_process_id>
 
 ### Step 2: Verify Process Stopped
 ```bash
-netstat -ano | findstr :8000
+netstat -ano | findstr :8002
 ```
-Should return NOTHING if port 8000 is free.
+Should return NOTHING if port 8002 is free.
 
 ### Step 3: Restart Django
 
@@ -82,7 +82,7 @@ python manage.py runserver
 
 **Expected output:**
 ```
-Starting development server at http://127.0.0.1:8000/
+Starting development server at http://127.0.0.1:8002/
 Quit the server with CONTROL-C.
 ```
 
@@ -90,7 +90,7 @@ Quit the server with CONTROL-C.
 
 ## Step 4: Test Immediately
 
-### In Browser (http://localhost:3000/editor):
+### In Browser (http://localhost:5175/editor):
 1. Open DevTools Console (F12)
 2. Clear console (⌘L or Ctrl+L)
 3. Type a title in the editor
@@ -170,13 +170,13 @@ python manage.py clear_cache
 python manage.py runserver
 ```
 
-**Check 4: Try different port (if 8000 is stuck)**
+**Check 4: Try different port (if 8002 is stuck)**
 ```bash
-python manage.py runserver 8001
+python manage.py runserver 8002
 ```
 Then in frontend .env:
 ```
-REACT_APP_API_BASE_URL=http://localhost:8001/api
+REACT_APP_API_BASE_URL=http://localhost:8002/api
 ```
 
 ---

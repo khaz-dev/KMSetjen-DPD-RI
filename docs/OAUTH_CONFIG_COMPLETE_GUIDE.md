@@ -15,7 +15,7 @@ Application Name: KMSetjen DPD RI
 Backend: Django 4.2.8 (Python)
 Frontend: React 18.2.0 (JavaScript)
 OAuth Version: OAuth 2.0 (Code Flow)
-Redirect URI: http://localhost:3000/google/callback
+Redirect URI: http://localhost:5175/google/callback
 Scopes: profile email openid
 ```
 
@@ -43,7 +43,7 @@ GOOGLE_CLIENT_SECRET:
 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
 
 GOOGLE_REDIRECT_URI:
-http://localhost:3000/google/callback
+http://localhost:5175/google/callback
 ```
 
 **Status**: 🔴 **EXPOSED** - Must be rotated immediately
@@ -102,15 +102,15 @@ http://localhost:3000/google/callback
    Name: KMSetjen DPD RI (or any descriptive name)
    
    Authorized JavaScript origins:
-   - http://localhost:3000
-   - http://localhost:8000
-   - http://127.0.0.1:3000
-   - http://127.0.0.1:8000
+   - http://localhost:5175
+   - http://localhost:8002
+   - http://127.0.0.1:5175
+   - http://127.0.0.1:8002
    
    Authorized redirect URIs:
-   - http://localhost:3000/google/callback
-   - http://localhost:3000/auth/google/callback
-   - http://127.0.0.1:3000/google/callback
+   - http://localhost:5175/google/callback
+   - http://localhost:5175/auth/google/callback
+   - http://127.0.0.1:5175/google/callback
    ```
 
    **CRITICAL**: The redirect URI must match EXACTLY what's in the code
@@ -141,14 +141,14 @@ Update these lines:
 ```env
 GOOGLE_CLIENT_ID=YOUR_NEW_CLIENT_ID_HERE
 GOOGLE_CLIENT_SECRET=YOUR_NEW_CLIENT_SECRET_HERE
-GOOGLE_REDIRECT_URI=http://localhost:3000/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:5175/google/callback
 ```
 
 **Example after update:**
 ```env
 GOOGLE_CLIENT_ID=123456789-abcdefghijk.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSP_1a2b3c4d5e6f7g8h9i0j
-GOOGLE_REDIRECT_URI=http://localhost:3000/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:5175/google/callback
 ```
 
 ---
@@ -189,7 +189,7 @@ REACT_APP_GOOGLE_CLIENT_ID=123456789-abcdefghijk.apps.googleusercontent.com
        │ 2. Redirect to Google OAuth
        │ URL: https://accounts.google.com/o/oauth2/v2/auth?
        │       client_id=[NEW_CLIENT_ID]&
-       │       redirect_uri=http://localhost:3000/google/callback&
+       │       redirect_uri=http://localhost:5175/google/callback&
        │       response_type=code&
        │       scope=profile+email+openid
        ▼
@@ -204,7 +204,7 @@ REACT_APP_GOOGLE_CLIENT_ID=123456789-abcdefghijk.apps.googleusercontent.com
 ┌──────────────────────────────────────┐
 │  GoogleCallbackPage.js                │
 │  (Frontend/React)                     │
-│  URL: http://localhost:3000/google/  │
+│  URL: http://localhost:5175/google/  │
 │       callback?code=AUTH_CODE&        │
 │       state=CSRF_TOKEN                │
 └──────┬───────────────────────────────┘
@@ -280,19 +280,19 @@ REACT_APP_GOOGLE_CLIENT_ID=123456789-abcdefghijk.apps.googleusercontent.com
 ```bash
 cd backend
 python manage.py runserver
-# Should start at http://localhost:8000
+# Should start at http://localhost:8002
 ```
 
 **Terminal 2 - Frontend:**
 ```bash
 cd frontend
 npm start
-# Should start at http://localhost:3000
+# Should start at http://localhost:5175
 ```
 
 ### Test Steps
 
-1. Open: **http://localhost:3000**
+1. Open: **http://localhost:5175**
 2. Click: **"Login with Google"** button
 3. You should be redirected to Google login
 4. Enter your Google credentials
@@ -312,7 +312,7 @@ npm start
    ```
 
 2. **Verify Redirect URI matches exactly**
-   - In Google Console: `http://localhost:3000/google/callback`
+   - In Google Console: `http://localhost:5175/google/callback`
    - In code: Same as above
    - No trailing slashes, exact match
 
@@ -340,9 +340,9 @@ npm start
 These are the domains where your frontend can call Google OAuth:
 
 ```
-http://localhost:3000      (Local development)
-http://127.0.0.1:3000      (Local development - alternate)
-http://localhost:8000      (Backend - if needed)
+http://localhost:5175      (Local development)
+http://127.0.0.1:5175      (Local development - alternate)
+http://localhost:8002      (Backend - if needed)
 ```
 
 **For Production Later:**
@@ -358,8 +358,8 @@ https://www.yourdomain.com
 This is where Google sends the user after login:
 
 ```
-http://localhost:3000/google/callback
-http://127.0.0.1:3000/google/callback
+http://localhost:5175/google/callback
+http://127.0.0.1:5175/google/callback
 ```
 
 **Note**: Must match EXACTLY (including protocol, domain, port, path)
@@ -374,7 +374,7 @@ http://127.0.0.1:3000/google/callback
 |------|-------|----------------|
 | **Client ID** | `123456789-abcdefgh.apps.googleusercontent.com` | Both `backend/.env` and `frontend/.env.local` |
 | **Client Secret** | `GOCSP_1a2b3c4d5e6f7g8h` | `backend/.env` ONLY |
-| **Redirect URI** | `http://localhost:3000/google/callback` | Already configured in code |
+| **Redirect URI** | `http://localhost:5175/google/callback` | Already configured in code |
 | **Scopes** | `profile email openid` | Already configured in code |
 
 ---
@@ -390,7 +390,7 @@ Before Testing:
 - [ ] Client ID copied to `backend/.env` (GOOGLE_CLIENT_ID)
 - [ ] Client Secret copied to `backend/.env` (GOOGLE_CLIENT_SECRET)
 - [ ] Client ID copied to `frontend/.env.local` (REACT_APP_GOOGLE_CLIENT_ID)
-- [ ] Redirect URI verified: `http://localhost:3000/google/callback`
+- [ ] Redirect URI verified: `http://localhost:5175/google/callback`
 - [ ] JavaScript origins added to Google Console
 - [ ] Backend server started (`python manage.py runserver`)
 - [ ] Frontend server started (`npm start`)
@@ -410,7 +410,7 @@ Before Testing:
 **Solution**:
 - Check: Google Console registered URI exactly matches
 - Common mistake: Trailing slash or different port number
-- URL must be: `http://localhost:3000/google/callback` (exact)
+- URL must be: `http://localhost:5175/google/callback` (exact)
 
 ### Issue: "Unauthorized Client"
 **Solution**:
@@ -461,7 +461,7 @@ Once Google login works:
 ```
 https://accounts.google.com/o/oauth2/v2/auth?
   client_id=YOUR_CLIENT_ID&
-  redirect_uri=http://localhost:3000/google/callback&
+  redirect_uri=http://localhost:5175/google/callback&
   response_type=code&
   scope=profile+email+openid&
   state=CSRF_STATE
@@ -475,7 +475,7 @@ Content-Type: application/x-www-form-urlencoded
 code=AUTH_CODE&
 client_id=YOUR_CLIENT_ID&
 client_secret=YOUR_CLIENT_SECRET&
-redirect_uri=http://localhost:3000/google/callback&
+redirect_uri=http://localhost:5175/google/callback&
 grant_type=authorization_code
 ```
 

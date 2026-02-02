@@ -22,7 +22,7 @@ All 3 issues have been fixed and deployed!
 
 1. **Open browser** and go to your frontend app
    - Since React moved to port 3769, use: `http://localhost:3769` (or check your browser tabs)
-   - Or use the original port if it's still available: `http://localhost:3000`
+   - Or use the original port if it's still available: `http://localhost:5175`
 
 2. **Click "Masuk dengan Google"** button
 
@@ -106,7 +106,7 @@ If something still doesn't work:
 
 ### Issue: Spinner still doesn't disappear
 **Cause**: Check if token exchange is failing (401/400 error from backend)
-**Solution**: Look at backend debug logs at `http://localhost:8000/`
+**Solution**: Look at backend debug logs at `http://localhost:8002/`
 **Fix**: Backend 400 error still needs investigation
 
 ### Issue: Navbar still shows "Login" button
@@ -152,8 +152,8 @@ If something still doesn't work:
 
 ## 📋 Checklist Before Final Testing
 
-- [ ] Frontend server running (port 3000 or 3769)
-- [ ] Backend server running (port 8000)
+- [ ] Frontend server running (port 5175 or 3769)
+- [ ] Backend server running (port 8002)
 - [ ] Both .env files have correct OAuth credentials
 - [ ] Browser DevTools open to see console logs
 - [ ] You have a Google account ready to log in
@@ -208,5 +208,5 @@ All changes are **already deployed** - no server restart needed!
 
 **Fixes Status**: ✅ Deployed and hot-loaded  
 **Frontend**: ✅ Recompiled automatically  
-**Backend**: ✅ Still running on port 8000  
+**Backend**: ✅ Still running on port 8002  
 **Ready**: ✅ YES, test now!

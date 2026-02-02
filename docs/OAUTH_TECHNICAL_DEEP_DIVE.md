@@ -61,7 +61,7 @@ const handleGoogleLogin = () => {
 # Google OAuth configuration - reads from .env
 GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID', default='')
 GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET', default='')
-GOOGLE_REDIRECT_URI = env('GOOGLE_REDIRECT_URI', default='http://localhost:3000/google/callback')
+GOOGLE_REDIRECT_URI = env('GOOGLE_REDIRECT_URI', default='http://localhost:5175/google/callback')
 ```
 
 **File 2**: `backend/apps/auth/views.py` (Lines 295-350+)
@@ -125,12 +125,12 @@ const handleGoogleLogin = () => {
 ```javascript
 export const getGoogleAuthorizationUrl = () => {
   const redirectUri = `${window.location.origin}/google/callback`;
-  // window.location.origin = "http://localhost:3000"
-  // redirectUri = "http://localhost:3000/google/callback"
+  // window.location.origin = "http://localhost:5175"
+  // redirectUri = "http://localhost:5175/google/callback"
   
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,           // From: REACT_APP_GOOGLE_CLIENT_ID in .env.local
-    redirect_uri: redirectUri,              // "http://localhost:3000/google/callback"
+    redirect_uri: redirectUri,              // "http://localhost:5175/google/callback"
     response_type: 'code',
     scope: 'profile email openid',          // What data we're requesting
     state: generateRandomState(),           // CSRF protection
@@ -146,7 +146,7 @@ export const getGoogleAuthorizationUrl = () => {
 ```
 https://accounts.google.com/o/oauth2/v2/auth?
   client_id=123456789-abc.apps.googleusercontent.com&
-  redirect_uri=http://localhost:3000/google/callback&
+  redirect_uri=http://localhost:5175/google/callback&
   response_type=code&
   scope=profile%20email%20openid&
   state=abc123xyz&
@@ -166,7 +166,7 @@ https://accounts.google.com/o/oauth2/v2/auth?
 
 **Google redirects to**:
 ```
-http://localhost:3000/google/callback?
+http://localhost:5175/google/callback?
   code=4/0AY0e-g...&
   state=abc123xyz
 ```
@@ -175,7 +175,7 @@ http://localhost:3000/google/callback?
 
 **Frontend - GoogleCallbackPage.js**
 ```javascript
-// URL: http://localhost:3000/google/callback?code=4/0AY0e-g...&state=abc123xyz
+// URL: http://localhost:5175/google/callback?code=4/0AY0e-g...&state=abc123xyz
 
 const code = urlParams.get('code');      // Extract: 4/0AY0e-g...
 const state = urlParams.get('state');    // Extract: abc123xyz
@@ -353,7 +353,7 @@ GOOGLE_CLIENT_SECRET=YOUR_NEW_CLIENT_SECRET
     ├─ Used in: backend/apps/auth/views.py (google_callback function)
     └─ Sent to: Google when exchanging code for token (NEVER exposed to frontend)
 
-GOOGLE_REDIRECT_URI=http://localhost:3000/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:5175/google/callback
     ├─ Used in: backend/config/settings.py
     ├─ Used in: backend/apps/auth/views.py (google_callback function)
     └─ Must match: The redirect_uri registered in Google Console
@@ -390,11 +390,11 @@ const GOOGLE_CLIENT_SECRET = process.env.REACT_APP_GOOGLE_CLIENT_SECRET;
 
 ```
 When you create OAuth credentials in Google Console:
-├─ You register: http://localhost:3000/google/callback
+├─ You register: http://localhost:5175/google/callback
 │
-Frontend uses: http://localhost:3000/google/callback
+Frontend uses: http://localhost:5175/google/callback
 │
-Backend uses: http://localhost:3000/google/callback
+Backend uses: http://localhost:5175/google/callback
 │
 Google checks: All three must match EXACTLY
 └─ If mismatch: Google rejects the request
@@ -427,7 +427,7 @@ Fix: Copy from Google Console again, paste carefully
 ```
 The redirect_uri doesn't match what Google expects
 Cause: URI in Google Console ≠ URI in code
-Fix: Make sure EXACT match: http://localhost:3000/google/callback
+Fix: Make sure EXACT match: http://localhost:5175/google/callback
 ```
 
 ### Error: "Invalid Client"

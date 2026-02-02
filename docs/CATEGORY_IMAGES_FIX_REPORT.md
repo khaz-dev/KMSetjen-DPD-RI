@@ -75,7 +75,7 @@ class CategoryListSerializer(serializers.ModelSerializer):
       "slug": "kebijakan-publik",
       "icon": "file-text",
       "color": "#007bff",
-      "image": "http://localhost:8000/media/categories/categories/kebijakan_publik.png",
+      "image": "http://localhost:8002/media/categories/categories/kebijakan_publik.png",
       // ✅ 'image' FIELD NOW INCLUDED
       "order_index": 1,
       "article_count": 0
@@ -93,11 +93,11 @@ class CategoryListSerializer(serializers.ModelSerializer):
 ```
 
 All 5 category images verified:
-- ✅ http://localhost:8000/media/categories/categories/kebijakan_publik.png
-- ✅ http://localhost:8000/media/categories/categories/pengumuman.png
-- ✅ http://localhost:8000/media/categories/categories/panduan_and_tutorial.png
-- ✅ http://localhost:8000/media/categories/categories/laporan_and_evaluasi.png
-- ✅ http://localhost:8000/media/categories/categories/berita_and_media.png
+- ✅ http://localhost:8002/media/categories/categories/kebijakan_publik.png
+- ✅ http://localhost:8002/media/categories/categories/pengumuman.png
+- ✅ http://localhost:8002/media/categories/categories/panduan_and_tutorial.png
+- ✅ http://localhost:8002/media/categories/categories/laporan_and_evaluasi.png
+- ✅ http://localhost:8002/media/categories/categories/berita_and_media.png
 
 ---
 
@@ -105,7 +105,7 @@ All 5 category images verified:
 
 ### Browser
 1. **Hard refresh** the page: `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
-2. Visit: `http://localhost:3000/`
+2. Visit: `http://localhost:5175/`
 3. Scroll to "Browse by Category" section
 4. **Category images should now be visible!**
 
@@ -147,7 +147,7 @@ All 5 serializers/endpoints now include image field:
 
 ## ✨ What You'll See
 
-Once you refresh the page at `http://localhost:3000/`:
+Once you refresh the page at `http://localhost:5175/`:
 
 ### Browse by Category Section
 ```

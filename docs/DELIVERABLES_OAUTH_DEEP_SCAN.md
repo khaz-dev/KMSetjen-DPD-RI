@@ -162,7 +162,7 @@ Identified credentials:
 
 ### Configuration Values
 ```
-✅ Redirect URI: http://localhost:3000/google/callback
+✅ Redirect URI: http://localhost:5175/google/callback
 ✅ Scopes: profile email openid
 ✅ OAuth Version: 2.0 (Authorization Code Flow)
 ✅ Token Type: JWT (JSON Web Token)

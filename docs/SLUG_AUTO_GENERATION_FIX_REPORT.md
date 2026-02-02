@@ -234,7 +234,7 @@ setFormData(prev => {
 ## Testing Checklist
 
 ### ✅ Create New Article
-- [ ] Navigate to http://localhost:3000/editor
+- [ ] Navigate to http://localhost:5175/editor
 - [ ] Start typing in "Article Title" field
 - [ ] Observe slug field updates in real-time
 - [ ] Each keystroke updates slug

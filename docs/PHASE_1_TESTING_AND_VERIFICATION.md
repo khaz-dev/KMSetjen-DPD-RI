@@ -92,7 +92,7 @@ npm start
 ### STEP 2: Test File Upload Workflow
 
 1. **Navigate to Article Editor:**
-   - Go to `http://localhost:3000/editor`
+   - Go to `http://localhost:5175/editor`
    - Or if logged in as editor, click "Create Article"
 
 2. **Create/Edit Article:**
@@ -437,8 +437,8 @@ Use this to verify Phase 1 is working:
 
 ```
 SETUP:
-  [ ] Backend running on localhost:8000
-  [ ] Frontend running on localhost:3000
+  [ ] Backend running on localhost:8002
+  [ ] Frontend running on localhost:5175
   [ ] User logged in as article editor
   [ ] No console errors
 

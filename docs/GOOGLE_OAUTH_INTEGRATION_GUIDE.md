@@ -24,7 +24,7 @@ User clicks "Sign in with Google"
         ↓
 Frontend redirects to: https://accounts.google.com/o/oauth2/v2/auth
    - client_id: YOUR_GOOGLE_CLIENT_ID
-   - redirect_uri: http://localhost:3000/google/callback
+   - redirect_uri: http://localhost:5175/google/callback
    - response_type: code
    - scope: profile email openid
    - access_type: online
@@ -33,7 +33,7 @@ Frontend redirects to: https://accounts.google.com/o/oauth2/v2/auth
         ↓
 User authenticates at Google
         ↓
-Google redirects to: http://localhost:3000/google/callback?code=...&state=...
+Google redirects to: http://localhost:5175/google/callback?code=...&state=...
         ↓
 GoogleCallbackPage exchanges code for tokens:
    POST /api/auth/google/callback/ {code, state, redirect_uri}
@@ -60,11 +60,11 @@ Frontend stores tokens and redirects to dashboard
    - Click "Create Credentials" → "OAuth client ID"
    - Application type: "Web application"
    - Authorized JavaScript origins:
-     - `http://localhost:3000` (development)
-     - `http://localhost:5173` (Vite)
+     - `http://localhost:5175` (development)
+     - `http://localhost:5175` (Vite)
      - `https://yourdomain.com` (production)
    - Authorized redirect URIs:
-     - `http://localhost:3000/google/callback`
+     - `http://localhost:5175/google/callback`
      - `https://yourdomain.com/google/callback`
    - Copy Client ID and Client Secret
 
@@ -75,10 +75,10 @@ Create or update `.env` in frontend directory:
 ```env
 # Google OAuth
 REACT_APP_GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID_HERE
-REACT_APP_GOOGLE_REDIRECT_URI=http://localhost:3000/google/callback
+REACT_APP_GOOGLE_REDIRECT_URI=http://localhost:5175/google/callback
 
 # API
-REACT_APP_API_BASE_URL=http://localhost:8000/api
+REACT_APP_API_BASE_URL=http://localhost:8002/api
 ```
 
 Replace `YOUR_GOOGLE_CLIENT_ID_HERE` with the Client ID from Google Cloud Console.
@@ -93,10 +93,10 @@ GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID_HERE
 GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_CLIENT_SECRET_HERE
 
 # CORS
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+CORS_ALLOWED_ORIGINS=http://localhost:5175,http://localhost:5175
 
 # CSRF
-CSRF_TRUSTED_ORIGINS=http://localhost:3000,http://localhost:5173
+CSRF_TRUSTED_ORIGINS=http://localhost:5175,http://localhost:5175
 ```
 
 ### Step 4: Backend Implementation
@@ -216,7 +216,7 @@ pip install PyJWT requests
 
 ### Google Login Button on Login Page
 
-Located at `http://localhost:3000/login`
+Located at `http://localhost:5175/login`
 
 - Shows "Sign in with Google" button with Google icon
 - Only displays if `REACT_APP_GOOGLE_CLIENT_ID` is configured
@@ -286,7 +286,7 @@ cd frontend
 npm run dev
 ```
 
-Visit: `http://localhost:3000/login`
+Visit: `http://localhost:5175/login`
 
 ### Test Google Login
 
@@ -294,7 +294,7 @@ Visit: `http://localhost:3000/login`
 2. You'll be redirected to Google's sign-in page
 3. Enter your Google credentials
 4. Accept permissions if prompted
-5. Automatically redirected back to `http://localhost:3000/google/callback`
+5. Automatically redirected back to `http://localhost:5175/google/callback`
 6. If successful → redirected to `/dashboard`
 7. If failed → redirected to `/login` with error message
 
@@ -313,15 +313,15 @@ Test these scenarios:
 **Frontend (.env)**
 ```env
 REACT_APP_GOOGLE_CLIENT_ID=YOUR_CLIENT_ID
-REACT_APP_API_BASE_URL=http://localhost:8000/api
+REACT_APP_API_BASE_URL=http://localhost:8002/api
 ```
 
 **Backend (.env)**
 ```env
 GOOGLE_CLIENT_ID=YOUR_CLIENT_ID
 GOOGLE_CLIENT_SECRET=YOUR_CLIENT_SECRET
-CORS_ALLOWED_ORIGINS=http://localhost:3000
-CSRF_TRUSTED_ORIGINS=http://localhost:3000
+CORS_ALLOWED_ORIGINS=http://localhost:5175
+CSRF_TRUSTED_ORIGINS=http://localhost:5175
 ```
 
 ### Google API Scopes
@@ -456,7 +456,7 @@ Install: `pip install google-auth google-auth-oauthlib google-auth-httplib2`
 {
   "code": "4/0gU...auth_code_from_google",
   "state": "random_state_string",
-  "redirect_uri": "http://localhost:3000/google/callback"
+  "redirect_uri": "http://localhost:5175/google/callback"
 }
 ```
 

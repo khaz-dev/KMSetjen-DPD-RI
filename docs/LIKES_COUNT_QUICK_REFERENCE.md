@@ -104,7 +104,7 @@ Author Name | Created Date | 👁 Views | ❤️ Likes
 ## Testing
 
 ### Quick Test
-1. Go to `http://localhost:3000/articles`
+1. Go to `http://localhost:5175/articles`
 2. Look for article cards
 3. Check meta section (bottom of card)
 4. Should show: `Author | Date | 👁 Views | ❤️ Likes`
@@ -180,7 +180,7 @@ Gap: 0.35rem between icon and text
 ## Summary
 
 **What:** Display like count on article cards  
-**Where:** `http://localhost:3000/articles`  
+**Where:** `http://localhost:5175/articles`  
 **How:** Heart icon + count next to view count  
 **Languages:** English & Indonesian  
 **Status:** ✅ Complete & Ready

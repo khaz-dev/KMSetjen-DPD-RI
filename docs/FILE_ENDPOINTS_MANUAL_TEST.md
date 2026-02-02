@@ -10,7 +10,7 @@
 
 ### 1. Get JWT Token (Get your auth token)
 ```bash
-curl -X POST http://localhost:8000/api/auth/login/ \
+curl -X POST http://localhost:8002/api/auth/login/ \
   -H "Content-Type: application/json" \
   -d '{"username": "admin", "password": "admin"}'
 
@@ -19,7 +19,7 @@ curl -X POST http://localhost:8000/api/auth/login/ \
 
 ### 2. Create Test Article (if needed)
 ```bash
-curl -X POST http://localhost:8000/api/v1/internal/articles/ \
+curl -X POST http://localhost:8002/api/v1/internal/articles/ \
   -H "Authorization: Bearer {TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{
@@ -35,7 +35,7 @@ curl -X POST http://localhost:8000/api/v1/internal/articles/ \
 
 ### 3. List Files (Empty)
 ```bash
-curl -X GET http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/ \
+curl -X GET http://localhost:8002/api/v1/internal/articles/{ARTICLE_ID}/files/ \
   -H "Authorization: Bearer {TOKEN}"
 
 # Expected: 200 OK with empty array []
@@ -47,7 +47,7 @@ curl -X GET http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/ \
 echo "This is test content" > test.txt
 
 # Upload the file
-curl -X POST http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/ \
+curl -X POST http://localhost:8002/api/v1/internal/articles/{ARTICLE_ID}/files/ \
   -H "Authorization: Bearer {TOKEN}" \
   -F "file=@test.txt" \
   -F "description_en=Test file" \
@@ -58,7 +58,7 @@ curl -X POST http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/ 
 
 ### 5. List Files (After upload)
 ```bash
-curl -X GET http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/ \
+curl -X GET http://localhost:8002/api/v1/internal/articles/{ARTICLE_ID}/files/ \
   -H "Authorization: Bearer {TOKEN}"
 
 # Expected: 200 OK with file list
@@ -66,7 +66,7 @@ curl -X GET http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/ \
 
 ### 6. Get File Detail
 ```bash
-curl -X GET http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/{FILE_ID}/ \
+curl -X GET http://localhost:8002/api/v1/internal/articles/{ARTICLE_ID}/files/{FILE_ID}/ \
   -H "Authorization: Bearer {TOKEN}"
 
 # Expected: 200 OK with file object
@@ -74,7 +74,7 @@ curl -X GET http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/{F
 
 ### 7. Update File Description
 ```bash
-curl -X PATCH http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/{FILE_ID}/ \
+curl -X PATCH http://localhost:8002/api/v1/internal/articles/{ARTICLE_ID}/files/{FILE_ID}/ \
   -H "Authorization: Bearer {TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{"description_en": "Updated description"}'
@@ -86,7 +86,7 @@ curl -X PATCH http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/
 ```bash
 echo "Second test file" > test2.txt
 
-curl -X POST http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/ \
+curl -X POST http://localhost:8002/api/v1/internal/articles/{ARTICLE_ID}/files/ \
   -H "Authorization: Bearer {TOKEN}" \
   -F "file=@test2.txt" \
   -F "description_en=Second file" \
@@ -97,7 +97,7 @@ curl -X POST http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/ 
 
 ### 9. Reorder Files
 ```bash
-curl -X POST http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/reorder/ \
+curl -X POST http://localhost:8002/api/v1/internal/articles/{ARTICLE_ID}/files/reorder/ \
   -H "Authorization: Bearer {TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{"file_ids": [{FILE_ID_2}, {FILE_ID_1}]}'
@@ -107,7 +107,7 @@ curl -X POST http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/r
 
 ### 10. Delete File
 ```bash
-curl -X DELETE http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/{FILE_ID}/ \
+curl -X DELETE http://localhost:8002/api/v1/internal/articles/{ARTICLE_ID}/files/{FILE_ID}/ \
   -H "Authorization: Bearer {TOKEN}"
 
 # Expected: 204 No Content
@@ -115,7 +115,7 @@ curl -X DELETE http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files
 
 ### 11. Verify File Deleted
 ```bash
-curl -X GET http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/ \
+curl -X GET http://localhost:8002/api/v1/internal/articles/{ARTICLE_ID}/files/ \
   -H "Authorization: Bearer {TOKEN}"
 
 # Expected: File should not be in list
@@ -137,7 +137,7 @@ curl -X GET http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/ \
 
 ### Test Non-Existent File
 ```bash
-curl -X GET http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/99999/ \
+curl -X GET http://localhost:8002/api/v1/internal/articles/{ARTICLE_ID}/files/99999/ \
   -H "Authorization: Bearer {TOKEN}"
 
 # Expected: 404 Not Found
@@ -145,7 +145,7 @@ curl -X GET http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/99
 
 ### Test Without Authentication
 ```bash
-curl -X GET http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/
+curl -X GET http://localhost:8002/api/v1/internal/articles/{ARTICLE_ID}/files/
 
 # Expected: 401 Unauthorized
 ```
@@ -158,7 +158,7 @@ curl -X GET http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/
   {
     "id": 1,
     "article": 7,
-    "file": "http://localhost:8000/media/articles/2026/01/test.pdf",
+    "file": "http://localhost:8002/media/articles/2026/01/test.pdf",
     "original_filename": "test.pdf",
     "file_size": 2048,
     "file_size_display": "2.00 KB",
@@ -177,7 +177,7 @@ curl -X GET http://localhost:8000/api/v1/internal/articles/{ARTICLE_ID}/files/
 {
   "id": 1,
   "article": 7,
-  "file": "http://localhost:8000/media/articles/2026/01/test.pdf",
+  "file": "http://localhost:8002/media/articles/2026/01/test.pdf",
   "original_filename": "test.pdf",
   "file_size": 2048,
   "file_size_display": "2.00 KB",
@@ -198,7 +198,7 @@ $token = "YOUR_JWT_TOKEN"
 $articleId = 7
 
 $file = Get-Item "C:\path\to\test.txt"
-curl -X POST "http://localhost:8000/api/v1/internal/articles/$articleId/files/" `
+curl -X POST "http://localhost:8002/api/v1/internal/articles/$articleId/files/" `
   -H "Authorization: Bearer $token" `
   -F "file=@$($file.FullName)" `
   -F "description_en=Test file" `
@@ -214,7 +214,7 @@ $body = @{
     file_ids = @(2, 1)
 } | ConvertTo-Json
 
-curl -X POST "http://localhost:8000/api/v1/internal/articles/$articleId/files/reorder/" `
+curl -X POST "http://localhost:8002/api/v1/internal/articles/$articleId/files/reorder/" `
   -H "Authorization: Bearer $token" `
   -H "Content-Type: application/json" `
   -d $body

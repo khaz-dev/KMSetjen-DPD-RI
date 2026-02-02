@@ -124,7 +124,7 @@ Tebal  Miring  GB   |  Judul1 Judul2| DaftarPoin Tautan Kode
 
 ### **Step 1: Load Application**
 ```
-1. Open browser to http://localhost:3000 (or your KMS URL)
+1. Open browser to http://localhost:5175 (or your KMS URL)
 2. Check language indicator in header (top-right)
 3. Should default to browser language or previously saved selection
 ```

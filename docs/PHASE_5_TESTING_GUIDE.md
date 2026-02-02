@@ -34,7 +34,7 @@ exit()
 ## Get Admin Token
 
 ```bash
-curl -X POST http://localhost:8000/api/auth/token/ \
+curl -X POST http://localhost:8002/api/auth/token/ \
   -H "Content-Type: application/json" \
   -d '{
     "username": "admin",
@@ -48,13 +48,13 @@ export ADMIN_TOKEN="<access_token_from_response>"
 
 ### List Users
 ```bash
-curl http://localhost:8000/api/v1/admin/users/ \
+curl http://localhost:8002/api/v1/admin/users/ \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 ### Create User
 ```bash
-curl -X POST http://localhost:8000/api/v1/admin/users/ \
+curl -X POST http://localhost:8002/api/v1/admin/users/ \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -72,13 +72,13 @@ curl -X POST http://localhost:8000/api/v1/admin/users/ \
 
 ### Get User Detail
 ```bash
-curl http://localhost:8000/api/v1/admin/users/$USER_ID/ \
+curl http://localhost:8002/api/v1/admin/users/$USER_ID/ \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 ### Update User
 ```bash
-curl -X PATCH http://localhost:8000/api/v1/admin/users/$USER_ID/ \
+curl -X PATCH http://localhost:8002/api/v1/admin/users/$USER_ID/ \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -89,7 +89,7 @@ curl -X PATCH http://localhost:8000/api/v1/admin/users/$USER_ID/ \
 
 ### Set User Password (Admin Only)
 ```bash
-curl -X POST http://localhost:8000/api/v1/admin/users/$USER_ID/set-password/ \
+curl -X POST http://localhost:8002/api/v1/admin/users/$USER_ID/set-password/ \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -100,19 +100,19 @@ curl -X POST http://localhost:8000/api/v1/admin/users/$USER_ID/set-password/ \
 
 ### Deactivate User
 ```bash
-curl -X POST http://localhost:8000/api/v1/admin/users/$USER_ID/deactivate/ \
+curl -X POST http://localhost:8002/api/v1/admin/users/$USER_ID/deactivate/ \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 ### Activate User
 ```bash
-curl -X POST http://localhost:8000/api/v1/admin/users/$USER_ID/activate/ \
+curl -X POST http://localhost:8002/api/v1/admin/users/$USER_ID/activate/ \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 ### Delete User
 ```bash
-curl -X DELETE http://localhost:8000/api/v1/admin/users/$USER_ID/ \
+curl -X DELETE http://localhost:8002/api/v1/admin/users/$USER_ID/ \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
@@ -120,13 +120,13 @@ curl -X DELETE http://localhost:8000/api/v1/admin/users/$USER_ID/ \
 
 ### List Roles
 ```bash
-curl http://localhost:8000/api/v1/admin/roles/ \
+curl http://localhost:8002/api/v1/admin/roles/ \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 ### Create Role
 ```bash
-curl -X POST http://localhost:8000/api/v1/admin/roles/ \
+curl -X POST http://localhost:8002/api/v1/admin/roles/ \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -140,13 +140,13 @@ curl -X POST http://localhost:8000/api/v1/admin/roles/ \
 
 ### Get Role Detail
 ```bash
-curl http://localhost:8000/api/v1/admin/roles/$ROLE_ID/ \
+curl http://localhost:8002/api/v1/admin/roles/$ROLE_ID/ \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 ### Update Role
 ```bash
-curl -X PATCH http://localhost:8000/api/v1/admin/roles/$ROLE_ID/ \
+curl -X PATCH http://localhost:8002/api/v1/admin/roles/$ROLE_ID/ \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -157,7 +157,7 @@ curl -X PATCH http://localhost:8000/api/v1/admin/roles/$ROLE_ID/ \
 ### Add Permission to Role
 First get permission ID:
 ```bash
-curl http://localhost:8000/api/v1/admin/permissions/ \
+curl http://localhost:8002/api/v1/admin/permissions/ \
   -H "Authorization: Bearer $ADMIN_TOKEN" | head -30
 
 # Save permission ID: export PERMISSION_ID=<id>
@@ -165,7 +165,7 @@ curl http://localhost:8000/api/v1/admin/permissions/ \
 
 Then add:
 ```bash
-curl -X POST http://localhost:8000/api/v1/admin/roles/$ROLE_ID/add-permission/ \
+curl -X POST http://localhost:8002/api/v1/admin/roles/$ROLE_ID/add-permission/ \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -175,7 +175,7 @@ curl -X POST http://localhost:8000/api/v1/admin/roles/$ROLE_ID/add-permission/ \
 
 ### Remove Permission from Role
 ```bash
-curl -X POST http://localhost:8000/api/v1/admin/roles/$ROLE_ID/remove-permission/ \
+curl -X POST http://localhost:8002/api/v1/admin/roles/$ROLE_ID/remove-permission/ \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -187,31 +187,31 @@ curl -X POST http://localhost:8000/api/v1/admin/roles/$ROLE_ID/remove-permission
 
 ### List All Audit Logs
 ```bash
-curl http://localhost:8000/api/v1/admin/audit-logs/ \
+curl http://localhost:8002/api/v1/admin/audit-logs/ \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 ### Filter by Action
 ```bash
-curl "http://localhost:8000/api/v1/admin/audit-logs/?action=UPDATE" \
+curl "http://localhost:8002/api/v1/admin/audit-logs/?action=UPDATE" \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 ### Filter by Resource Type
 ```bash
-curl "http://localhost:8000/api/v1/admin/audit-logs/?resource_type=Article" \
+curl "http://localhost:8002/api/v1/admin/audit-logs/?resource_type=Article" \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 ### Filter by User
 ```bash
-curl "http://localhost:8000/api/v1/admin/audit-logs/?user_id=$USER_ID" \
+curl "http://localhost:8002/api/v1/admin/audit-logs/?user_id=$USER_ID" \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 ### Advanced Filter
 ```bash
-curl -X POST http://localhost:8000/api/v1/admin/audit-logs/filter/ \
+curl -X POST http://localhost:8002/api/v1/admin/audit-logs/filter/ \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -225,10 +225,10 @@ curl -X POST http://localhost:8000/api/v1/admin/audit-logs/filter/ \
 ### Get Audit Log Detail
 ```bash
 # First get log ID
-LOG_ID=$(curl -s "http://localhost:8000/api/v1/admin/audit-logs/" \
+LOG_ID=$(curl -s "http://localhost:8002/api/v1/admin/audit-logs/" \
   -H "Authorization: Bearer $ADMIN_TOKEN" | jq '.results[0].id')
 
-curl http://localhost:8000/api/v1/admin/audit-logs/$LOG_ID/ \
+curl http://localhost:8002/api/v1/admin/audit-logs/$LOG_ID/ \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
@@ -236,25 +236,25 @@ curl http://localhost:8000/api/v1/admin/audit-logs/$LOG_ID/ \
 
 ### System Statistics
 ```bash
-curl http://localhost:8000/api/v1/admin/statistics/ \
+curl http://localhost:8002/api/v1/admin/statistics/ \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 ### User Statistics
 ```bash
-curl http://localhost:8000/api/v1/admin/statistics/users/ \
+curl http://localhost:8002/api/v1/admin/statistics/users/ \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 ### Article Statistics
 ```bash
-curl http://localhost:8000/api/v1/admin/statistics/articles/ \
+curl http://localhost:8002/api/v1/admin/statistics/articles/ \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 ### Audit Statistics
 ```bash
-curl http://localhost:8000/api/v1/admin/statistics/audit/ \
+curl http://localhost:8002/api/v1/admin/statistics/audit/ \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
@@ -264,7 +264,7 @@ curl http://localhost:8000/api/v1/admin/statistics/audit/ \
 
 Register non-admin user:
 ```bash
-curl -X POST http://localhost:8000/api/auth/register/ \
+curl -X POST http://localhost:8002/api/auth/register/ \
   -H "Content-Type: application/json" \
   -d '{
     "username": "normal",
@@ -273,7 +273,7 @@ curl -X POST http://localhost:8000/api/auth/register/ \
   }'
 
 # Login and get token
-curl -X POST http://localhost:8000/api/auth/token/ \
+curl -X POST http://localhost:8002/api/auth/token/ \
   -H "Content-Type: application/json" \
   -d '{"username": "normal", "password": "pass123"}'
 
@@ -282,13 +282,13 @@ export NORMAL_TOKEN="<access_token>"
 
 Try to access admin endpoints (should get 403 Forbidden):
 ```bash
-curl http://localhost:8000/api/v1/admin/users/ \
+curl http://localhost:8002/api/v1/admin/users/ \
   -H "Authorization: Bearer $NORMAL_TOKEN"
 
-curl http://localhost:8000/api/v1/admin/roles/ \
+curl http://localhost:8002/api/v1/admin/roles/ \
   -H "Authorization: Bearer $NORMAL_TOKEN"
 
-curl http://localhost:8000/api/v1/admin/statistics/ \
+curl http://localhost:8002/api/v1/admin/statistics/ \
   -H "Authorization: Bearer $NORMAL_TOKEN"
 ```
 
@@ -301,7 +301,7 @@ Expected response:
 
 ### Try without token (should fail with 401)
 ```bash
-curl http://localhost:8000/api/v1/admin/users/
+curl http://localhost:8002/api/v1/admin/users/
 
 # Expected: 401 Unauthorized
 ```
@@ -379,32 +379,32 @@ pytest tests/api/test_admin_api.py --cov=apps.api.v1.admin --cov-report=html
 Full admin workflow:
 ```bash
 # 1. Get admin token
-ADMIN_TOKEN=$(curl -s -X POST http://localhost:8000/api/auth/token/ \
+ADMIN_TOKEN=$(curl -s -X POST http://localhost:8002/api/auth/token/ \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"adminpass123"}' | jq -r '.access')
 
 # 2. Create new user
-USER_ID=$(curl -s -X POST http://localhost:8000/api/v1/admin/users/ \
+USER_ID=$(curl -s -X POST http://localhost:8002/api/v1/admin/users/ \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"username":"newadmin","email":"new@test.com","password":"pass123","password_confirm":"pass123"}' | jq '.id')
 
 # 3. Get user detail
-curl -s http://localhost:8000/api/v1/admin/users/$USER_ID/ \
+curl -s http://localhost:8002/api/v1/admin/users/$USER_ID/ \
   -H "Authorization: Bearer $ADMIN_TOKEN" | jq .
 
 # 4. Update user
-curl -s -X PATCH http://localhost:8000/api/v1/admin/users/$USER_ID/ \
+curl -s -X PATCH http://localhost:8002/api/v1/admin/users/$USER_ID/ \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"first_name":"New","department":"Admin"}' | jq .
 
 # 5. Get statistics
-curl -s http://localhost:8000/api/v1/admin/statistics/ \
+curl -s http://localhost:8002/api/v1/admin/statistics/ \
   -H "Authorization: Bearer $ADMIN_TOKEN" | jq '.total_users'
 
 # 6. View audit logs
-curl -s http://localhost:8000/api/v1/admin/audit-logs/ \
+curl -s http://localhost:8002/api/v1/admin/audit-logs/ \
   -H "Authorization: Bearer $ADMIN_TOKEN" | jq '.results | length'
 ```
 

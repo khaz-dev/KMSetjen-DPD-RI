@@ -1,7 +1,7 @@
 ## ArticleDetailPage Deep Scan - Issue Resolution Report
 
 ### Issues Reported
-User visiting `http://localhost:3000/articles/6` reported:
+User visiting `http://localhost:5175/articles/6` reported:
 1. **No likes (Suka/Likes) showing** in article-info section
 2. **All articles show "2 days ago"** - suggesting static or wrong date field
 3. **Question:** "Is it using data from database or just static data?"

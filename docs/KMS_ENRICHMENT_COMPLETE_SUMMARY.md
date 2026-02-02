@@ -295,12 +295,12 @@ Your KMS now has realistic data showing:
 
 You can now view the enriched articles:
 
-- **Article 1:** http://localhost:3000/articles/1 (KMS Guide + Video)
-- **Article 2:** http://localhost:3000/articles/2 (Security Docs + Files)
-- **Article 3:** http://localhost:3000/articles/3 (API Tutorial + Video)
-- **Article 4:** http://localhost:3000/articles/4 (Analytics Report)
-- **Article 5:** http://localhost:3000/articles/5 (Content Tutorial + Video)
-- **Article 6:** http://localhost:3000/articles/6 (News Article + Files)
+- **Article 1:** http://localhost:5175/articles/1 (KMS Guide + Video)
+- **Article 2:** http://localhost:5175/articles/2 (Security Docs + Files)
+- **Article 3:** http://localhost:5175/articles/3 (API Tutorial + Video)
+- **Article 4:** http://localhost:5175/articles/4 (Analytics Report)
+- **Article 5:** http://localhost:5175/articles/5 (Content Tutorial + Video)
+- **Article 6:** http://localhost:5175/articles/6 (News Article + Files)
 
 ---
 

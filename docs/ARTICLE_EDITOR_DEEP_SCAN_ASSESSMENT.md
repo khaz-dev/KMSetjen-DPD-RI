@@ -1,6 +1,6 @@
 # Article Editor Deep Scan Assessment
 **Date:** January 14, 2026  
-**Scope:** http://localhost:3000/editor  
+**Scope:** http://localhost:5175/editor  
 **Focus:** File/Video Upload & Product/Information Sharing Capabilities
 
 ---

@@ -8,7 +8,7 @@
 ## 🎯 Issues Identified
 
 ### Issue #1: POST 400 Bad Request on OAuth Callback ❌
-**Error**: `api.js:125 POST http://localhost:8000/api/auth/google/callback/ 400 (Bad Request)`
+**Error**: `api.js:125 POST http://localhost:8002/api/auth/google/callback/ 400 (Bad Request)`
 
 ### Issue #2: Authenticated Users Can Access Login Page ❌  
 **Problem**: If user is already logged in and navigates to `/login`, they stay on the login page instead of being redirected to dashboard
@@ -135,7 +135,7 @@ const LoginPage = () => {
 
 ### Test OAuth Callback Fix
 
-1. Go to: `http://localhost:3769` (or 3000)
+1. Go to: `http://localhost:3769` (or 5175)
 2. Click: **"Masuk dengan Google"**
 3. Log in with Google
 4. Expected:

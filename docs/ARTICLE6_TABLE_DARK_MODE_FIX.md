@@ -3,7 +3,7 @@
 ## 🔍 Issue Analysis
 
 ### Problem Statement
-Article 6 (`http://localhost:3000/articles/6`) contains a data table with poor contrast in dark mode. Specifically, the odd table rows have light gray backgrounds (#f9f9f9) that don't provide sufficient contrast with text in dark mode, making the content unreadable.
+Article 6 (`http://localhost:5175/articles/6`) contains a data table with poor contrast in dark mode. Specifically, the odd table rows have light gray backgrounds (#f9f9f9) that don't provide sufficient contrast with text in dark mode, making the content unreadable.
 
 ### Root Cause Analysis
 

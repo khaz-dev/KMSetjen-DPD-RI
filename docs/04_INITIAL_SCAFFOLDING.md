@@ -168,7 +168,7 @@ ROOT_URLCONF = 'config.urls'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('DB_NAME', default='kms_db'),
+        'NAME': env('DB_NAME', default='kmsdb'),
         'USER': env('DB_USER', default='kms_user'),
         'PASSWORD': env('DB_PASSWORD', default=''),
         'HOST': env('DB_HOST', default='localhost'),
@@ -203,7 +203,7 @@ REST_FRAMEWORK = {
 # CORS
 CORS_ALLOWED_ORIGINS = env.list(
     'CORS_ALLOWED_ORIGINS',
-    default=['http://localhost:3000', 'http://localhost:5173']
+    default=['http://localhost:5175', 'http://localhost:5175']
 )
 
 # Language & Timezone
@@ -293,19 +293,19 @@ ALLOWED_HOSTS=localhost,127.0.0.1,example.com
 
 # Database
 DB_ENGINE=django.db.backends.postgresql
-DB_NAME=kms_db
+DB_NAME=kmsdb
 DB_USER=kms_user
 DB_PASSWORD=secure_password
 DB_HOST=localhost
 DB_PORT=5432
 
 # CORS (frontend URLs)
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,https://kms.example.com
+CORS_ALLOWED_ORIGINS=http://localhost:5175,http://localhost:5175,https://kms.example.com
 
 # SSO Configuration
 SSO_ENABLED=False
 SSO_URL=https://sso.server.com
-SSO_CALLBACK_URL=http://localhost:8000/api/auth/sso/callback
+SSO_CALLBACK_URL=http://localhost:8002/api/auth/sso/callback
 
 # Email (for notifications)
 EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
@@ -419,10 +419,10 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3000,
+    port: 5175,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8002',
         changeOrigin: true,
       },
     },
@@ -439,7 +439,7 @@ export default defineConfig({
 ```javascript
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.REACT_APP_API_URL || 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.REACT_APP_API_URL || 'http://localhost:8002'
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,
@@ -555,7 +555,7 @@ export default i18n
 #### `frontend/.env.example`
 
 ```env
-REACT_APP_API_URL=http://localhost:8000
+REACT_APP_API_URL=http://localhost:8002
 REACT_APP_ENV=dev
 ```
 
@@ -615,13 +615,13 @@ body {
 
 # Create database and user
 sudo -u postgres psql
-CREATE DATABASE kms_db;
+CREATE DATABASE kmsdb;
 CREATE USER kms_user WITH PASSWORD 'secure_password';
 ALTER ROLE kms_user SET client_encoding TO 'utf8';
 ALTER ROLE kms_user SET default_transaction_isolation TO 'read committed';
 ALTER ROLE kms_user SET default_transaction_deferrable TO on;
 ALTER ROLE kms_user SET default_transaction_read_committed TO on;
-GRANT ALL PRIVILEGES ON DATABASE kms_db TO kms_user;
+GRANT ALL PRIVILEGES ON DATABASE kmsdb TO kms_user;
 \q
 ```
 
@@ -746,7 +746,7 @@ COPY . .
 RUN mkdir -p /app/logs
 
 # Run migrations and start server
-CMD ["sh", "-c", "python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:8000"]
+CMD ["sh", "-c", "python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:8002"]
 ```
 
 ### 4.2 `frontend/Dockerfile`
@@ -765,7 +765,7 @@ RUN npm run build
 
 # Serve with static server
 RUN npm install -g serve
-CMD ["serve", "-s", "dist", "-l", "3000"]
+CMD ["serve", "-s", "dist", "-l", "5175"]
 ```
 
 ### 4.3 `docker-compose.yml`
@@ -777,7 +777,7 @@ services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_DB: kms_db
+      POSTGRES_DB: kmsdb
       POSTGRES_USER: kms_user
       POSTGRES_PASSWORD: secure_password
     volumes:
@@ -792,11 +792,11 @@ services:
 
   backend:
     build: ./backend
-    command: sh -c "python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:8000"
+    command: sh -c "python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:8002"
     volumes:
       - ./backend:/app
     ports:
-      - "8000:8000"
+      - "8002:8002"
     environment:
       - DB_HOST=db
       - REDIS_URL=redis://redis:6379/0
@@ -807,7 +807,7 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "3000:3000"
+      - "5175:5175"
     depends_on:
       - backend
 
@@ -838,7 +838,7 @@ Run with: `docker-compose up`
 cd backend
 python manage.py migrate
 python manage.py collectstatic --noinput
-gunicorn config.wsgi:application --workers 4 --bind 0.0.0.0:8000
+gunicorn config.wsgi:application --workers 4 --bind 0.0.0.0:8002
 
 # Frontend
 cd frontend
@@ -850,7 +850,7 @@ npm run build
 
 ```nginx
 upstream django {
-    server 127.0.0.1:8000;
+    server 127.0.0.1:8002;
 }
 
 server {

@@ -69,7 +69,7 @@ These are exposed in this repository. You must rotate them.
 4. For the OAuth client ID:
    - Application type: **Web application**
    - Name: `KMSetjen DPD RI`
-   - Authorized redirect URIs: Add `http://localhost:3000/google/callback`
+   - Authorized redirect URIs: Add `http://localhost:5175/google/callback`
    - Click: **Create**
 
 ---
@@ -136,14 +136,14 @@ npm start
 ```
 
 Then:
-1. Open http://localhost:3000 in your browser
+1. Open http://localhost:5175 in your browser
 2. Try logging in with Google
 3. Verify it works without errors
 4. Check the browser console for any authentication errors
 
 If you see login errors:
 - Check that the Client ID matches exactly
-- Verify redirect URI is exactly: `http://localhost:3000/google/callback`
+- Verify redirect URI is exactly: `http://localhost:5175/google/callback`
 - Restart both servers after updating .env files
 
 ---
@@ -210,7 +210,7 @@ Once Google OAuth is rotated and tested:
 ## ❓ Common Issues
 
 ### "Google Login Not Working"
-- ✅ Check: Redirect URI matches exactly `http://localhost:3000/google/callback`
+- ✅ Check: Redirect URI matches exactly `http://localhost:5175/google/callback`
 - ✅ Check: Client ID in frontend matches backend
 - ✅ Check: Restart backend and frontend servers
 - ✅ Check: Clear browser cache

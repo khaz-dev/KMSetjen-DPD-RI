@@ -95,13 +95,13 @@ const publicClient = axios.create({...});
    ```
 
 3. **Verify startup:**
-   - Look for: "Starting development server at http://127.0.0.1:8000/"
+   - Look for: "Starting development server at http://127.0.0.1:8002/"
    - No errors should appear
 
 ### 🎯 VERIFY: Test the Fix
 
 **In Browser:**
-1. Go to http://localhost:3000/editor
+1. Go to http://localhost:5175/editor
 2. Type title: "Test Article"
 3. Slug should auto-generate
 4. Watch for badge: "Checking..." → "Valid"
@@ -157,8 +157,8 @@ No 401 errors for:
 
 **If still 404 after restart:**
 1. Verify Django server actually stopped (give it 5 seconds)
-2. Check if another process is running on port 8000
-3. Try: `python manage.py runserver 8001` (different port)
+2. Check if another process is running on port 8002
+3. Try: `python manage.py runserver 8002` (different port)
 
 **If still seeing 401 on public endpoints:**
 1. Hard refresh browser (Ctrl+Shift+R)

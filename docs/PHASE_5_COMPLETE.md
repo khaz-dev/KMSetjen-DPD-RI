@@ -24,7 +24,7 @@ All admin endpoints require Bearer token with admin role:
 
 ```bash
 # Login as admin
-curl -X POST http://localhost:8000/api/auth/token/ \
+curl -X POST http://localhost:8002/api/auth/token/ \
   -H "Content-Type: application/json" \
   -d '{
     "username": "admin",
@@ -33,7 +33,7 @@ curl -X POST http://localhost:8000/api/auth/token/ \
 
 # Use token in all requests
 curl -H "Authorization: Bearer <access_token>" \
-  http://localhost:8000/api/v1/admin/users/
+  http://localhost:8002/api/v1/admin/users/
 ```
 
 ---
@@ -57,7 +57,7 @@ GET /api/v1/admin/users/
 ```json
 {
   "count": 10,
-  "next": "http://localhost:8000/api/v1/admin/users/?page=2",
+  "next": "http://localhost:8002/api/v1/admin/users/?page=2",
   "previous": null,
   "results": [
     {
@@ -553,7 +553,7 @@ GET /api/v1/admin/statistics/audit/
     "PUBLISH": 200
   },
   "by_resource_type": {
-    "Article": 3000,
+    "Article": 5175,
     "User": 1500,
     "Role": 500
   },
@@ -593,12 +593,12 @@ pytest tests/api/test_admin_api.py --cov=apps.api.v1.admin
 ### Get all users (paginated)
 ```bash
 curl -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:8000/api/v1/admin/users/?page=1&page_size=10"
+  "http://localhost:8002/api/v1/admin/users/?page=1&page_size=10"
 ```
 
 ### Create new user
 ```bash
-curl -X POST http://localhost:8000/api/v1/admin/users/ \
+curl -X POST http://localhost:8002/api/v1/admin/users/ \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -614,7 +614,7 @@ curl -X POST http://localhost:8000/api/v1/admin/users/ \
 
 ### Set user password
 ```bash
-curl -X POST http://localhost:8000/api/v1/admin/users/5/set-password/ \
+curl -X POST http://localhost:8002/api/v1/admin/users/5/set-password/ \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -626,12 +626,12 @@ curl -X POST http://localhost:8000/api/v1/admin/users/5/set-password/ \
 ### Get system statistics
 ```bash
 curl -H "Authorization: Bearer $TOKEN" \
-  http://localhost:8000/api/v1/admin/statistics/
+  http://localhost:8002/api/v1/admin/statistics/
 ```
 
 ### Filter audit logs
 ```bash
-curl -X POST http://localhost:8000/api/v1/admin/audit-logs/filter/ \
+curl -X POST http://localhost:8002/api/v1/admin/audit-logs/filter/ \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{

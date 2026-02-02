@@ -17,9 +17,6 @@ cryptography==41.0.7
 Pillow==10.1.0
 python-magic==0.4.27
 
-# Search & FTS (PostgreSQL built-in, but these help)
-django-postgres-searchvector==0.1.0
-
 # Utilities
 python-dateutil==2.8.2
 pytz==2023.3.post1

@@ -499,12 +499,12 @@ DEBUG=True|False
 ALLOWED_HOSTS=localhost,127.0.0.1
 DATABASE_URL=postgres://...
 SSO_URL=https://sso.server.com
-CORS_ALLOWED_ORIGINS=http://localhost:3000,https://kms.server.com
+CORS_ALLOWED_ORIGINS=http://localhost:5175,https://kms.server.com
 ```
 
 **Frontend:**
 ```
-REACT_APP_API_URL=http://localhost:8000
+REACT_APP_API_URL=http://localhost:8002
 REACT_APP_ENV=dev|prod
 ```
 

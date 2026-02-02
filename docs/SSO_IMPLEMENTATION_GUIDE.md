@@ -24,14 +24,14 @@ User clicks "Sign in with SSO"
         ↓
 Frontend redirects to: https://nusadpd.duckdns.org/oauth/authorize
    - client_id: kms-dpd-ri
-   - redirect_uri: http://localhost:3000/sso/callback
+   - redirect_uri: http://localhost:5175/sso/callback
    - response_type: code
    - scope: openid profile email
    - state: random_csrf_token
         ↓
 User authenticates at SSO provider
         ↓
-SSO redirects to: http://localhost:3000/sso/callback?code=...&state=...
+SSO redirects to: http://localhost:5175/sso/callback?code=...&state=...
         ↓
 SSOCallbackPage exchanges code for tokens:
    POST /api/auth/sso/callback/ {code, state, redirect_uri}
@@ -53,7 +53,7 @@ REACT_APP_SSO_URL=https://nusadpd.duckdns.org
 REACT_APP_SSO_CLIENT_ID=kms-dpd-ri
 
 # API
-REACT_APP_API_BASE_URL=http://localhost:8000/api
+REACT_APP_API_BASE_URL=http://localhost:8002/api
 ```
 
 ### 2. Backend Configuration
@@ -64,13 +64,13 @@ Update `.env` in backend directory:
 # SSO Configuration
 SSO_ENABLED=True
 SSO_URL=https://nusadpd.duckdns.org
-SSO_CALLBACK_URL=http://localhost:8000/api/auth/sso/callback
+SSO_CALLBACK_URL=http://localhost:8002/api/auth/sso/callback
 
 # CORS - Add to frontend URL
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+CORS_ALLOWED_ORIGINS=http://localhost:5175,http://localhost:5175
 
 # CSRF Trusted Origins
-CSRF_TRUSTED_ORIGINS=http://localhost:3000,http://localhost:5173
+CSRF_TRUSTED_ORIGINS=http://localhost:5175,http://localhost:5175
 ```
 
 ### 3. Backend Implementation
@@ -185,7 +185,7 @@ SSO_CLIENT_SECRET=your-client-secret-here
 
 ### SSO Button on Login Page
 
-Located at `http://localhost:3000/login`
+Located at `http://localhost:5175/login`
 
 - Shows "Sign in with SSO" button with OpenID icon
 - Divider line separating traditional login from SSO
@@ -232,7 +232,7 @@ cd frontend
 npm run dev
 ```
 
-Visit: `http://localhost:3000/login`
+Visit: `http://localhost:5175/login`
 
 ### 2. Test Flow
 
@@ -240,7 +240,7 @@ Visit: `http://localhost:3000/login`
 2. You'll be redirected to `https://nusadpd.duckdns.org`
 3. Authenticate with your credentials
 4. Accept permissions if prompted
-5. Automatically redirected back to `http://localhost:3000/sso/callback`
+5. Automatically redirected back to `http://localhost:5175/sso/callback`
 6. If successful → redirected to `/dashboard`
 7. If failed → redirected to `/login` with error message
 
@@ -263,7 +263,7 @@ SSO_ENABLED = env.bool('SSO_ENABLED', default=False)
 SSO_URL = env('SSO_URL', default='https://nusadpd.duckdns.org')
 SSO_CLIENT_ID = env('SSO_CLIENT_ID', default='')
 SSO_CLIENT_SECRET = env('SSO_CLIENT_SECRET', default='')
-SSO_CALLBACK_URL = env('SSO_CALLBACK_URL', default='http://localhost:8000/api/auth/sso/callback')
+SSO_CALLBACK_URL = env('SSO_CALLBACK_URL', default='http://localhost:8002/api/auth/sso/callback')
 ```
 
 ### Required Frontend Configuration
@@ -272,7 +272,7 @@ SSO_CALLBACK_URL = env('SSO_CALLBACK_URL', default='http://localhost:8000/api/au
 // Environment variables
 REACT_APP_SSO_URL=https://nusadpd.duckdns.org
 REACT_APP_SSO_CLIENT_ID=kms-dpd-ri
-REACT_APP_API_BASE_URL=http://localhost:8000/api
+REACT_APP_API_BASE_URL=http://localhost:8002/api
 ```
 
 ## User Model Changes
@@ -362,7 +362,7 @@ CSRF_COOKIE_HTTPONLY = True
 {
   "code": "auth_code_from_sso_provider",
   "state": "csrf_protection_state",
-  "redirect_uri": "http://localhost:3000/sso/callback"
+  "redirect_uri": "http://localhost:5175/sso/callback"
 }
 ```
 

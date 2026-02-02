@@ -10,7 +10,7 @@ Successfully implemented 4 missing footer navigation pages (About, Contact, Priv
 ## Problem Statement
 
 **Issue Reported**: 
-- User clicked "About" link in footer at http://localhost:3000/
+- User clicked "About" link in footer at http://localhost:5175/
 - Received "404 - Page Not Found" error
 - All footer navigation links returning 404:
   - `/about` ❌
@@ -48,7 +48,7 @@ Successfully implemented 4 missing footer navigation pages (About, Contact, Priv
 - **Content**:
   - Contact information section:
     - Email: info@dpdri.go.id
-    - Phone: +62-21-3868-3000
+    - Phone: +62-21-3868-5175
     - Address: Jakarta, Indonesia
     - Website link
     - Social media links

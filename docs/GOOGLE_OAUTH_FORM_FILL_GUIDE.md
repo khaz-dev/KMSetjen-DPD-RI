@@ -31,24 +31,24 @@
 ### Field 3: Authorized JavaScript Origins
 ```
 Add EACH of these URLs:
-├─ http://localhost:3000
-├─ http://localhost:8000
-├─ http://127.0.0.1:3000
-└─ http://127.0.0.1:8000
+├─ http://localhost:5175
+├─ http://localhost:8002
+├─ http://127.0.0.1:5175
+└─ http://127.0.0.1:8002
 ```
 
 **How to Add**:
 1. In the "URIs 1" field, clear the example text
-2. Type: `http://localhost:3000`
+2. Type: `http://localhost:5175`
 3. Press Tab or click "Add URI"
 4. Repeat for each URL above
 5. Result: 4 origins listed
 
 **Why Each Origin**:
-- `http://localhost:3000` - Frontend development (main)
-- `http://localhost:8000` - Backend development (if needed)
-- `http://127.0.0.1:3000` - Alternative localhost (port 3000)
-- `http://127.0.0.1:8000` - Alternative localhost (port 8000)
+- `http://localhost:5175` - Frontend development (main)
+- `http://localhost:8002` - Backend development (if needed)
+- `http://127.0.0.1:5175` - Alternative localhost (port 5175)
+- `http://127.0.0.1:8002` - Alternative localhost (port 8002)
 
 **Important**: 
 - ✅ Use `http://` (not https for localhost)
@@ -61,24 +61,24 @@ Add EACH of these URLs:
 ### Field 4: Authorized Redirect URIs
 ```
 Add EACH of these URLs:
-├─ http://localhost:3000/google/callback
-└─ http://127.0.0.1:3000/google/callback
+├─ http://localhost:5175/google/callback
+└─ http://127.0.0.1:5175/google/callback
 ```
 
 **How to Add**:
 1. In the "URIs 1" field, clear the example text
-2. Type: `http://localhost:3000/google/callback`
+2. Type: `http://localhost:5175/google/callback`
 3. Press Tab or click "Add URI"
-4. Add the second one: `http://127.0.0.1:3000/google/callback`
+4. Add the second one: `http://127.0.0.1:5175/google/callback`
 5. Result: 2 redirect URIs listed
 
 **Why These URLs**:
-- `http://localhost:3000/google/callback` - Frontend callback (development)
-- `http://127.0.0.1:3000/google/callback` - Alternative callback URL
+- `http://localhost:5175/google/callback` - Frontend callback (development)
+- `http://127.0.0.1:5175/google/callback` - Alternative callback URL
 
 **CRITICAL**:
 - ✅ Must match EXACTLY what's in your code
-- ✅ In your code: `http://localhost:3000/google/callback`
+- ✅ In your code: `http://localhost:5175/google/callback`
 - ✅ Path must include `/google/callback`
 - ✅ No trailing slash after "callback"
 - ✅ Must use `http://` (not https for localhost)
@@ -92,14 +92,14 @@ Application type:        Web application ✅
 Name:                   KMSetjen-DPD-RI ✅
 
 Authorized JavaScript Origins (4 total):
-├─ 1. http://localhost:3000 ✅
-├─ 2. http://localhost:8000 ✅
-├─ 3. http://127.0.0.1:3000 ✅
-└─ 4. http://127.0.0.1:8000 ✅
+├─ 1. http://localhost:5175 ✅
+├─ 2. http://localhost:8002 ✅
+├─ 3. http://127.0.0.1:5175 ✅
+└─ 4. http://127.0.0.1:8002 ✅
 
 Authorized Redirect URIs (2 total):
-├─ 1. http://localhost:3000/google/callback ✅
-└─ 2. http://127.0.0.1:3000/google/callback ✅
+├─ 1. http://localhost:5175/google/callback ✅
+└─ 2. http://127.0.0.1:5175/google/callback ✅
 ```
 
 ---
@@ -118,22 +118,22 @@ Authorized Redirect URIs (2 total):
 **What to do**:
 1. Click in the "URIs 1" field (first box under "Authorized JavaScript origins")
 2. Delete: `https://www.example.com`
-3. Type: `http://localhost:3000`
+3. Type: `http://localhost:5175`
 4. Click: "Add URI" button (or press Tab)
-5. Now type the second: `http://localhost:8000`
+5. Now type the second: `http://localhost:8002`
 6. Click: "Add URI" button
-7. Add third: `http://127.0.0.1:3000`
+7. Add third: `http://127.0.0.1:5175`
 8. Click: "Add URI" button
-9. Add fourth: `http://127.0.0.1:8000`
+9. Add fourth: `http://127.0.0.1:8002`
 10. Result: You should see 4 URLs listed
 
 **Visual Result After Completing**:
 ```
 Authorized JavaScript origins:
-☑ http://localhost:3000
-☑ http://localhost:8000
-☑ http://127.0.0.1:3000
-☑ http://127.0.0.1:8000
+☑ http://localhost:5175
+☑ http://localhost:8002
+☑ http://127.0.0.1:5175
+☑ http://127.0.0.1:8002
 ```
 
 ### Step 4: Add Authorized Redirect URIs
@@ -142,17 +142,17 @@ Authorized JavaScript origins:
 **What to do**:
 1. Click in the "URIs 1" field (first box under "Authorized redirect URIs")
 2. Delete: `https://www.example.com`
-3. Type: `http://localhost:3000/google/callback`
+3. Type: `http://localhost:5175/google/callback`
 4. Click: "Add URI" button (or press Tab)
-5. Type the second: `http://127.0.0.1:3000/google/callback`
+5. Type the second: `http://127.0.0.1:5175/google/callback`
 6. Click: "Add URI" button
 7. Result: You should see 2 URLs listed
 
 **Visual Result After Completing**:
 ```
 Authorized redirect URIs:
-☑ http://localhost:3000/google/callback
-☑ http://127.0.0.1:3000/google/callback
+☑ http://localhost:5175/google/callback
+☑ http://127.0.0.1:5175/google/callback
 ```
 
 ### Step 5: Click "CREATE"
@@ -165,44 +165,44 @@ Authorized redirect URIs:
 
 ### ❌ Mistake 1: Using HTTPS for localhost
 ```
-❌ WRONG: https://localhost:3000
-✅ RIGHT: http://localhost:3000
+❌ WRONG: https://localhost:5175
+✅ RIGHT: http://localhost:5175
 ```
 
 ### ❌ Mistake 2: Including example text
 ```
-❌ WRONG: http://localhost:3000 https://www.example.com
-✅ RIGHT: http://localhost:3000
+❌ WRONG: http://localhost:5175 https://www.example.com
+✅ RIGHT: http://localhost:5175
 ```
 
 ### ❌ Mistake 3: Forgetting the port
 ```
 ❌ WRONG: http://localhost/google/callback
-✅ RIGHT: http://localhost:3000/google/callback
+✅ RIGHT: http://localhost:5175/google/callback
 ```
 
 ### ❌ Mistake 4: Adding trailing slash
 ```
-❌ WRONG: http://localhost:3000/google/callback/
-✅ RIGHT: http://localhost:3000/google/callback
+❌ WRONG: http://localhost:5175/google/callback/
+✅ RIGHT: http://localhost:5175/google/callback
 ```
 
 ### ❌ Mistake 5: Wrong callback path
 ```
-❌ WRONG: http://localhost:3000/callback
-✅ RIGHT: http://localhost:3000/google/callback
+❌ WRONG: http://localhost:5175/callback
+✅ RIGHT: http://localhost:5175/google/callback
 ```
 
 ### ❌ Mistake 6: Missing port in origins
 ```
-❌ WRONG: http://localhost (missing :3000)
-✅ RIGHT: http://localhost:3000
+❌ WRONG: http://localhost (missing :5175)
+✅ RIGHT: http://localhost:5175
 ```
 
 ### ❌ Mistake 7: Mixing localhost and 127.0.0.1
 ```
 ❌ Can use either, but be consistent:
-✅ Use BOTH: http://localhost:3000 AND http://127.0.0.1:3000
+✅ Use BOTH: http://localhost:5175 AND http://127.0.0.1:5175
 ```
 
 ---
@@ -212,17 +212,17 @@ Authorized redirect URIs:
 - [ ] Application Type: Web application ✅
 - [ ] Name: KMSetjen-DPD-RI ✅
 - [ ] JavaScript Origins: 4 URLs added
-  - [ ] http://localhost:3000
-  - [ ] http://localhost:8000
-  - [ ] http://127.0.0.1:3000
-  - [ ] http://127.0.0.1:8000
+  - [ ] http://localhost:5175
+  - [ ] http://localhost:8002
+  - [ ] http://127.0.0.1:5175
+  - [ ] http://127.0.0.1:8002
 - [ ] Redirect URIs: 2 URLs added
-  - [ ] http://localhost:3000/google/callback
-  - [ ] http://127.0.0.1:3000/google/callback
+  - [ ] http://localhost:5175/google/callback
+  - [ ] http://127.0.0.1:5175/google/callback
 - [ ] No example text remaining
 - [ ] No HTTPS for localhost
 - [ ] No trailing slashes
-- [ ] All ports included (3000, 8000)
+- [ ] All ports included (5175, 8002)
 
 ---
 
@@ -297,16 +297,16 @@ TOTAL:              15 minutes
 
 ### For JavaScript Origins (Copy all at once if your form allows)
 ```
-http://localhost:3000
-http://localhost:8000
-http://127.0.0.1:3000
-http://127.0.0.1:8000
+http://localhost:5175
+http://localhost:8002
+http://127.0.0.1:5175
+http://127.0.0.1:8002
 ```
 
 ### For Redirect URIs (Copy all at once if your form allows)
 ```
-http://localhost:3000/google/callback
-http://127.0.0.1:3000/google/callback
+http://localhost:5175/google/callback
+http://127.0.0.1:5175/google/callback
 ```
 
 ---

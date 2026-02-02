@@ -118,12 +118,12 @@ python manage.py loaddata fixtures/initial_languages.json
 ### Step 6: Run development server
 ```bash
 python manage.py runserver
-# Access admin at: http://localhost:8000/admin/
+# Access admin at: http://localhost:8002/admin/
 ```
 
 ### Step 7: Test the API
 ```bash
-curl http://localhost:8000/api/v1/public/
+curl http://localhost:8002/api/v1/public/
 # Should return empty results (no articles yet)
 ```
 
@@ -321,7 +321,7 @@ python manage.py createsuperuser
 python manage.py runserver
 
 # Access admin panel
-# http://localhost:8000/admin/
+# http://localhost:8002/admin/
 
 # Run tests
 pytest

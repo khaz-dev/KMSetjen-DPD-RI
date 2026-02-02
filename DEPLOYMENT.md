@@ -162,7 +162,7 @@ services:
       - ./backend/media:/app/media
       - ./backend/staticfiles:/app/staticfiles
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:8002:8002"
     depends_on:
       db:
         condition: service_healthy
@@ -176,7 +176,7 @@ services:
       VITE_API_URL: https://your-domain.com/api
       VITE_GOOGLE_CLIENT_ID: your-production-client-id.apps.googleusercontent.com
     ports:
-      - "127.0.0.1:3000:80"
+      - "127.0.0.1:5175:80"
     depends_on:
       - backend
     restart: always
@@ -265,7 +265,7 @@ http {
         # API Backend
         location /api/ {
             limit_req zone=api burst=50 nodelay;
-            proxy_pass http://backend:8000;
+            proxy_pass http://backend:8002;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -276,7 +276,7 @@ http {
         # Django admin
         location /admin/ {
             limit_req zone=api burst=20 nodelay;
-            proxy_pass http://backend:8000;
+            proxy_pass http://backend:8002;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -475,7 +475,7 @@ ExecStart=/var/www/kmsetjen/venv/bin/gunicorn \
     --workers 4 \
     --worker-class sync \
     --worker-tmp-dir /dev/shm \
-    --bind 127.0.0.1:8000 \
+    --bind 127.0.0.1:8002 \
     --timeout 30 \
     --access-logfile /var/log/kmsetjen/access.log \
     --error-logfile /var/log/kmsetjen/error.log \
@@ -507,7 +507,7 @@ Create `/etc/nginx/sites-available/kmsetjen`:
 ```nginx
 # See Docker Deployment section for complete config
 # Main differences:
-# - proxy_pass http://127.0.0.1:8000 (not http://backend:8000)
+# - proxy_pass http://127.0.0.1:8002 (not http://backend:8002)
 # - Use local file paths instead of container volumes
 ```
 
@@ -686,9 +686,9 @@ git security-audit
 ```nginx
 # Load balancer config
 upstream backend_servers {
-    server backend1.internal:8000;
-    server backend2.internal:8000;
-    server backend3.internal:8000;
+    server backend1.internal:8002;
+    server backend2.internal:8002;
+    server backend3.internal:8002;
 }
 
 server {

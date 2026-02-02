@@ -11,10 +11,10 @@ CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = 'Strict'
 CSRF_COOKIE_AGE = 31449600  # 1 year
 CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:3000',
-    'http://localhost:8000',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:8000',
+    'http://localhost:5175',
+    'http://localhost:8002',
+    'http://127.0.0.1:5175',
+    'http://127.0.0.1:8002',
 ]
 
 # ============================================================================
@@ -73,7 +73,7 @@ SECURE_CONTENT_SECURITY_POLICY = {
     'style-src': ("'self'", "'unsafe-inline'", "cdn.jsdelivr.net"),
     'img-src': ("'self'", "data:", "https:"),
     'font-src': ("'self'", "cdn.jsdelivr.net"),
-    'connect-src': ("'self'", "localhost:8000", "localhost:3000"),
+    'connect-src': ("'self'", "localhost:8002", "localhost:5175"),
     'frame-ancestors': ("'none'",),
 }
 
@@ -109,10 +109,10 @@ AUTH_PASSWORD_VALIDATORS = [
 # CORS SECURITY
 # ============================================================================
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
+    'http://localhost:5175',
+    'http://127.0.0.1:5175',
+    'http://localhost:8002',
+    'http://127.0.0.1:8002',
 ]
 
 CORS_ALLOW_CREDENTIALS = True

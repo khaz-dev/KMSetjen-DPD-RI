@@ -222,7 +222,7 @@ fields = ['id', 'uuid', 'title_id', 'title_en', 'summary_id', 'summary_en', 'ima
 
 ## ✨ What Users Will See
 
-Visit `http://localhost:3000/` and scroll to "Popular Articles":
+Visit `http://localhost:5175/` and scroll to "Popular Articles":
 
 1. **Beautiful Featured Images**
    - Each article shows a professional gradient image

@@ -158,13 +158,13 @@ A complete, comprehensive documentation package with **8 specialized guides** cr
 ### Endpoints
 ```
 Frontend OAuth URL: https://accounts.google.com/o/oauth2/v2/auth
-Frontend Callback:  http://localhost:3000/google/callback
+Frontend Callback:  http://localhost:5175/google/callback
 Backend Endpoint:   POST /api/auth/google/callback/
 ```
 
 ### Configuration Values
 ```
-Redirect URI:       http://localhost:3000/google/callback
+Redirect URI:       http://localhost:5175/google/callback
 OAuth Version:      2.0 (Code Flow)
 Scopes:             profile email openid
 Token Type:         JWT (JSON Web Token)
@@ -350,7 +350,7 @@ Status:             🟡 Pending - You'll generate
 3. Open: Google Cloud Console
 4. Copy: Client ID and Secret
 5. Paste: Into .env files
-6. Test: http://localhost:3000/login
+6. Test: http://localhost:5175/login
 7. Verify: Google login works
 
 ### The Most Complete Path (30 minutes):
@@ -367,7 +367,7 @@ Status:             🟡 Pending - You'll generate
 **🎉 Deep Scan Complete!**
 
 **Status**: Ready for OAuth setup  
-**Documentation**: Comprehensive (8 guides, 3000+ lines)  
+**Documentation**: Comprehensive (8 guides, 5175+ lines)  
 **Next Step**: Follow your chosen guide from above  
 **Time Required**: 15-30 minutes  
 **Difficulty**: Easy (copy-paste steps)  

@@ -2,7 +2,7 @@
 
 ### Your Issue
 ```
-URL: http://localhost:3000/articles/6
+URL: http://localhost:5175/articles/6
 ❌ No likes (Suka) showing
 ❌ All show "2 days ago"
 ❓ Real data or static?

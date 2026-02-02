@@ -3,8 +3,12 @@
  * Handles OAuth flow with Google identity provider
  */
 
-const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 const GOOGLE_SCOPES = 'profile email openid';
+
+// Cache to prevent duplicate code exchanges (React StrictMode fix)
+let pendingCodeExchange = null;
+const exchangedCodes = new Set();
 
 /**
  * Get Google OAuth authorization URL
@@ -35,6 +39,76 @@ export const getGoogleAuthorizationUrl = () => {
 };
 
 /**
+ * Exchange authorization code for tokens with retry logic
+ * Handles transient failures and prevents duplicate exchanges (React StrictMode)
+ * @param {string} code - Authorization code from Google
+ * @param {string} state - State parameter for security
+ * @param {string} redirectUri - Redirect URI used in authorization
+ * @param {object} authService - Auth service instance
+ * @param {number} attempt - Current retry attempt (internal)
+ * @param {number} maxRetries - Maximum retry attempts
+ * @returns {Promise<object>} - Token exchange response
+ */
+const exchangeCodeWithRetry = async (
+  code,
+  state,
+  redirectUri,
+  authService,
+  attempt = 1,
+  maxRetries = 3
+) => {
+  // If code was already exchanged, return cached promise
+  if (exchangedCodes.has(code)) {
+    console.debug(`[GoogleService] Code already being exchanged, waiting for pending exchange...`);
+    if (pendingCodeExchange) {
+      return pendingCodeExchange;
+    }
+  }
+
+  // Mark code as being exchanged and cache the promise
+  exchangedCodes.add(code);
+
+  try {
+    const promise = authService.googleCallback(code, state, redirectUri);
+    pendingCodeExchange = promise;
+    
+    const response = await promise;
+    console.debug(`[GoogleService] Code exchange successful on attempt ${attempt}`);
+    return response;
+  } catch (error) {
+    // Clear pending promise on error
+    pendingCodeExchange = null;
+
+    // Don't retry on invalid_grant (code was already used or invalid)
+    if (error.response?.data?.error === 'invalid_grant') {
+      console.warn('[GoogleService] invalid_grant error - code may have already been exchanged');
+      throw error;
+    }
+
+    // Retry on transient errors (network issues, temporary server errors)
+    if (attempt < maxRetries) {
+      const delayMs = Math.pow(2, attempt - 1) * 1000; // Exponential backoff: 1s, 2s, 4s
+      console.debug(
+        `[GoogleService] Retrying code exchange (attempt ${attempt}/${maxRetries}) after ${delayMs}ms...`
+      );
+
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+      return exchangeCodeWithRetry(
+        code,
+        state,
+        redirectUri,
+        authService,
+        attempt + 1,
+        maxRetries
+      );
+    }
+
+    // All retries exhausted
+    throw error;
+  }
+};
+
+/**
  * Handle Google OAuth callback
  * @param {string} code - Authorization code from Google
  * @param {string} state - State parameter for security
@@ -49,12 +123,20 @@ export const handleGoogleCallback = async (code, state, authService) => {
       throw new Error('Invalid state parameter - possible CSRF attack');
     }
 
-    // Exchange code for tokens via backend
+    // Exchange code for tokens via backend with retry logic
     // Note: Backend uses its configured redirect_uri (must match Google's registered URI)
-    const response = await authService.googleCallback(code, state);
+    const redirectUri = `${window.location.origin}/google/callback`;
+    console.debug('[GoogleService] Calling googleCallback with:');
+    console.debug('[GoogleService] - redirectUri:', redirectUri);
+    console.debug('[GoogleService] - code:', code.substring(0, 20) + '...');
+    console.debug('[GoogleService] - state:', state.substring(0, 20) + '...');
+    
+    const response = await exchangeCodeWithRetry(code, state, redirectUri, authService);
 
-    // Clear stored state
+    // Clear stored state and caches
     localStorage.removeItem('google_oauth_state');
+    exchangedCodes.clear();
+    pendingCodeExchange = null;
 
     return response.data;
   } catch (error) {

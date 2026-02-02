@@ -172,14 +172,14 @@ python manage.py migrate --run-syncdb
 cd frontend
 npm start
 ```
-**Access at:** http://localhost:3000
+**Access at:** http://localhost:5175
 
 ### Run Backend Development Server
 ```bash
 cd backend
 python manage.py runserver
 ```
-**Access at:** http://localhost:8000
+**Access at:** http://localhost:8002
 
 ### Run Backend with Debugger
 ```bash
@@ -356,8 +356,8 @@ pytest tests/models/test_models.py --durations=10
 | `pytest tests/models/ -v` | Backend model tests | 27/27 ✅ |
 | `pytest tests/api/ -v` | Backend API tests | 35+ created |
 | `pytest tests/ --cov=apps` | Full coverage report | 80%+ target |
-| `npm start` | Frontend dev server | localhost:3000 |
-| `python manage.py runserver` | Backend dev server | localhost:8000 |
+| `npm start` | Frontend dev server | localhost:5175 |
+| `python manage.py runserver` | Backend dev server | localhost:8002 |
 
 ---
 

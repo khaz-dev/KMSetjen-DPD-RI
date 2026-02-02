@@ -3,8 +3,8 @@
  * Handles OAuth flow with external SSO provider (nusadpd.duckdns.org)
  */
 
-const SSO_PROVIDER_URL = process.env.REACT_APP_SSO_URL || 'https://nusadpd.duckdns.org';
-const SSO_CLIENT_ID = process.env.REACT_APP_SSO_CLIENT_ID || 'kms-dpd-ri';
+const SSO_PROVIDER_URL = import.meta.env.VITE_SSO_URL || 'https://nusadpd.duckdns.org';
+const SSO_CLIENT_ID = import.meta.env.VITE_SSO_CLIENT_ID || 'kms-dpd-ri';
 const REDIRECT_URI = `${window.location.origin}/sso/callback`;
 
 /**

@@ -96,7 +96,7 @@ Author Name | 5 hari yang lalu | 👁 234 tampilan | ❤️ 45 suka
 ## ✅ How to Test
 
 ### Manual Test
-1. Open browser: `http://localhost:3000/articles`
+1. Open browser: `http://localhost:5175/articles`
 2. Look at any article card
 3. Check meta section (bottom of card)
 4. Verify heart icon and like count appears

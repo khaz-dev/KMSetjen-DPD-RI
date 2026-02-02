@@ -255,7 +255,7 @@ docker-compose ps
 docker-compose exec django pytest tests/models/ tests/security/ -q
 
 # Access application
-curl http://localhost:8000/
+curl http://localhost:8002/
 ```
 
 ---

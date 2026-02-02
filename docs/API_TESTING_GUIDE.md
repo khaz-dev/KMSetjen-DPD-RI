@@ -12,64 +12,64 @@ python manage.py runserver
 ## Test Endpoints with Browser
 
 Open in browser and see results:
-- http://localhost:8000/api/v1/public/articles/
-- http://localhost:8000/api/v1/public/articles/1/
-- http://localhost:8000/api/v1/public/categories/
-- http://localhost:8000/api/v1/public/tags/
+- http://localhost:8002/api/v1/public/articles/
+- http://localhost:8002/api/v1/public/articles/1/
+- http://localhost:8002/api/v1/public/categories/
+- http://localhost:8002/api/v1/public/tags/
 
 ## Test with Curl
 
 ### Articles List
 ```bash
-curl "http://localhost:8000/api/v1/public/articles/"
+curl "http://localhost:8002/api/v1/public/articles/"
 ```
 
 ### Articles with Search
 ```bash
-curl "http://localhost:8000/api/v1/public/articles/?search=government"
+curl "http://localhost:8002/api/v1/public/articles/?search=government"
 ```
 
 ### Articles by Category
 ```bash
-curl "http://localhost:8000/api/v1/public/articles/?category=1"
+curl "http://localhost:8002/api/v1/public/articles/?category=1"
 ```
 
 ### Articles by Tags
 ```bash
-curl "http://localhost:8000/api/v1/public/articles/?tags=1&tags=2"
+curl "http://localhost:8002/api/v1/public/articles/?tags=1&tags=2"
 ```
 
 ### Trending Articles
 ```bash
-curl "http://localhost:8000/api/v1/public/articles/trending/"
+curl "http://localhost:8002/api/v1/public/articles/trending/"
 ```
 
 ### Latest Articles
 ```bash
-curl "http://localhost:8000/api/v1/public/articles/latest/"
+curl "http://localhost:8002/api/v1/public/articles/latest/"
 ```
 
 ### Article Detail
 ```bash
-curl "http://localhost:8000/api/v1/public/articles/1/"
+curl "http://localhost:8002/api/v1/public/articles/1/"
 ```
 
 ### Record View
 ```bash
-curl -X POST "http://localhost:8000/api/v1/public/articles/1/view/"
+curl -X POST "http://localhost:8002/api/v1/public/articles/1/view/"
 ```
 
 ### Categories
 ```bash
-curl "http://localhost:8000/api/v1/public/categories/"
-curl "http://localhost:8000/api/v1/public/categories/1/"
+curl "http://localhost:8002/api/v1/public/categories/"
+curl "http://localhost:8002/api/v1/public/categories/1/"
 ```
 
 ### Tags
 ```bash
-curl "http://localhost:8000/api/v1/public/tags/"
-curl "http://localhost:8000/api/v1/public/tags/1/"
-curl "http://localhost:8000/api/v1/public/tags/1/articles/"
+curl "http://localhost:8002/api/v1/public/tags/"
+curl "http://localhost:8002/api/v1/public/tags/1/"
+curl "http://localhost:8002/api/v1/public/tags/1/articles/"
 ```
 
 ## Create Test Data
@@ -116,19 +116,19 @@ print("Test data created!")
 import requests
 
 # List articles
-response = requests.get('http://localhost:8000/api/v1/public/articles/')
+response = requests.get('http://localhost:8002/api/v1/public/articles/')
 print(response.json())
 
 # Search
-response = requests.get('http://localhost:8000/api/v1/public/articles/?search=government')
+response = requests.get('http://localhost:8002/api/v1/public/articles/?search=government')
 print(response.json())
 
 # Trending
-response = requests.get('http://localhost:8000/api/v1/public/articles/trending/')
+response = requests.get('http://localhost:8002/api/v1/public/articles/trending/')
 print(response.json())
 
 # Record view
-response = requests.post('http://localhost:8000/api/v1/public/articles/1/view/')
+response = requests.post('http://localhost:8002/api/v1/public/articles/1/view/')
 print(response.json())
 ```
 
@@ -151,10 +151,10 @@ pytest tests/api/test_public_api.py --cov=apps.api.v1.public
 ## View API Documentation
 
 DRF automatically generates docs:
-- http://localhost:8000/api/v1/public/ - Root API docs
-- http://localhost:8000/api/v1/public/articles/ - Article docs
-- http://localhost:8000/api/v1/public/categories/ - Category docs
-- http://localhost:8000/api/v1/public/tags/ - Tag docs
+- http://localhost:8002/api/v1/public/ - Root API docs
+- http://localhost:8002/api/v1/public/articles/ - Article docs
+- http://localhost:8002/api/v1/public/categories/ - Category docs
+- http://localhost:8002/api/v1/public/tags/ - Tag docs
 
 ## Debug Mode
 
@@ -199,16 +199,16 @@ print(response.data)
 
 ```bash
 # Newest government articles, 50 per page
-curl "http://localhost:8000/api/v1/public/articles/?search=government&page_size=50&ordering=-published_at"
+curl "http://localhost:8002/api/v1/public/articles/?search=government&page_size=50&ordering=-published_at"
 
 # Popular articles from category 1
-curl "http://localhost:8000/api/v1/public/articles/?category=1&ordering=-view_count"
+curl "http://localhost:8002/api/v1/public/articles/?category=1&ordering=-view_count"
 
 # Articles with multiple tags
-curl "http://localhost:8000/api/v1/public/articles/?tags=1&tags=2&language=en"
+curl "http://localhost:8002/api/v1/public/articles/?tags=1&tags=2&language=en"
 
 # Recent policy articles
-curl "http://localhost:8000/api/v1/public/articles/?search=policy&published_after=2026-01-01"
+curl "http://localhost:8002/api/v1/public/articles/?search=policy&published_after=2026-01-01"
 ```
 
 ## Next: Phase 4

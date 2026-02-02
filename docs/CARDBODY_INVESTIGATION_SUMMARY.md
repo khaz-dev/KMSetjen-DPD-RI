@@ -2,7 +2,7 @@
 
 ### Your Question
 ```
-URL: http://localhost:3000/articles/6
+URL: http://localhost:5175/articles/6
 Section: card-body in sidebar
 Question: Real data or static data?
 Request: Deep scan, find culprit, fix it

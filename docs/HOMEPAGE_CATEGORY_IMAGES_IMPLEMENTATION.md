@@ -397,7 +397,7 @@ HomePage Component
 2. Ensure media directory exists: `media/categories/`
 3. Deploy backend code
 4. Deploy frontend code
-5. Test on http://localhost:3000/
+5. Test on http://localhost:5175/
 6. Verify images load correctly
 
 ---

@@ -23,7 +23,7 @@ Backend server has been restarted with comprehensive debug logging. The debug lo
 
 ### Step 1: Test Google OAuth Login
 
-1. Open browser to **http://localhost:3000**
+1. Open browser to **http://localhost:5175**
 2. Click **"Masuk dengan Google"** button
 3. You'll be redirected to Google login page
 4. Log in with your Google account
@@ -81,7 +81,7 @@ The logs will show WHERE the 400 error occurs:
 ```
 GOOGLE_CLIENT_ID=403156786636-7umtcldsh5t6h31r3q4eprni77qqicos.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=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
-GOOGLE_REDIRECT_URI=http://localhost:3000/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:5175/google/callback
 ```
 
 **Frontend .env.local (for OAuth button):**
@@ -91,8 +91,8 @@ REACT_APP_GOOGLE_CLIENT_ID=403156786636-7umtcldsh5t6h31r3q4eprni77qqicos.apps.go
 
 ## Servers Status
 
-✅ Backend: http://localhost:8000 (Django)
-✅ Frontend: http://localhost:3000 (React)
+✅ Backend: http://localhost:8002 (Django)
+✅ Frontend: http://localhost:5175 (React)
 
 ## What To Do After Getting Logs
 
