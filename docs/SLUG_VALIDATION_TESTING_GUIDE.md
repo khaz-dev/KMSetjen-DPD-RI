@@ -314,7 +314,7 @@ Show result:
 
 ### Slug validation shows "Could not verify slug availability"
 - **Cause**: Backend API unreachable
-- **Solution**: Check if backend is running on port 8000
+- **Solution**: Check if backend is running on port 8002
 - **Check**: Browser console for network errors
 
 ### Bilingual messages not showing

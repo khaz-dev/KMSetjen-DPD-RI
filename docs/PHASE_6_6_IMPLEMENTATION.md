@@ -524,7 +524,7 @@ Deliverables:
 
 ### Create an Article
 ```
-1. Login to http://localhost:3000
+1. Login to http://localhost:5175
 2. Navigate to /editor
 3. Fill in article details
 4. Click "Save as Draft"

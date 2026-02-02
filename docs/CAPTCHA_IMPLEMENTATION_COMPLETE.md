@@ -113,7 +113,7 @@ No additional package installation needed - using built-in `requests` library.
 ## What Happens Now
 
 ### During Development (with test keys)
-1. You visit http://localhost:3000/login
+1. You visit http://localhost:5175/login
 2. You enter email and password
 3. You click "Masuk"
 4. CAPTCHA runs invisibly in background
@@ -239,7 +239,7 @@ backend/
    cd backend && python manage.py runserver
    ```
 
-3. **Test at http://localhost:3000/login**:
+3. **Test at http://localhost:5175/login**:
    - Try logging in with valid credentials
    - CAPTCHA should verify automatically
    - Login should complete successfully

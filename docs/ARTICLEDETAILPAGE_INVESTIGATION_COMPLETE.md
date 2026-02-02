@@ -1,7 +1,7 @@
 ## 🔍 Complete Investigation: ArticleDetailPage Issue Resolution
 
 ### User Report
-**URL:** `http://localhost:3000/articles/6`  
+**URL:** `http://localhost:5175/articles/6`  
 **Issue:** Article info section missing likes, all show "2 days ago", questioned if data is static
 
 ---
@@ -178,4 +178,4 @@ Both HomePage and ArticleDetailPage now consistently:
 
 All fixes applied and verified.  
 No syntax errors detected.  
-Ready to test in browser at http://localhost:3000/articles/6
+Ready to test in browser at http://localhost:5175/articles/6

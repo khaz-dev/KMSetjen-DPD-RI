@@ -1,11 +1,11 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002/api';
 
 // Create axios instance for AUTHENTICATED requests (with JWT token)
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000, // 30 seconds timeout
+  timeout: 51750, // 30 seconds timeout
   headers: {
     'Content-Type': 'application/json',
   },
@@ -14,7 +14,7 @@ const apiClient = axios.create({
 // Create axios instance for PUBLIC requests (no JWT token)
 const publicClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000, // 30 seconds timeout
+  timeout: 51750, // 30 seconds timeout
   headers: {
     'Content-Type': 'application/json',
   },
@@ -119,10 +119,11 @@ export const authService = {
     }),
 
   // Google OAuth endpoints (use publicClient to avoid Bearer token)
-  googleCallback: (code, state) =>
+  googleCallback: (code, state, redirectUri) =>
     publicClient.post('/auth/google/callback/', {
       code,
       state,
+      redirect_uri: redirectUri,
     }),
 };
 

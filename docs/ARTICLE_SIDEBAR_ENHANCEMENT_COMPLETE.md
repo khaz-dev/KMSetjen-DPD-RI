@@ -2,7 +2,7 @@
 
 ## 🎯 Overview
 
-Enhanced the **Article Detail Page** (http://localhost:3000/articles/3) with three new sidebar sections that recommend articles to readers:
+Enhanced the **Article Detail Page** (http://localhost:5175/articles/3) with three new sidebar sections that recommend articles to readers:
 - **Similar Articles** - Same category
 - **Related Articles** - Same tags  
 - **Popular Articles** - Most viewed overall

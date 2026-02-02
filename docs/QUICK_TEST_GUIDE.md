@@ -23,7 +23,7 @@
 
 ### Step 1️⃣ Navigate to Articles
 ```
-URL: http://localhost:3000/articles
+URL: http://localhost:5175/articles
 ```
 
 ### Step 2️⃣ Look at Current Sort Order
@@ -191,5 +191,5 @@ You know it's working when:
 
 **You now have real, varied article data** that visibly demonstrates the sorting and meta-item reordering feature!
 
-**Next Step:** Visit http://localhost:3000/articles and try different sort options! 🎉
+**Next Step:** Visit http://localhost:5175/articles and try different sort options! 🎉
 

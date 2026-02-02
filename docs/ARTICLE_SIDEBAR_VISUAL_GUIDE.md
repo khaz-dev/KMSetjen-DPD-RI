@@ -98,7 +98,7 @@ User clicks: "Q1 2026 Trend Analysis Report"
     ↓
 navigate(`/articles/4`)
     ↓
-Redirects to: http://localhost:3000/articles/4
+Redirects to: http://localhost:5175/articles/4
 ```
 
 ---

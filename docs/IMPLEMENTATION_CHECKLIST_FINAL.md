@@ -334,7 +334,7 @@
 
 ### Testing Status
 - [x] Content verified in database
-- [x] Views visible in browser at localhost:3000
+- [x] Views visible in browser at localhost:5175
 - [x] Videos display correctly
 - [x] Files are associated properly
 - [x] Bilingual content accessible

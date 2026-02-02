@@ -607,7 +607,7 @@ python manage.py migrate
 python manage.py collectstatic
 
 # Start production server
-gunicorn config.wsgi:application --bind 0.0.0.0:8000
+gunicorn config.wsgi:application --bind 0.0.0.0:8002
 ```
 
 ### Docker Deployment

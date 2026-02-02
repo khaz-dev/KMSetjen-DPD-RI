@@ -169,12 +169,12 @@ src="https://www.youtube.com/embed/[VIDEO_ID]" allowfullscreen>
 
 Visit your articles in the browser:
 
-- **Article 1:** http://localhost:3000/articles/1
-- **Article 2:** http://localhost:3000/articles/2
-- **Article 3:** http://localhost:3000/articles/3 ⭐ See embedded video
-- **Article 4:** http://localhost:3000/articles/4
-- **Article 5:** http://localhost:3000/articles/5 ⭐ See embedded video
-- **Article 6:** http://localhost:3000/articles/6 ⭐ Massive expansion
+- **Article 1:** http://localhost:5175/articles/1
+- **Article 2:** http://localhost:5175/articles/2
+- **Article 3:** http://localhost:5175/articles/3 ⭐ See embedded video
+- **Article 4:** http://localhost:5175/articles/4
+- **Article 5:** http://localhost:5175/articles/5 ⭐ See embedded video
+- **Article 6:** http://localhost:5175/articles/6 ⭐ Massive expansion
 
 ---
 

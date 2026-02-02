@@ -1,7 +1,7 @@
 # ✅ CATEGORY IMAGES - FIX COMPLETE & IMMEDIATE ACTION REQUIRED
 
 ## 🎯 The Problem
-Category images were NOT showing on http://localhost:3000/ even though everything was implemented.
+Category images were NOT showing on http://localhost:5175/ even though everything was implemented.
 
 ## 🔧 What Was Wrong
 The API serializer for listing categories was missing the `image` field. It's been fixed!
@@ -16,7 +16,7 @@ Mac:     Cmd + Shift + R
 
 ### Step 2: Visit HomePage
 ```
-http://localhost:3000/
+http://localhost:5175/
 ```
 
 ### Step 3: Scroll to "Browse by Category"

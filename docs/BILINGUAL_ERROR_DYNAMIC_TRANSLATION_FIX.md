@@ -176,7 +176,7 @@ This means whenever the component re-renders (which happens when language change
 
 **Test Procedure:**
 
-1. Navigate to http://localhost:3000/editor
+1. Navigate to http://localhost:5175/editor
 2. Set language to **Indonesian** (Header → Language dropdown)
 3. Try to save an article without required fields
 4. **Verify:** Error shows "Kesalahan! Gagal menyimpan draf" (fully in Indonesian)

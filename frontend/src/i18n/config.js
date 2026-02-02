@@ -13,7 +13,8 @@ i18n
     fallbackLng: 'id',
     defaultNS: 'translation',
     ns: ['translation'],
-
+    supportedLngs: ['id', 'en'],  // Only support these languages
+    
     resources: {
       id: { translation: idTranslation },
       en: { translation: enTranslation }

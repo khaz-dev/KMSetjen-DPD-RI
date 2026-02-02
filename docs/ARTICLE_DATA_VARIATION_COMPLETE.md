@@ -148,7 +148,7 @@ Author | ❤️ 267 (highlighted) | 👁 892 | 7 hari yang lalu
 ## Testing Instructions
 
 ### ✅ Step 1: Navigate to Articles
-Go to: **http://localhost:3000/articles**
+Go to: **http://localhost:5175/articles**
 
 ### ✅ Step 2: Select Sort Options
 Use the **"Urutkan Berdasarkan"** dropdown to select:
@@ -245,7 +245,7 @@ For each sort option, observe:
 ## Next Steps
 
 1. **Refresh Frontend** - Clear browser cache or do hard refresh (Ctrl+Shift+R)
-2. **Navigate to Articles** - Go to http://localhost:3000/articles
+2. **Navigate to Articles** - Go to http://localhost:5175/articles
 3. **Test Each Sort Option** - Click dropdown and select each sort
 4. **Verify Reordering** - Watch articles change position
 5. **Verify Highlighting** - Check that the relevant metric is bold + blue

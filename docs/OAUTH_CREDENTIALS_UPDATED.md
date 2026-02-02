@@ -40,7 +40,7 @@ Frontend: React development server running
 
 ### Step 1: Open Browser
 ```
-URL: http://localhost:3000
+URL: http://localhost:5175
 ```
 
 ### Step 2: Click Google Login
@@ -115,7 +115,7 @@ Locations: backend/.env and frontend/.env.local
 ## 📝 Next Steps
 
 ### Immediate (Now)
-1. Open: http://localhost:3000/login
+1. Open: http://localhost:5175/login
 2. Click: "Login with Google" button
 3. Test: Google login flow
 4. Verify: Dashboard loads after login
@@ -145,8 +145,8 @@ Check:
 - Frontend never sees the secret (more secure)
 
 ### Why Both localhost URLs?
-- **localhost:3000** - Main development URL
-- **127.0.0.1:3000** - Alternative (same as localhost)
+- **localhost:5175** - Main development URL
+- **127.0.0.1:5175** - Alternative (same as localhost)
 - Both registered in Google Console for reliability
 
 ### What If Login Still Shows "Invalid Client ID"?
@@ -228,7 +228,7 @@ Phase 6: GitHub Push                 🟡 PENDING
 - [x] .env files not showing in git status
 - [x] Backend server started
 - [x] Frontend server started
-- [ ] Google login button visible on http://localhost:3000/login
+- [ ] Google login button visible on http://localhost:5175/login
 - [ ] Google login redirects to Google
 - [ ] Google login works end-to-end
 - [ ] Dashboard shows after successful login
@@ -240,7 +240,7 @@ Phase 6: GitHub Push                 🟡 PENDING
 **Current Status**: Everything is set up and running
 
 **What to do now**:
-1. Go to: http://localhost:3000/login
+1. Go to: http://localhost:5175/login
 2. Click: "Login with Google" button
 3. Complete: Google login flow
 4. Verify: You're logged in

@@ -249,7 +249,7 @@ docker-compose down
 
 # Execute commands
 docker-compose exec django python manage.py shell
-docker-compose exec postgres psql -U postgres -d kms_db
+docker-compose exec postgres psql -U postgres -d kmsdb
 ```
 
 ---
@@ -341,7 +341,7 @@ docker-compose ps
 docker-compose exec django pytest tests/models/ tests/security/ -q
 
 # Access application
-curl http://localhost:8000/
+curl http://localhost:8002/
 ```
 
 ### Step 4: Monitor for 24 Hours
@@ -373,9 +373,9 @@ docker-compose logs django | grep ERROR
 - [ ] Smoke tests passing
 
 ### After Deployment
-- [ ] Application accessible at http://localhost:8000
-- [ ] Admin panel at http://localhost:8000/admin
-- [ ] API working at http://localhost:8000/api
+- [ ] Application accessible at http://localhost:8002
+- [ ] Admin panel at http://localhost:8002/admin
+- [ ] API working at http://localhost:8002/api
 - [ ] Logs show no critical errors
 - [ ] All services healthy
 - [ ] Monitoring alerts configured
@@ -421,8 +421,8 @@ docker ps  # verify it's running
 ### Port conflicts
 ```bash
 # Check what's using ports
-netstat -ano | findstr ":8000"  # Windows
-lsof -i :8000  # Linux/Mac
+netstat -ano | findstr ":8002"  # Windows
+lsof -i :8002  # Linux/Mac
 
 # Change ports in docker-compose.yml
 ```
@@ -436,7 +436,7 @@ docker-compose logs postgres
 docker-compose exec django python manage.py migrate --verbose
 
 # Restore from backup if needed
-docker-compose exec postgres psql -U postgres kms_db < backups/backup_*.sql
+docker-compose exec postgres psql -U postgres kmsdb < backups/backup_*.sql
 ```
 
 ### Application not responding
@@ -471,7 +471,7 @@ docker-compose logs
 docker-compose exec django python manage.py shell
 
 # Access database
-docker-compose exec postgres psql -U postgres -d kms_db
+docker-compose exec postgres psql -U postgres -d kmsdb
 
 # Restart all services
 docker-compose restart
@@ -480,7 +480,7 @@ docker-compose restart
 docker stats
 
 # Backup database
-docker-compose exec -T postgres pg_dump -U postgres kms_db > backup.sql
+docker-compose exec -T postgres pg_dump -U postgres kmsdb > backup.sql
 ```
 
 ---

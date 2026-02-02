@@ -277,12 +277,12 @@ All objectives achieved:
 python manage.py runserver
 
 # Access in browser
-http://localhost:8000/api/v1/public/articles/
-http://localhost:8000/api/v1/public/categories/
-http://localhost:8000/api/v1/public/tags/
+http://localhost:8002/api/v1/public/articles/
+http://localhost:8002/api/v1/public/categories/
+http://localhost:8002/api/v1/public/tags/
 
 # Test with curl
-curl "http://localhost:8000/api/v1/public/articles/?search=government&ordering=-published_at"
+curl "http://localhost:8002/api/v1/public/articles/?search=government&ordering=-published_at"
 
 # Run tests
 pytest tests/api/test_public_api.py -v

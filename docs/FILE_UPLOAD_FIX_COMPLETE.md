@@ -3,7 +3,7 @@
 ## Problem Summary
 When uploading files (Unggah File - Lampiran File) on the `/editor/8` page, the following error occurred:
 ```
-POST http://localhost:8000/api/v1/internal/articles/8/files/ 400 (Bad Request)
+POST http://localhost:8002/api/v1/internal/articles/8/files/ 400 (Bad Request)
 File upload error: AxiosError {message: 'Request failed with status code 400', ...}
 ErrorAlert: errors.file_upload_failed
 ```

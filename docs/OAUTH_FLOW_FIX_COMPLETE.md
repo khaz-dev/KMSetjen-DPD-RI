@@ -250,7 +250,7 @@ DashboardPage loads with authenticated user
 
 ### Test OAuth Flow:
 
-1. **Open browser** to http://localhost:3000
+1. **Open browser** to http://localhost:5175
 2. **Click** "Masuk dengan Google" button
 3. **Log in** with your Google account
 4. **Observe** spinner appears

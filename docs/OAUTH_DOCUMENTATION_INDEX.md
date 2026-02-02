@@ -179,7 +179,7 @@ Long Time (15 min):
 ### Step 6: TEST
 - Start backend: `python manage.py runserver`
 - Start frontend: `npm start`
-- Test login: http://localhost:3000
+- Test login: http://localhost:5175
 
 ### Step 7: VERIFY
 - Check: `git status` (no .env files)
@@ -194,7 +194,7 @@ Long Time (15 min):
 
 ```
 Documentation Created:     8 files
-Total Documentation:       3000+ lines
+Total Documentation:       5175+ lines
 Time to Read All:          60 minutes
 Time to Actually Do It:    15 minutes
 Difficulty:                EASY (mostly copy-paste)

@@ -232,20 +232,20 @@ See `FILE_ENDPOINTS_MANUAL_TEST.md` for complete curl commands.
 
 2. **Get JWT token:**
    ```bash
-   curl -X POST http://localhost:8000/api/auth/login/ \
+   curl -X POST http://localhost:8002/api/auth/login/ \
      -d '{"username": "admin", "password": "admin"}'
    ```
 
 3. **Test upload:**
    ```bash
-   curl -X POST http://localhost:8000/api/v1/internal/articles/1/files/ \
+   curl -X POST http://localhost:8002/api/v1/internal/articles/1/files/ \
      -H "Authorization: Bearer {TOKEN}" \
      -F "file=@test.txt"
    ```
 
 4. **Test list:**
    ```bash
-   curl -X GET http://localhost:8000/api/v1/internal/articles/1/files/ \
+   curl -X GET http://localhost:8002/api/v1/internal/articles/1/files/ \
      -H "Authorization: Bearer {TOKEN}"
    ```
 

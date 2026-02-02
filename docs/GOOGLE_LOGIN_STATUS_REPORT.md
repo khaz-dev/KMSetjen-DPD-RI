@@ -89,7 +89,7 @@ path('google/callback/', google_callback, name='google_callback')
 ```python
 GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID', default='')
 GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET', default='')
-GOOGLE_REDIRECT_URI = env('GOOGLE_REDIRECT_URI', default='http://localhost:3000/google/callback')
+GOOGLE_REDIRECT_URI = env('GOOGLE_REDIRECT_URI', default='http://localhost:5175/google/callback')
 ```
 
 **Environment Template** (`backend/.env.example` and `.env`)
@@ -112,7 +112,7 @@ GOOGLE_REDIRECT_URI = env('GOOGLE_REDIRECT_URI', default='http://localhost:3000/
 3. **Google Login & Approval**
    - User logs into Google account (if not already)
    - User approves requested scopes (email, profile)
-   - Google redirects to: `http://localhost:3000/google/callback?code=AUTH_CODE&state=CSRF_TOKEN`
+   - Google redirects to: `http://localhost:5175/google/callback?code=AUTH_CODE&state=CSRF_TOKEN`
 
 4. **Frontend Callback Handler**
    - Validates state parameter (CSRF check)
@@ -172,7 +172,7 @@ Go to [Google Cloud Console](https://console.cloud.google.com/):
 3. Search and enable **Google+ API**
 4. Go to **Credentials** → Create **OAuth 2.0 Client ID**
 5. Choose **Web Application**
-6. Add redirect URI: `http://localhost:3000/google/callback`
+6. Add redirect URI: `http://localhost:5175/google/callback`
 7. Click **Create**
 8. Copy **Client ID** (example: `1234567890-abc...xyz.apps.googleusercontent.com`)
 9. Copy **Client Secret** (shown in dialog or download JSON)
@@ -192,7 +192,7 @@ Edit `backend/.env` - Replace values:
 ```env
 GOOGLE_CLIENT_ID=YOUR_CLIENT_ID_HERE
 GOOGLE_CLIENT_SECRET=YOUR_CLIENT_SECRET_HERE
-GOOGLE_REDIRECT_URI=http://localhost:3000/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:5175/google/callback
 ```
 
 ### 4. Restart Servers (1 minute)
@@ -209,7 +209,7 @@ npm start
 
 ### 5. Test (1 minute)
 
-1. Go to `http://localhost:3000/login`
+1. Go to `http://localhost:5175/login`
 2. Look for **"Masuk dengan Google"** button
 3. Click it
 4. Log in with Google account

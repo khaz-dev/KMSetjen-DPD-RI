@@ -209,12 +209,12 @@ Your KMS now demonstrates:
 
 Visit your enriched articles:
 
-- **Article 1:** http://localhost:3000/articles/1 (KMS Guide + Video)
-- **Article 2:** http://localhost:3000/articles/2 (Security + Files)
-- **Article 3:** http://localhost:3000/articles/3 (API + Video + Files)
-- **Article 4:** http://localhost:3000/articles/4 (Analytics + Files)
-- **Article 5:** http://localhost:3000/articles/5 (Tutorial + Video + Files)
-- **Article 6:** http://localhost:3000/articles/6 (Expanded News + Files) ⭐
+- **Article 1:** http://localhost:5175/articles/1 (KMS Guide + Video)
+- **Article 2:** http://localhost:5175/articles/2 (Security + Files)
+- **Article 3:** http://localhost:5175/articles/3 (API + Video + Files)
+- **Article 4:** http://localhost:5175/articles/4 (Analytics + Files)
+- **Article 5:** http://localhost:5175/articles/5 (Tutorial + Video + Files)
+- **Article 6:** http://localhost:5175/articles/6 (Expanded News + Files) ⭐
 
 ---
 

@@ -77,13 +77,13 @@ cd frontend
 npm install
 
 # Create environment file
-echo "REACT_APP_API_URL=http://localhost:8000" > .env
+echo "REACT_APP_API_URL=http://localhost:8002" > .env
 
 # Start development server
 npm start
 ```
 
-Server runs at `http://localhost:3000`
+Server runs at `http://localhost:5175`
 
 ### Backend Setup
 ```bash
@@ -116,7 +116,7 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-Server runs at `http://localhost:8000`
+Server runs at `http://localhost:8002`
 
 ### Running Tests Locally
 ```bash
@@ -215,7 +215,7 @@ npm run build
 # Create nginx config
 sudo cat > /etc/nginx/sites-available/kmsetjen << 'EOF'
 upstream django {
-    server 127.0.0.1:8000;
+    server 127.0.0.1:8002;
 }
 
 server {
@@ -264,7 +264,7 @@ After=network.target
 [Service]
 User=ubuntu
 WorkingDirectory=/home/ubuntu/kmsetjen/backend
-ExecStart=/home/ubuntu/kmsetjen/backend/venv/bin/gunicorn config.wsgi:application --bind 0.0.0.0:8000
+ExecStart=/home/ubuntu/kmsetjen/backend/venv/bin/gunicorn config.wsgi:application --bind 0.0.0.0:8002
 
 [Install]
 WantedBy=multi-user.target
@@ -380,10 +380,10 @@ RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
 # Expose port
-EXPOSE 8000
+EXPOSE 8002
 
 # Run application
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8002"]
 ```
 
 ### Dockerfile (Frontend)
@@ -408,9 +408,9 @@ RUN npm install -g serve
 
 COPY --from=builder /app/build ./build
 
-EXPOSE 3000
+EXPOSE 5175
 
-CMD ["serve", "-s", "build", "-l", "3000"]
+CMD ["serve", "-s", "build", "-l", "5175"]
 ```
 
 ### Docker Compose Configuration
@@ -440,7 +440,7 @@ services:
     depends_on:
       - db
     ports:
-      - "8000:8000"
+      - "8002:8002"
     networks:
       - app-network
 
@@ -449,9 +449,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     environment:
-      REACT_APP_API_URL: http://backend:8000
+      REACT_APP_API_URL: http://backend:8002
     ports:
-      - "3000:3000"
+      - "5175:5175"
     depends_on:
       - backend
     networks:
@@ -506,13 +506,13 @@ docker-compose down
 ### Verification Steps
 ```bash
 # Check application status
-curl -s http://localhost:8000/api/v1/health/
+curl -s http://localhost:8002/api/v1/health/
 
 # Verify database connectivity
-curl -s http://localhost:8000/api/v1/admin/statistics/
+curl -s http://localhost:8002/api/v1/admin/statistics/
 
 # Check frontend loading
-curl -s http://localhost:3000 | head -20
+curl -s http://localhost:5175 | head -20
 
 # Check SSL certificate
 openssl s_client -connect kmsetjen.go.id:443 -showcerts

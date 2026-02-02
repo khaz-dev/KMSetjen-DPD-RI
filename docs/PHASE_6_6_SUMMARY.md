@@ -349,7 +349,7 @@ Documentation:         ✅ Complete
 
 ### To Create an Article
 ```
-1. Navigate to http://localhost:3000/editor
+1. Navigate to http://localhost:5175/editor
 2. Fill in article details
 3. Click "Save as Draft" to save
 4. Click "Submit for Review" to submit
@@ -358,7 +358,7 @@ Documentation:         ✅ Complete
 
 ### To Review Articles (Editors)
 ```
-1. Navigate to http://localhost:3000/editor-dashboard
+1. Navigate to http://localhost:5175/editor-dashboard
 2. Click "Pending Review" tab
 3. Click "Approve" or "Reject"
 4. Add feedback in modal
@@ -367,7 +367,7 @@ Documentation:         ✅ Complete
 
 ### To Edit Article
 ```
-1. Navigate to http://localhost:3000/editor/{articleId}
+1. Navigate to http://localhost:5175/editor/{articleId}
 2. Form pre-populated with data
 3. Make changes
 4. Save as draft (auto-saves too)

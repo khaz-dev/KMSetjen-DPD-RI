@@ -324,5 +324,5 @@ Root Directory (d:\Project\KMSetjen DPD RI\)
 ✅ Highlighting works on primary metric
 ✅ Documentation is complete
 
-**Everything is ready to test at http://localhost:3000/articles!**
+**Everything is ready to test at http://localhost:5175/articles!**
 

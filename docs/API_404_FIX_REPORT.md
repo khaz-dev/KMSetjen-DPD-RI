@@ -5,7 +5,7 @@
 **Browser Console Errors:**
 1. `Slug check error: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON`
 2. `Failed to load resource: the server responded with a status of 404 (Not Found)` for `api/v1/internal/articles/`
-3. `POST http://localhost:3000/api/v1/internal/articles/ 404 (Not Found)`
+3. `POST http://localhost:5175/api/v1/internal/articles/ 404 (Not Found)`
 
 ## Root Cause Analysis
 
@@ -14,10 +14,10 @@
 The frontend was making API calls with **relative paths** instead of **absolute URLs with the correct base domain**.
 
 #### Frontend Running On:
-- **http://localhost:3000** (React development server)
+- **http://localhost:5175** (React development server)
 
 #### Backend Running On:
-- **http://localhost:8000** (Django development server)
+- **http://localhost:8002** (Django development server)
 
 #### The Bug:
 Frontend code was calling:
@@ -27,11 +27,11 @@ fetch('/api/v1/internal/articles/check-slug/?slug=...')
 
 This resolves to:
 ```
-http://localhost:3000/api/v1/internal/articles/check-slug/
+http://localhost:5175/api/v1/internal/articles/check-slug/
                     ↑ WRONG! Looking on frontend server, not backend
 ```
 
-When the frontend server (port 3000) received this request, it returned an HTML 404 error page, not JSON. The frontend then tried to parse HTML as JSON, causing:
+When the frontend server (port 5175) received this request, it returned an HTML 404 error page, not JSON. The frontend then tried to parse HTML as JSON, causing:
 
 ```
 SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
@@ -43,7 +43,7 @@ Other API calls in the app probably used the configured API service (`publicAPI`
 ### Environment Configuration:
 **File:** `.env.local`
 ```dotenv
-REACT_APP_API_BASE_URL=http://localhost:8000/api
+REACT_APP_API_BASE_URL=http://localhost:8002/api
 ```
 
 This environment variable defines where the backend API actually lives.
@@ -83,13 +83,13 @@ Changed from relative paths to absolute URLs using the environment variable:
 const response = await fetch(`/api/v1/internal/articles/${id}/`, {...})
 
 // AFTER (CORRECT):
-const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
+const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8002/api';
 const response = await fetch(`${apiBaseUrl}/v1/internal/articles/${id}/`, {...})
 ```
 
 #### Benefits of This Approach:
 1. **Environment-aware:** Uses `.env.local` in development, environment variables in production
-2. **Fallback:** Defaults to `http://localhost:8000/api` if env var not set
+2. **Fallback:** Defaults to `http://localhost:8002/api` if env var not set
 3. **Flexible:** Can be configured per environment without code changes
 4. **Consistent:** Same base URL used across all API calls
 
@@ -105,29 +105,29 @@ const response = await fetch(`${apiBaseUrl}/v1/internal/articles/${id}/`, {...})
 
 **Pattern Applied to All Four Locations:**
 ```javascript
-const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
+const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8002/api';
 const response = await fetch(`${apiBaseUrl}/v1/internal/articles/...`, {...})
 ```
 
 ## What Should Now Work
 
 ### ✅ Slug Real-Time Validation
-- Frontend makes request to: `http://localhost:8000/api/v1/internal/articles/check-slug/?slug=...`
+- Frontend makes request to: `http://localhost:8002/api/v1/internal/articles/check-slug/?slug=...`
 - Backend responds with JSON: `{"available": true/false, "message": "..."}`
 - No more HTML 404 errors parsed as JSON
 
 ### ✅ Load Article
-- Frontend makes request to: `http://localhost:8000/api/v1/internal/articles/{id}/`
+- Frontend makes request to: `http://localhost:8002/api/v1/internal/articles/{id}/`
 - Backend responds with article data as JSON
 - Article loads correctly
 
 ### ✅ Save Draft
-- Frontend makes request to: `http://localhost:8000/api/v1/internal/articles/`
+- Frontend makes request to: `http://localhost:8002/api/v1/internal/articles/`
 - Backend saves article and responds with JSON
 - Draft saves successfully
 
 ### ✅ Submit for Review
-- Frontend makes request to: `http://localhost:8000/api/v1/internal/articles/{id}/`
+- Frontend makes request to: `http://localhost:8002/api/v1/internal/articles/{id}/`
 - Backend updates article and responds with JSON
 - Article submits successfully
 
@@ -140,10 +140,10 @@ const response = await fetch(`${apiBaseUrl}/v1/internal/articles/...`, {...})
    - Or clear local storage
 
 2. **Test Slug Validation**
-   - Navigate to http://localhost:3000/editor
+   - Navigate to http://localhost:5175/editor
    - Start typing a title
    - Watch browser console (F12)
-   - Should see successful slug check request to `http://localhost:8000/api/...`
+   - Should see successful slug check request to `http://localhost:8002/api/...`
    - Should NOT see 404 errors
    - Should see green/red validation feedback
 
@@ -161,7 +161,7 @@ const response = await fetch(`${apiBaseUrl}/v1/internal/articles/...`, {...})
 
 ### Browser Console Should Show:
 ```
-✅ Network requests to http://localhost:8000/api/... returning 200
+✅ Network requests to http://localhost:8002/api/... returning 200
 ✅ JSON responses being parsed correctly
 ✅ No "Unexpected token '<'" errors
 ✅ No 404 errors for articles endpoints
@@ -172,7 +172,7 @@ const response = await fetch(`${apiBaseUrl}/v1/internal/articles/...`, {...})
 ### Network & Security Reasons:
 
 1. **CORS (Cross-Origin Resource Sharing):**
-   - Frontend on port 3000, backend on port 8000 = different origins
+   - Frontend on port 5175, backend on port 8002 = different origins
    - Without proper URLs, requests fail silently
 
 2. **Production Deployment:**
@@ -181,7 +181,7 @@ const response = await fetch(`${apiBaseUrl}/v1/internal/articles/...`, {...})
    - Absolute URLs with env variables solve this
 
 3. **Environment Configuration:**
-   - Development: `REACT_APP_API_BASE_URL=http://localhost:8000/api`
+   - Development: `REACT_APP_API_BASE_URL=http://localhost:8002/api`
    - Staging: `REACT_APP_API_BASE_URL=https://staging-api.example.com/api`
    - Production: `REACT_APP_API_BASE_URL=https://api.example.com/api`
    - Same code, different URLs per environment
@@ -195,7 +195,7 @@ const response = await fetch(`${apiBaseUrl}/v1/internal/articles/...`, {...})
 
 ### ✅ Fallback Values
 ```javascript
-const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
+const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8002/api';
 ```
 - Uses env var if set
 - Falls back to localhost for development
@@ -215,7 +215,7 @@ const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/
 ### 1. Create API Helper Function
 ```javascript
 const apiCall = (endpoint, options = {}) => {
-  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
+  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8002/api';
   return fetch(`${apiBaseUrl}${endpoint}`, {
     headers: {
       'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
@@ -256,7 +256,7 @@ try {
 
 **Fix:** Updated all fetch calls to use environment variable `REACT_APP_API_BASE_URL`
 
-**Result:** API calls now correctly route to `http://localhost:8000/api` instead of `http://localhost:3000/api`
+**Result:** API calls now correctly route to `http://localhost:8002/api` instead of `http://localhost:5175/api`
 
 **Impact:** 
 - ✅ Slug validation works

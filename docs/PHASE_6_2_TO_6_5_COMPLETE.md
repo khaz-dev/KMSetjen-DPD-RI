@@ -361,7 +361,7 @@ npm run build
 ## Testing the Application
 
 1. **Public Access:**
-   - Visit http://localhost:3000
+   - Visit http://localhost:5175
    - Browse articles
    - Search and filter articles
    - View article details

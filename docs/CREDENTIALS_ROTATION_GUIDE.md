@@ -58,7 +58,7 @@
 5. Create new OAuth 2.0 credentials:
    - Application type: Web Application
    - Name: KMSetjen DPD RI
-   - Authorized redirect URIs: `http://localhost:3000/google/callback`
+   - Authorized redirect URIs: `http://localhost:5175/google/callback`
 6. Copy the new Client ID and Secret
 
 **Where to update after rotation**:

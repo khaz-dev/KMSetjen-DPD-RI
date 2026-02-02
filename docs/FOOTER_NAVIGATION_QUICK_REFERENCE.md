@@ -45,10 +45,10 @@ All footer links now:
 
 ### To Access Pages
 
-- Home: http://localhost:3000/
-- About: http://localhost:3000/about ✅ (was 404)
-- Contact: http://localhost:3000/contact ✅ (was 404)
-- Privacy: http://localhost:3000/privacy ✅ (was 404)
-- Terms: http://localhost:3000/terms ✅ (was 404)
+- Home: http://localhost:5175/
+- About: http://localhost:5175/about ✅ (was 404)
+- Contact: http://localhost:5175/contact ✅ (was 404)
+- Privacy: http://localhost:5175/privacy ✅ (was 404)
+- Terms: http://localhost:5175/terms ✅ (was 404)
 
 **Status: 🟢 PRODUCTION READY**

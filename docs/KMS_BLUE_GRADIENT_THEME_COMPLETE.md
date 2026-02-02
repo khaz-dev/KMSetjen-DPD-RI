@@ -108,11 +108,11 @@ All updated headers now support both light and dark modes:
 
 ## Testing Checklist
 
-- [ ] Visit http://localhost:3000/contact - Blue gradient header
-- [ ] Visit http://localhost:3000/about - Blue gradient header
-- [ ] Visit http://localhost:3000/privacy - Blue gradient header (changed from red)
-- [ ] Visit http://localhost:3000/terms - Blue gradient header (changed from red)
-- [ ] Visit http://localhost:3000/articles/[id] - Blue gradient header
+- [ ] Visit http://localhost:5175/contact - Blue gradient header
+- [ ] Visit http://localhost:5175/about - Blue gradient header
+- [ ] Visit http://localhost:5175/privacy - Blue gradient header (changed from red)
+- [ ] Visit http://localhost:5175/terms - Blue gradient header (changed from red)
+- [ ] Visit http://localhost:5175/articles/[id] - Blue gradient header
 - [ ] Toggle Dark Mode on all pages - verify gradient colors adjust correctly
 - [ ] Check responsive design on mobile devices
 - [ ] Verify color consistency across all pages

@@ -176,7 +176,7 @@ cp .env.example .env
 npm run dev
 ```
 
-Visit: `http://localhost:3000` (frontend) + `http://localhost:8000/admin` (backend)
+Visit: `http://localhost:5175` (frontend) + `http://localhost:8002/admin` (backend)
 
 ---
 

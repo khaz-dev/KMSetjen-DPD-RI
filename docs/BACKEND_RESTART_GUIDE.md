@@ -36,20 +36,20 @@ Run one of these commands in the backend terminal:
 python manage.py runserver
 ```
 
-**Option B - Specific port (if port 8000 is busy):**
+**Option B - Specific port (if port 8002 is busy):**
 ```bash
-python manage.py runserver 8001
+python manage.py runserver 8002
 ```
 
 **Option C - Listen on all interfaces:**
 ```bash
-python manage.py runserver 0.0.0.0:8000
+python manage.py runserver 0.0.0.0:8002
 ```
 
 ### Step 4: Verify Server is Running
 Look for output like:
 ```
-Starting development server at http://127.0.0.1:8000/
+Starting development server at http://127.0.0.1:8002/
 Quit the server with CONTROL-C.
 ```
 
@@ -58,7 +58,7 @@ Quit the server with CONTROL-C.
 ## Step 5: Test the Fix
 
 ### In Browser:
-1. Open http://localhost:3000/editor
+1. Open http://localhost:5175/editor
 2. Type a title (e.g., "Test Article")
 3. Watch the slug field
 4. **Expected:** Slug auto-generates, then shows "Checking..." badge → "Valid" badge
@@ -66,7 +66,7 @@ Quit the server with CONTROL-C.
 
 ### Expected Console Output (None of these):
 ```
-❌ GET http://localhost:8000/api/v1/internal/articles/check-slug/?slug=... 404 (Not Found)
+❌ GET http://localhost:8002/api/v1/internal/articles/check-slug/?slug=... 404 (Not Found)
 ❌ Slug check error: Error: Failed to check slug
 ```
 

@@ -3,7 +3,7 @@
 ## Deep Scan & Thorough Analysis Summary
 
 ### Problem Statement
-User requested: "Do deep and thorough scan over http://localhost:3000/articles/3 how about if we add similar articles or related article also popular articles below category card inside sidebar-sticky element"
+User requested: "Do deep and thorough scan over http://localhost:5175/articles/3 how about if we add similar articles or related article also popular articles below category card inside sidebar-sticky element"
 
 ### Solution Delivered
 ✅ **Complete implementation** of three article recommendation sections in the Article Detail Page sidebar:

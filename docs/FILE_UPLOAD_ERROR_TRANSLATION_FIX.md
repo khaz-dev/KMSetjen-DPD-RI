@@ -60,7 +60,7 @@ npm install
 
 **OR use Incognito Window:**
 - Open: `Ctrl+Shift+N`
-- Navigate to: `http://localhost:3000/editor/8`
+- Navigate to: `http://localhost:5175/editor/8`
 
 ### Step 4: Restart Servers
 ```powershell
@@ -74,7 +74,7 @@ npm start
 ```
 
 ### Step 5: Test
-1. Go to: http://localhost:3000/editor/8
+1. Go to: http://localhost:5175/editor/8
 2. Try to upload a file that triggers the error (file > 50MB, invalid type, etc.)
 3. **Expected:** Error should show properly translated text in current language:
    - **Indonesian:** "Kesalahan! Gagal mengunggah file. Silakan coba lagi."

@@ -179,7 +179,7 @@ Status: ✅ DONE
 ## 🧪 QUICK TEST (30 Seconds)
 
 ```
-1. Go to:   http://localhost:3769 (or 3000)
+1. Go to:   http://localhost:3769 (or 5175)
 2. Click:   "Masuk dengan Google"
 3. Login:   With your Google account
 4. Check:   

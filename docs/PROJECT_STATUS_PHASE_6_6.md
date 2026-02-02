@@ -473,20 +473,20 @@ Deliverables:
 cd frontend
 npm install
 npm start
-# Runs on http://localhost:3000
+# Runs on http://localhost:5175
 ```
 
 ### Backend
 ```bash
 cd backend
 python manage.py runserver
-# Runs on http://localhost:8000
+# Runs on http://localhost:8002
 ```
 
 ### Environment Setup
 Create `.env` file in frontend:
 ```
-REACT_APP_API_BASE_URL=http://localhost:8000/api
+REACT_APP_API_BASE_URL=http://localhost:8002/api
 REACT_APP_API_TIMEOUT=10000
 ```
 

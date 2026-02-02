@@ -35,7 +35,7 @@ The Browse by Category section on the HomePage now displays beautiful gradient i
 
 ## 📍 URL to Test
 ```
-http://localhost:3000/
+http://localhost:5175/
 ```
 
 Scroll to "Browse by Category" section.

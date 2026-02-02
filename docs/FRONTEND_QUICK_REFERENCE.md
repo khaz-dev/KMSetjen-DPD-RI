@@ -6,7 +6,7 @@
 cd frontend
 npm install
 npm start
-# Opens http://localhost:3000
+# Opens http://localhost:5175
 ```
 
 ---
@@ -14,14 +14,14 @@ npm start
 ## User Flows
 
 ### First-Time User
-1. Visit http://localhost:3000 → HomePage
+1. Visit http://localhost:5175 → HomePage
 2. Browse articles or click "Get Started"
 3. Click "Register" → Create account
 4. Login with credentials
-5. Access Dashboard (http://localhost:3000/dashboard)
+5. Access Dashboard (http://localhost:5175/dashboard)
 
 ### Returning User
-1. Visit http://localhost:3000
+1. Visit http://localhost:5175
 2. Click "Sign In" → Login
 3. View dashboard and manage articles
 
@@ -63,7 +63,7 @@ npm start
 ### Base URL
 ```javascript
 // From .env file
-REACT_APP_API_BASE_URL=http://localhost:8000/api
+REACT_APP_API_BASE_URL=http://localhost:8002/api
 ```
 
 ### Service Methods
@@ -282,11 +282,11 @@ if (password !== passwordConfirm) {
 ### Issue: API calls failing
 **Solution:** Ensure backend is running and `.env` has correct API_BASE_URL
 ```env
-REACT_APP_API_BASE_URL=http://localhost:8000/api
+REACT_APP_API_BASE_URL=http://localhost:8002/api
 ```
 
 ### Issue: CORS errors
-**Solution:** Backend must have CORS enabled for localhost:3000
+**Solution:** Backend must have CORS enabled for localhost:5175
 
 ### Issue: Pages showing "To be implemented"
 **Solution:** Components are stubs waiting for implementation
@@ -371,7 +371,7 @@ git push origin feature/component-name
 
 ### .env file
 ```env
-REACT_APP_API_BASE_URL=http://localhost:8000/api
+REACT_APP_API_BASE_URL=http://localhost:8002/api
 REACT_APP_API_TIMEOUT=10000
 ```
 
@@ -380,7 +380,7 @@ REACT_APP_API_TIMEOUT=10000
 - npm 6+ or yarn
 
 ### Backend Requirements
-- Django running on localhost:8000
+- Django running on localhost:8002
 - API endpoints accessible
 - CORS enabled
 

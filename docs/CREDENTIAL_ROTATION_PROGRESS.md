@@ -89,7 +89,7 @@ python manage.py runserver
 cd frontend  
 npm start
 
-# Try Google login at http://localhost:3000
+# Try Google login at http://localhost:5175
 ```
 
 ### After Testing Confirms It Works (1 minute)

@@ -442,7 +442,7 @@ TIMEZONE="Asia/Jakarta"
 # Frontend .env
 REACT_APP_SITE_NAME="KM Setjen DPD RI"
 REACT_APP_DEFAULT_LANGUAGE="id"
-REACT_APP_API_URL="http://localhost:8000/api/v1"
+REACT_APP_API_URL="http://localhost:8002/api/v1"
 ```
 
 ### Database Indexes (Optimization)

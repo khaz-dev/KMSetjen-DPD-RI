@@ -229,7 +229,7 @@ Error Alert:
 ### **To verify the fix:**
 
 1. **Switch to Indonesian language**
-   - [ ] Go to editor: `http://localhost:3000/editor`
+   - [ ] Go to editor: `http://localhost:5175/editor`
    - [ ] Click language selector → "Bahasa Indonesia"
 
 2. **Test Save Draft Error**

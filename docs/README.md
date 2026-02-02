@@ -284,7 +284,7 @@ python manage.py createsuperuser
 ### 8. Run Development Server
 ```bash
 python manage.py runserver
-# Access: http://localhost:8000/admin/
+# Access: http://localhost:8002/admin/
 ```
 
 ## Architecture Overview
@@ -345,7 +345,7 @@ python manage.py runserver
 
 ## Admin Panel
 
-Access at http://localhost:8000/admin/
+Access at http://localhost:8002/admin/
 
 Manage:
 - Users and roles
@@ -390,7 +390,7 @@ python manage.py dumpdata core.Role --indent 2 > fixtures/roles.json
 python manage.py collectstatic
 
 # Run server on different port
-python manage.py runserver 0.0.0.0:8001
+python manage.py runserver 0.0.0.0:8002
 
 # Format code with black
 black .
@@ -435,7 +435,7 @@ pip install gunicorn
 python manage.py collectstatic --noinput
 
 # Run with Gunicorn
-gunicorn config.wsgi:application --bind 0.0.0.0:8000
+gunicorn config.wsgi:application --bind 0.0.0.0:8002
 ```
 
 ## Troubleshooting
@@ -453,8 +453,8 @@ gunicorn config.wsgi:application --bind 0.0.0.0:8000
 - Activate virtual environment: source venv/bin/activate
 - Reinstall: pip install -r requirements.txt
 
-**Port 8000 already in use:**
-- Use different port: python manage.py runserver 0.0.0.0:8001
+**Port 8002 already in use:**
+- Use different port: python manage.py runserver 0.0.0.0:8002
 
 ## Documentation
 

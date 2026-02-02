@@ -26,7 +26,7 @@ The code checks: `isGoogleConfigured()` which returns `false` when `REACT_APP_GO
 3. Go to **Credentials** → **Create Credentials** → **OAuth 2.0 Client ID**
 4. Choose **Web Application**
 5. Add authorized redirect URIs:
-   - `http://localhost:3000/google/callback` (development)
+   - `http://localhost:5175/google/callback` (development)
    - `https://your-domain.com/google/callback` (production)
 6. Copy the **Client ID** (looks like: `123456789-abc...xyz.apps.googleusercontent.com`)
 
@@ -36,7 +36,7 @@ Create or edit `frontend/.env.local`:
 
 ```env
 # Frontend Configuration
-REACT_APP_API_BASE_URL=http://localhost:8000/api
+REACT_APP_API_BASE_URL=http://localhost:8002/api
 REACT_APP_API_TIMEOUT=10000
 
 # SSO Configuration
@@ -75,7 +75,7 @@ Edit `backend/.env`:
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID_HERE
 GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_CLIENT_SECRET_HERE
-GOOGLE_REDIRECT_URI=http://localhost:3000/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:5175/google/callback
 ```
 
 Get `GOOGLE_CLIENT_SECRET` from Google Cloud Console (same place as Client ID).
@@ -227,7 +227,7 @@ from decouple import config
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = config('GOOGLE_CLIENT_SECRET', '')
-GOOGLE_REDIRECT_URI = config('GOOGLE_REDIRECT_URI', 'http://localhost:3000/google/callback')
+GOOGLE_REDIRECT_URI = config('GOOGLE_REDIRECT_URI', 'http://localhost:5175/google/callback')
 ```
 
 ---
@@ -236,7 +236,7 @@ GOOGLE_REDIRECT_URI = config('GOOGLE_REDIRECT_URI', 'http://localhost:3000/googl
 
 ### Frontend Test (No Backend)
 1. Set `REACT_APP_GOOGLE_CLIENT_ID` in `.env.local`
-2. Go to `http://localhost:3000/login`
+2. Go to `http://localhost:5175/login`
 3. Click "Masuk dengan Google" button
 4. Should redirect to Google login page
 5. After approval, redirects to `/google/callback`
@@ -244,7 +244,7 @@ GOOGLE_REDIRECT_URI = config('GOOGLE_REDIRECT_URI', 'http://localhost:3000/googl
 
 ### Full End-to-End Test (With Backend)
 1. Complete all backend setup above
-2. Go to `http://localhost:3000/login`
+2. Go to `http://localhost:5175/login`
 3. Click "Masuk dengan Google"
 4. Approve scopes
 5. Should redirect to dashboard
@@ -308,7 +308,7 @@ REACT_APP_GOOGLE_CLIENT_ID=YOUR_CLIENT_ID
 ```
 GOOGLE_CLIENT_ID=YOUR_CLIENT_ID
 GOOGLE_CLIENT_SECRET=YOUR_CLIENT_SECRET
-GOOGLE_REDIRECT_URI=http://localhost:3000/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:5175/google/callback
 ```
 - **Location**: `backend/.env`
 - **Purpose**: Used to exchange authorization code for tokens
@@ -385,7 +385,7 @@ Frontend: getGoogleAuthorizationUrl()
     ↓ (Redirects to)
 Google: Asks user to login/approve
     ↓ (Redirects to)
-http://localhost:3000/google/callback?code=AUTH_CODE&state=CSRF_TOKEN
+http://localhost:5175/google/callback?code=AUTH_CODE&state=CSRF_TOKEN
     ↓
 Frontend: GoogleCallbackPage validates state
     ↓

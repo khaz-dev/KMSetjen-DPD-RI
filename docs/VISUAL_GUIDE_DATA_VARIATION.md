@@ -202,7 +202,7 @@ Dropdown: "Paling Banyak Disukai"
 
 ## Step-by-Step to See It
 
-1. **Open** http://localhost:3000/articles
+1. **Open** http://localhost:5175/articles
 
 2. **Look at first article's metrics** (note the position and values)
 
@@ -256,5 +256,5 @@ You now have **real, varied data** that makes the sorting feature **visually obv
 ✅ **Visual Highlighting** - Primary metric is bold + blue
 ✅ **Dynamic Order** - Articles change position based on selected sort
 
-When you visit http://localhost:3000/articles now, **you WILL SEE the sorting working** because the data is visibly different! 🎉
+When you visit http://localhost:5175/articles now, **you WILL SEE the sorting working** because the data is visibly different! 🎉
 

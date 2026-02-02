@@ -14,7 +14,7 @@ python manage.py runserver
 
 ### 1. Register User
 ```bash
-curl -X POST http://localhost:8000/api/auth/register/ \
+curl -X POST http://localhost:8002/api/auth/register/ \
   -H "Content-Type: application/json" \
   -d '{
     "username": "testuser",
@@ -28,7 +28,7 @@ curl -X POST http://localhost:8000/api/auth/register/ \
 
 ### 2. Login (Get Token)
 ```bash
-curl -X POST http://localhost:8000/api/auth/token/ \
+curl -X POST http://localhost:8002/api/auth/token/ \
   -H "Content-Type: application/json" \
   -d '{
     "username": "testuser",
@@ -43,7 +43,7 @@ export TOKEN="<access_token_from_response>"
 
 ### 3. Get Current User
 ```bash
-curl http://localhost:8000/api/auth/me/ \
+curl http://localhost:8002/api/auth/me/ \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -51,7 +51,7 @@ curl http://localhost:8000/api/auth/me/ \
 
 ### 1. Create Article
 ```bash
-curl -X POST http://localhost:8000/api/v1/internal/articles/ \
+curl -X POST http://localhost:8002/api/v1/internal/articles/ \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -73,19 +73,19 @@ Save the article ID from response: `export ARTICLE_ID=<id>`
 
 ### 2. Get Article Detail
 ```bash
-curl http://localhost:8000/api/v1/internal/articles/$ARTICLE_ID/ \
+curl http://localhost:8002/api/v1/internal/articles/$ARTICLE_ID/ \
   -H "Authorization: Bearer $TOKEN"
 ```
 
 ### 3. List User's Articles
 ```bash
-curl http://localhost:8000/api/v1/internal/articles/ \
+curl http://localhost:8002/api/v1/internal/articles/ \
   -H "Authorization: Bearer $TOKEN"
 ```
 
 ### 4. Update Article (Partial)
 ```bash
-curl -X PATCH http://localhost:8000/api/v1/internal/articles/$ARTICLE_ID/ \
+curl -X PATCH http://localhost:8002/api/v1/internal/articles/$ARTICLE_ID/ \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -96,7 +96,7 @@ curl -X PATCH http://localhost:8000/api/v1/internal/articles/$ARTICLE_ID/ \
 
 ### 5. Update Article (Full)
 ```bash
-curl -X PUT http://localhost:8000/api/v1/internal/articles/$ARTICLE_ID/ \
+curl -X PUT http://localhost:8002/api/v1/internal/articles/$ARTICLE_ID/ \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -114,7 +114,7 @@ curl -X PUT http://localhost:8000/api/v1/internal/articles/$ARTICLE_ID/ \
 
 ### 1. Submit for Review
 ```bash
-curl -X POST http://localhost:8000/api/v1/internal/articles/$ARTICLE_ID/submit-review/ \
+curl -X POST http://localhost:8002/api/v1/internal/articles/$ARTICLE_ID/submit-review/ \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -124,7 +124,7 @@ curl -X POST http://localhost:8000/api/v1/internal/articles/$ARTICLE_ID/submit-r
 
 ### 2. Create Editor User (for testing approval)
 ```bash
-curl -X POST http://localhost:8000/api/auth/register/ \
+curl -X POST http://localhost:8002/api/auth/register/ \
   -H "Content-Type: application/json" \
   -d '{
     "username": "editor",
@@ -150,7 +150,7 @@ exit()
 
 Login as editor:
 ```bash
-curl -X POST http://localhost:8000/api/auth/token/ \
+curl -X POST http://localhost:8002/api/auth/token/ \
   -H "Content-Type: application/json" \
   -d '{"username": "editor", "password": "editorpass123"}'
 
@@ -159,19 +159,19 @@ export EDITOR_TOKEN="<editor_access_token>"
 
 ### 3. Approve Article (as Editor)
 ```bash
-curl -X POST http://localhost:8000/api/v1/internal/articles/$ARTICLE_ID/approve/ \
+curl -X POST http://localhost:8002/api/v1/internal/articles/$ARTICLE_ID/approve/ \
   -H "Authorization: Bearer $EDITOR_TOKEN"
 ```
 
 ### 4. Publish Article (as Editor)
 ```bash
-curl -X POST http://localhost:8000/api/v1/internal/articles/$ARTICLE_ID/publish/ \
+curl -X POST http://localhost:8002/api/v1/internal/articles/$ARTICLE_ID/publish/ \
   -H "Authorization: Bearer $EDITOR_TOKEN"
 ```
 
 ### 5. Archive Article (as Author)
 ```bash
-curl -X POST http://localhost:8000/api/v1/internal/articles/$ARTICLE_ID/archive/ \
+curl -X POST http://localhost:8002/api/v1/internal/articles/$ARTICLE_ID/archive/ \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -179,7 +179,7 @@ curl -X POST http://localhost:8000/api/v1/internal/articles/$ARTICLE_ID/archive/
 
 ### Get User Dashboard
 ```bash
-curl http://localhost:8000/api/v1/internal/articles/dashboard/ \
+curl http://localhost:8002/api/v1/internal/articles/dashboard/ \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -202,7 +202,7 @@ Returns:
 
 ### Update Profile
 ```bash
-curl -X POST http://localhost:8000/api/auth/update-profile/ \
+curl -X POST http://localhost:8002/api/auth/update-profile/ \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -214,7 +214,7 @@ curl -X POST http://localhost:8000/api/auth/update-profile/ \
 
 ### Change Password
 ```bash
-curl -X POST http://localhost:8000/api/auth/change-password/ \
+curl -X POST http://localhost:8002/api/auth/change-password/ \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -228,7 +228,7 @@ curl -X POST http://localhost:8000/api/auth/change-password/ \
 ### Try to Update Other User's Article (should fail)
 ```bash
 # Create another article by editor user
-curl -X POST http://localhost:8000/api/v1/internal/articles/ \
+curl -X POST http://localhost:8002/api/v1/internal/articles/ \
   -H "Authorization: Bearer $EDITOR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -243,7 +243,7 @@ curl -X POST http://localhost:8000/api/v1/internal/articles/ \
 # Save the ID: export OTHER_ARTICLE_ID=<id>
 
 # Try to update with contributor token (should fail with 403)
-curl -X PATCH http://localhost:8000/api/v1/internal/articles/$OTHER_ARTICLE_ID/ \
+curl -X PATCH http://localhost:8002/api/v1/internal/articles/$OTHER_ARTICLE_ID/ \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"title_en": "Hacked"}'
@@ -253,7 +253,7 @@ Expected response: 403 Forbidden
 
 ### Try to Delete Other User's Article (should fail)
 ```bash
-curl -X DELETE http://localhost:8000/api/v1/internal/articles/$OTHER_ARTICLE_ID/ \
+curl -X DELETE http://localhost:8002/api/v1/internal/articles/$OTHER_ARTICLE_ID/ \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -286,30 +286,30 @@ pytest tests/api/test_internal_api.py --cov=apps.api.v1.internal --cov=apps.auth
 Complete workflow test:
 ```bash
 # 1. Register
-TOKEN=$(curl -s -X POST http://localhost:8000/api/auth/register/ \
+TOKEN=$(curl -s -X POST http://localhost:8002/api/auth/register/ \
   -H "Content-Type: application/json" \
   -d '{"username":"workflow","email":"workflow@test.com","password":"pass123"}' \
   | jq -r '.user.id')
 
 # 2. Login
-TOKEN=$(curl -s -X POST http://localhost:8000/api/auth/token/ \
+TOKEN=$(curl -s -X POST http://localhost:8002/api/auth/token/ \
   -H "Content-Type: application/json" \
   -d '{"username":"workflow","password":"pass123"}' \
   | jq -r '.access')
 
 # 3. Create article
-ARTICLE_ID=$(curl -s -X POST http://localhost:8000/api/v1/internal/articles/ \
+ARTICLE_ID=$(curl -s -X POST http://localhost:8002/api/v1/internal/articles/ \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"title_id":"Test","title_en":"Test","content_id":"Content","content_en":"Content","category":1}' \
   | jq -r '.id')
 
 # 4. Submit for review
-curl -s -X POST http://localhost:8000/api/v1/internal/articles/$ARTICLE_ID/submit-review/ \
+curl -s -X POST http://localhost:8002/api/v1/internal/articles/$ARTICLE_ID/submit-review/ \
   -H "Authorization: Bearer $TOKEN" | jq .
 
 # 5. Get dashboard
-curl -s http://localhost:8000/api/v1/internal/articles/dashboard/ \
+curl -s http://localhost:8002/api/v1/internal/articles/dashboard/ \
   -H "Authorization: Bearer $TOKEN" | jq .
 ```
 

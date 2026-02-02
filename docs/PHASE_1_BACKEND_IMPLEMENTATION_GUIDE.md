@@ -382,7 +382,7 @@ urlpatterns = [
 
 ### Test 1: List Files (Before Upload)
 ```bash
-curl -X GET http://localhost:8000/api/v1/internal/articles/1/files/ \
+curl -X GET http://localhost:8002/api/v1/internal/articles/1/files/ \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 
 # Expected: 200 OK with empty list []
@@ -390,7 +390,7 @@ curl -X GET http://localhost:8000/api/v1/internal/articles/1/files/ \
 
 ### Test 2: Upload File
 ```bash
-curl -X POST http://localhost:8000/api/v1/internal/articles/1/files/ \
+curl -X POST http://localhost:8002/api/v1/internal/articles/1/files/ \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -F "file=@/path/to/file.pdf" \
   -F "description_en=Test file" \
@@ -401,7 +401,7 @@ curl -X POST http://localhost:8000/api/v1/internal/articles/1/files/ \
 
 ### Test 3: List Files (After Upload)
 ```bash
-curl -X GET http://localhost:8000/api/v1/internal/articles/1/files/ \
+curl -X GET http://localhost:8002/api/v1/internal/articles/1/files/ \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 
 # Expected: 200 OK with file list
@@ -409,7 +409,7 @@ curl -X GET http://localhost:8000/api/v1/internal/articles/1/files/ \
 
 ### Test 4: Update File Description
 ```bash
-curl -X PATCH http://localhost:8000/api/v1/internal/articles/1/files/1/ \
+curl -X PATCH http://localhost:8002/api/v1/internal/articles/1/files/1/ \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"description_en": "Updated description"}'
@@ -419,7 +419,7 @@ curl -X PATCH http://localhost:8000/api/v1/internal/articles/1/files/1/ \
 
 ### Test 5: Delete File
 ```bash
-curl -X DELETE http://localhost:8000/api/v1/internal/articles/1/files/1/ \
+curl -X DELETE http://localhost:8002/api/v1/internal/articles/1/files/1/ \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 
 # Expected: 204 No Content
@@ -427,7 +427,7 @@ curl -X DELETE http://localhost:8000/api/v1/internal/articles/1/files/1/ \
 
 ### Test 6: Reorder Files
 ```bash
-curl -X POST http://localhost:8000/api/v1/internal/articles/1/files/reorder/ \
+curl -X POST http://localhost:8002/api/v1/internal/articles/1/files/reorder/ \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"file_ids": [2, 1, 3]}'

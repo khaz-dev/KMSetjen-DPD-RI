@@ -106,12 +106,12 @@ python manage.py createsuperuser
 # Follow the prompts to set username, email, password
 
 # Start backend server
-python manage.py runserver 0.0.0.0:8000
+python manage.py runserver 0.0.0.0:8002
 ```
 
 **Expected output:**
 ```
-Starting development server at http://127.0.0.1:8000/
+Starting development server at http://127.0.0.1:8002/
 Quit the server with CONTROL-C.
 ```
 
@@ -152,9 +152,9 @@ Open your browser and navigate to:
 | Service | URL | Purpose |
 |---------|-----|---------|
 | **Frontend** | http://localhost:3769 | Main application |
-| **Backend API** | http://localhost:8000/api | REST API |
-| **Admin Panel** | http://localhost:8000/admin | Django admin |
-| **API Docs** | http://localhost:8000/api/docs | API documentation |
+| **Backend API** | http://localhost:8002/api | REST API |
+| **Admin Panel** | http://localhost:8002/admin | Django admin |
+| **API Docs** | http://localhost:8002/api/docs | API documentation |
 
 ---
 
@@ -181,7 +181,7 @@ GOOGLE_OAUTH_CLIENT_SECRET=your-client-secret
 GOOGLE_OAUTH_REDIRECT_URI=http://localhost:3769/auth/google/callback
 
 # CORS Settings
-CORS_ALLOWED_ORIGINS=http://localhost:3769,http://localhost:3000
+CORS_ALLOWED_ORIGINS=http://localhost:3769,http://localhost:5175
 
 # Email (optional)
 EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
@@ -201,7 +201,7 @@ Create `frontend/.env.local` based on `frontend/.env.example`:
 
 ```bash
 # API Configuration
-VITE_API_URL=http://localhost:8000/api
+VITE_API_URL=http://localhost:8002/api
 VITE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 
 # Debug Settings
@@ -376,7 +376,7 @@ server {
     
     # API Backend
     location /api/ {
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://127.0.0.1:8002;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -418,7 +418,7 @@ WorkingDirectory=/var/www/kmsetjen/backend
 Environment="PATH=/var/www/kmsetjen/backend/venv/bin"
 ExecStart=/var/www/kmsetjen/backend/venv/bin/gunicorn \
     --workers 4 \
-    --bind 127.0.0.1:8000 \
+    --bind 127.0.0.1:8002 \
     config.wsgi:application
 
 [Install]
@@ -454,9 +454,9 @@ docker-compose exec backend python manage.py migrate
 docker-compose exec backend python manage.py createsuperuser
 
 # Access the application
-# Frontend: http://localhost:3000
-# Backend: http://localhost:8000
-# Admin: http://localhost:8000/admin
+# Frontend: http://localhost:5175
+# Backend: http://localhost:8002
+# Admin: http://localhost:8002/admin
 ```
 
 ### Option 2: Individual Docker Containers
@@ -473,10 +473,10 @@ docker build -t kmsetjen-frontend ./frontend
 **Run containers:**
 ```bash
 # Backend
-docker run -p 8000:8000 --env-file backend/.env kmsetjen-backend
+docker run -p 8002:8002 --env-file backend/.env kmsetjen-backend
 
 # Frontend (new terminal)
-docker run -p 3000:80 kmsetjen-frontend
+docker run -p 5175:80 kmsetjen-frontend
 ```
 
 ---
@@ -486,8 +486,8 @@ docker run -p 3000:80 kmsetjen-frontend
 After installation, verify everything works:
 
 ### Backend
-- [ ] `http://localhost:8000/api/articles/` returns JSON
-- [ ] `http://localhost:8000/admin` shows Django admin
+- [ ] `http://localhost:8002/api/articles/` returns JSON
+- [ ] `http://localhost:8002/admin` shows Django admin
 - [ ] No error messages in terminal
 - [ ] Database migrations successful
 
@@ -511,16 +511,16 @@ After installation, verify everything works:
 ### Port Already in Use
 
 ```bash
-# Find process using port 8000
-lsof -i :8000  # macOS/Linux
-netstat -ano | findstr :8000  # Windows
+# Find process using port 8002
+lsof -i :8002  # macOS/Linux
+netstat -ano | findstr :8002  # Windows
 
 # Kill the process
 kill -9 <PID>  # macOS/Linux
 taskkill /PID <PID> /F  # Windows
 
 # Or use different port
-python manage.py runserver 0.0.0.0:8001
+python manage.py runserver 0.0.0.0:8002
 ```
 
 ### Database Connection Error

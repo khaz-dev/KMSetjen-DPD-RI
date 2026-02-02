@@ -17,7 +17,7 @@ npm start
 Create `.env` file in the frontend directory:
 
 ```env
-REACT_APP_API_BASE_URL=http://localhost:8000/api
+REACT_APP_API_BASE_URL=http://localhost:8002/api
 REACT_APP_API_TIMEOUT=10000
 ```
 
@@ -171,7 +171,7 @@ frontend/
 npm start
 ```
 
-The app will open at `http://localhost:3000`
+The app will open at `http://localhost:5175`
 
 ### Build for Production
 
@@ -329,7 +329,7 @@ The backend must have CORS enabled. Check Django settings:
 
 ```python
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
+    "http://localhost:5175",
     "https://yourdomain.com",
 ]
 ```

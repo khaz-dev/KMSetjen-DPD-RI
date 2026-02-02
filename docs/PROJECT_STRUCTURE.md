@@ -279,7 +279,7 @@ See **.gitignore** for complete list of excluded files.
 ```bash
 # Backend (terminal 1)
 cd backend
-python manage.py runserver 0.0.0.0:8000
+python manage.py runserver 0.0.0.0:8002
 
 # Frontend (terminal 2)
 cd frontend

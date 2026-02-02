@@ -32,7 +32,7 @@
 ### Step 3: Test Locally (3 min)
 - [ ] Terminal 1: `cd backend && python manage.py runserver`
 - [ ] Terminal 2: `cd frontend && npm start`
-- [ ] Open: http://localhost:3000
+- [ ] Open: http://localhost:5175
 - [ ] Click: Google login button
 - [ ] Verify: Login works without errors
 
@@ -94,7 +94,7 @@ You'll know you're done when:
 - [ ] Check: Client ID is pasted correctly (no spaces)
 - [ ] Check: Client ID in frontend matches backend
 - [ ] Check: Servers restarted after .env update
-- [ ] Check: Redirect URI in Google Console is exactly `http://localhost:3000/google/callback`
+- [ ] Check: Redirect URI in Google Console is exactly `http://localhost:5175/google/callback`
 
 ### "Can't find where to update credentials in Google Console"
 - [ ] Go to: https://console.cloud.google.com/

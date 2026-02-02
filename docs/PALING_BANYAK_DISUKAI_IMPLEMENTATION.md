@@ -216,7 +216,7 @@ GET /api/v1/public/articles/?ordering=-like_count&page=1
 ```json
 {
   "count": 47,
-  "next": "http://localhost:3000/api/v1/public/articles/?ordering=-like_count&page=2",
+  "next": "http://localhost:5175/api/v1/public/articles/?ordering=-like_count&page=2",
   "previous": null,
   "results": [
     {
@@ -385,10 +385,10 @@ npm start
 ### 4. Verification
 ```bash
 # Test API endpoint
-curl "http://localhost:8000/api/v1/public/articles/?ordering=-like_count"
+curl "http://localhost:8002/api/v1/public/articles/?ordering=-like_count"
 
 # Visit frontend
-# Navigate to http://localhost:3000/articles
+# Navigate to http://localhost:5175/articles
 # Verify "Paling Banyak Disukai" option in sort dropdown
 ```
 

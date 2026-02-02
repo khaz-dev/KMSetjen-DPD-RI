@@ -134,7 +134,7 @@ Articles reorder completely. Sorting is VISIBLE!
 
 ### Step 1: Navigate
 ```
-http://localhost:3000/articles
+http://localhost:5175/articles
 ```
 
 ### Step 2: Select Sort Options
@@ -204,7 +204,7 @@ Berita Kolaborasi: 15 days (oldest)
 ## 🚀 NEXT STEPS
 
 1. **Refresh Browser** (Ctrl+Shift+R)
-2. **Visit** http://localhost:3000/articles
+2. **Visit** http://localhost:5175/articles
 3. **Try sort options** from dropdown
 4. **Watch articles reorder** with different metrics
 5. **See metrics highlight** (bold + blue)
@@ -259,5 +259,5 @@ Berita Kolaborasi: 15 days (oldest)
 ### Result:
 **The sorting feature is now VISUALLY OBVIOUS and fully testable!**
 
-When users visit http://localhost:3000/articles and select different sort options, they will clearly see articles reorder with different metrics appearing and being highlighted. The feature is complete, verified, and ready for use! 🚀
+When users visit http://localhost:5175/articles and select different sort options, they will clearly see articles reorder with different metrics appearing and being highlighted. The feature is complete, verified, and ready for use! 🚀
 

@@ -1,7 +1,7 @@
 # 401 Unauthorized Error - Investigation & Fix Complete
 
 ## Problem Summary
-Browser console showed `GET http://localhost:8000/api/auth/me/ 401 (Unauthorized)` error when loading `/editor/8` page. The error was triggered from `AuthContext.js` attempting to verify the current user on component mount.
+Browser console showed `GET http://localhost:8002/api/auth/me/ 401 (Unauthorized)` error when loading `/editor/8` page. The error was triggered from `AuthContext.js` attempting to verify the current user on component mount.
 
 ## Root Cause Analysis
 

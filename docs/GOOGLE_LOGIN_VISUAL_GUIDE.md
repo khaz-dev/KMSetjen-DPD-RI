@@ -519,7 +519,7 @@ AFTER Setup:
 
 ## 🎊 Result After Setup
 
-When user visits `http://localhost:3000/login`:
+When user visits `http://localhost:5175/login`:
 
 **They will see** (instead of just 2 options):
 ```

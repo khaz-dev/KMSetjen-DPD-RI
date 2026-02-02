@@ -75,7 +75,7 @@ Dashboard: ❌ (blocked)  →   Dashboard: ✅ (accessible)
 
 ## 🧪 TEST NOW
 
-1. Go to: http://localhost:3769 (or 3000)
+1. Go to: http://localhost:3769 (or 5175)
 2. Click: "Masuk dengan Google"  
 3. Login: With Google
 4. Check: Spinner → Name → Dashboard → Profile visible

@@ -105,7 +105,7 @@ Sort: "Paling Banyak Disukai" (Most Liked)
 
 ## How to Test
 
-**Navigate to:** http://localhost:3000/articles
+**Navigate to:** http://localhost:5175/articles
 
 **Select different sort options from dropdown:**
 1. **Terbaru** → See date changes (1-15 days), date highlighted
@@ -230,7 +230,7 @@ published_at  | Oldest first | Date (highlighted)
 ## Next Steps for User
 
 1. **Hard refresh browser** (Ctrl+Shift+R)
-2. **Visit** http://localhost:3000/articles
+2. **Visit** http://localhost:5175/articles
 3. **Click dropdown** and select different sort options
 4. **Watch articles reorder** with different metrics showing
 5. **Notice highlighting** on primary metric (2nd position after author)
@@ -258,5 +258,5 @@ When you change the sort order, you will **clearly see:**
 - Different metrics highlight based on the sort
 - Meta-items show different information per sort
 
-The feature is **ready to demonstrate** at http://localhost:3000/articles! 🎉
+The feature is **ready to demonstrate** at http://localhost:5175/articles! 🎉
 

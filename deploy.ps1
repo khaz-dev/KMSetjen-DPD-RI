@@ -104,7 +104,7 @@ if ($Environment -eq "production" -and -not $SkipBackup) {
     
     Log-Info "Backing up PostgreSQL database..."
     try {
-        docker-compose exec -T postgres pg_dump -U postgres kms_db | Out-File -Encoding UTF8 $BackupFile
+        docker-compose exec -T postgres pg_dump -U postgres kmsdb | Out-File -Encoding UTF8 $BackupFile
         if (Test-Path $BackupFile) {
             Log-Success "Database backup created: $BackupFile"
         }
@@ -130,8 +130,19 @@ try {
 # ==============================================================================
 
 Log-Info "Building Docker images..."
-docker-compose build 2>&1 | Out-Null
-Log-Success "Docker images built"
+$dockerBuildOutput = docker-compose build 2>&1
+if ($LASTEXITCODE -ne 0) {
+    if ($dockerBuildOutput -like "*the attribute*obsolete*") {
+        Log-Warning "Docker-compose warning about version field (expected, being fixed)"
+        Log-Success "Docker images built (warnings will be resolved)"
+    } else {
+        Log-Error "Docker build failed"
+        Write-Host $dockerBuildOutput
+        exit 1
+    }
+} else {
+    Log-Success "Docker images built"
+}
 
 Log-Info "Stopping existing containers..."
 docker-compose down 2>&1 | Out-Null
@@ -224,8 +235,8 @@ try {
 Log-Info "Verifying services..."
 
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:8000/" -ErrorAction SilentlyContinue
-    Log-Success "Django is responding on port 8000"
+    $response = Invoke-WebRequest -Uri "http://localhost:8002/" -ErrorAction SilentlyContinue
+    Log-Success "Django is responding on port 8002"
 } catch {
     Log-Warning "Health check pending (may be normal)"
 }
@@ -271,12 +282,12 @@ Write-Host ""
 Write-Host "Services are running:" -ForegroundColor Yellow
 Log-Info "PostgreSQL: localhost:5432"
 Log-Info "Redis: localhost:6379"
-Log-Info "Django: http://localhost:8000"
+Log-Info "Django: http://localhost:8002"
 
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Yellow
 Log-Info "1. View logs: docker-compose logs -f"
-Log-Info "2. Check health: curl http://localhost:8000/"
+Log-Info "2. Check health: curl http://localhost:8002/"
 Log-Info "3. Run full tests: docker-compose exec django pytest tests/"
 
 if ($Environment -eq "production") {

@@ -7,7 +7,7 @@
 
 ## What Was Added
 
-Article cards on the articles listing page (`http://localhost:3000/articles`) now display **like count** alongside the view count and author information.
+Article cards on the articles listing page (`http://localhost:5175/articles`) now display **like count** alongside the view count and author information.
 
 ### Visual Change
 ```
@@ -213,7 +213,7 @@ ArticlesPage.js
 ## Testing Checklist
 
 ### Manual Testing Steps
-1. ✅ Navigate to `http://localhost:3000/articles`
+1. ✅ Navigate to `http://localhost:5175/articles`
 2. ✅ Verify article cards display
 3. ✅ Check likes count shows with heart icon
 4. ✅ Format: "❤️ 12 suka" (Indonesian) or "❤️ 12 likes" (English)

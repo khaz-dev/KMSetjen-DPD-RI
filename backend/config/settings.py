@@ -14,9 +14,10 @@ import logging.config
 # ENVIRONMENT SETUP
 # ============================================================================
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+# Read .env from project root (not backend directory)
+PROJECT_ROOT = BASE_DIR.parent
 env = environ.Env()
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+environ.Env.read_env(os.path.join(PROJECT_ROOT, '.env'))
 
 # ============================================================================
 # SECURITY
@@ -28,13 +29,14 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 # ============================================================================
 # DJANGO APPS
 # ============================================================================
+# IMPORTANT: apps.core must come before django.contrib.staticfiles
+# so that our custom runserver command takes precedence
 DJANGO_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
 ]
 
 THIRD_PARTY_APPS = [
@@ -45,14 +47,18 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
-    'apps.core',
+    'apps.core',  # Must come before staticfiles so runserver command is prioritized
     'apps.content',
     'apps.auth',
     'apps.audit',
     'apps.api',
 ]
 
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+DJANGO_APPS_AFTER_LOCAL = [
+    'django.contrib.staticfiles',
+]
+
+INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS + DJANGO_APPS_AFTER_LOCAL
 
 # ============================================================================
 # MIDDLEWARE
@@ -101,12 +107,17 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # ============================================================================
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'db.sqlite3',
-        'CONN_MAX_AGE': 0,  # Disable persistent connections to avoid locking
+        'ENGINE': env('DB_ENGINE', default='django.db.backends.postgresql'),
+        'NAME': env('DB_NAME', default='kmsdb'),
+        'USER': env('DB_USER', default='postgres'),
+        'PASSWORD': env('DB_PASSWORD', default='Okkdpdri2026'),
+        'HOST': env('DB_HOST', default='localhost'),
+        'PORT': env('DB_PORT', default='5432'),
+        'CONN_MAX_AGE': 0,  # Disable persistent connections
         'OPTIONS': {
-            'timeout': 20,  # Increase timeout from default 5 seconds to 20 seconds
+            'connect_timeout': 10,
         },
+        'ATOMIC_REQUESTS': True,
     }
 }
 
@@ -281,14 +292,14 @@ DEFAULT_FROM_EMAIL = env('EMAIL_HOST_USER', default='noreply@kms.example.com')
 # ============================================================================
 SSO_ENABLED = env.bool('SSO_ENABLED', default=False)
 SSO_URL = env('SSO_URL', default='https://sso.server.com')
-SSO_CALLBACK_URL = env('SSO_CALLBACK_URL', default='http://localhost:8000/api/auth/sso/callback')
+SSO_CALLBACK_URL = env('SSO_CALLBACK_URL', default='http://localhost:8002/api/auth/sso/callback')
 
 # ============================================================================
 # GOOGLE OAUTH CONFIGURATION
 # ============================================================================
 GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID', default='')
 GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET', default='')
-GOOGLE_REDIRECT_URI = env('GOOGLE_REDIRECT_URI', default='http://localhost:3000/google/callback')
+GOOGLE_REDIRECT_URI = env('GOOGLE_REDIRECT_URI', default='http://localhost:5175/google/callback')
 
 # ============================================================================
 # GOOGLE RECAPTCHA CONFIGURATION
@@ -395,7 +406,7 @@ FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
 # CORS Configuration (Origin-based Access Control)
 CORS_ALLOWED_ORIGINS = env.list(
     'CORS_ALLOWED_ORIGINS',
-    default=['http://localhost:3000', 'http://localhost:5173']
+    default=['http://localhost:5175', 'http://localhost:5175']
 )
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [

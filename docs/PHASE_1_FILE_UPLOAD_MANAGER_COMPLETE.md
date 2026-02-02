@@ -10,7 +10,7 @@
 
 ### 1. ✅ Frontend File Manager UI
 
-**Location:** `http://localhost:3000/editor` → "File Attachments" section (appears after article saved)
+**Location:** `http://localhost:5175/editor` → "File Attachments" section (appears after article saved)
 
 **Features:**
 - File upload input with visual feedback
@@ -110,7 +110,7 @@ const [fileUploading, setFileUploading] = useState(false);
 
 ### For End Users:
 
-1. **Create/Edit Article** at `http://localhost:3000/editor`
+1. **Create/Edit Article** at `http://localhost:5175/editor`
 2. **Save Article** as draft (this generates article ID)
 3. **Scroll to "File Attachments"** section (now visible after save)
 4. **Click upload zone** to browse files OR drag-drop files
@@ -343,7 +343,7 @@ Frontend
 
 Phase 1 implementation is **COMPLETE on the frontend**. The file manager is fully functional and ready to use once backend API endpoints are verified/created.
 
-**Ready to test:** `http://localhost:3000/editor`
+**Ready to test:** `http://localhost:5175/editor`
 
 **Expected Behavior:**
 1. Save article as draft → ID generated

@@ -241,7 +241,7 @@ cd backend && python manage.py runserver &
 cd frontend && npm start &
 
 # 5. Test (1 min)
-# Visit: http://localhost:3000/login
+# Visit: http://localhost:5175/login
 # See: "Masuk dengan Google" button ✅
 ```
 
@@ -272,7 +272,7 @@ cd frontend && npm start &
 - [ ] Add GOOGLE_CLIENT_SECRET
 - [ ] Restart backend (python manage.py runserver)
 - [ ] Restart frontend (npm start)
-- [ ] Go to http://localhost:3000/login
+- [ ] Go to http://localhost:5175/login
 - [ ] See "Masuk dengan Google" button
 - [ ] Click and test with Google account
 

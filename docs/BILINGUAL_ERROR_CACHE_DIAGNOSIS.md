@@ -109,7 +109,7 @@ npm start
 ### **Step 6: Test in new incognito window**
 ```
 Open incognito/private window
-Go to http://localhost:3000/editor
+Go to http://localhost:5175/editor
 ```
 
 ---

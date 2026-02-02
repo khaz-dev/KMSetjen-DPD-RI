@@ -47,7 +47,7 @@ def google_callback(request):
     {
         "code": "authorization_code_from_google",
         "state": "csrf_state_token",
-        "redirect_uri": "http://localhost:3000/google/callback"
+        "redirect_uri": "http://localhost:5175/google/callback"
     }
     
     Response:
@@ -260,7 +260,7 @@ from decouple import config
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = config('GOOGLE_CLIENT_SECRET', '')
-GOOGLE_REDIRECT_URI = config('GOOGLE_REDIRECT_URI', 'http://localhost:3000/google/callback')
+GOOGLE_REDIRECT_URI = config('GOOGLE_REDIRECT_URI', 'http://localhost:5175/google/callback')
 """
 
 
@@ -274,7 +274,7 @@ Add these lines to backend/.env:
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID_HERE
 GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_CLIENT_SECRET_HERE
-GOOGLE_REDIRECT_URI=http://localhost:3000/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:5175/google/callback
 
 Replace YOUR_GOOGLE_CLIENT_ID_HERE and YOUR_GOOGLE_CLIENT_SECRET_HERE with 
 credentials from Google Cloud Console.
@@ -301,16 +301,16 @@ This package is needed to make HTTP requests to Google OAuth endpoints.
 """
 Test the endpoint with curl:
 
-curl -X POST http://localhost:8000/api/auth/google/callback/ \\
+curl -X POST http://localhost:8002/api/auth/google/callback/ \\
   -H "Content-Type: application/json" \\
   -d '{
     "code": "TEST_AUTHORIZATION_CODE",
     "state": "TEST_STATE_TOKEN",
-    "redirect_uri": "http://localhost:3000/google/callback"
+    "redirect_uri": "http://localhost:5175/google/callback"
   }'
 
 Or test via the frontend by:
-1. Going to http://localhost:3000/login
+1. Going to http://localhost:5175/login
 2. Setting REACT_APP_GOOGLE_CLIENT_ID in frontend/.env.local
 3. Clicking "Masuk dengan Google"
 4. Completing the Google login flow

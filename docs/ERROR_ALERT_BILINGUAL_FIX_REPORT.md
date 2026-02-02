@@ -2,7 +2,7 @@
 
 ## Problem Summary
 
-**Issue:** On http://localhost:3000/editor, error alerts were showing `{error}` without any explanation instead of displaying the actual error message.
+**Issue:** On http://localhost:5175/editor, error alerts were showing `{error}` without any explanation instead of displaying the actual error message.
 
 **Root Cause:** i18next interpolation syntax error. Translation strings were using single braces `{error}` instead of double braces `{{error}}` required by i18next.
 
@@ -189,7 +189,7 @@ t('message', { name: 'John' })
 ## Testing the Fix
 
 ### Test Case 1: Network Error While Saving
-1. Go to http://localhost:3000/editor
+1. Go to http://localhost:5175/editor
 2. Create an article with title, content, category
 3. Disconnect internet or stop backend server
 4. Click "Save Draft"
@@ -206,7 +206,7 @@ t('message', { name: 'John' })
 7. **Should work in:** English and Indonesian
 
 ### Test Case 3: Missing Required Fields
-1. Go to http://localhost:3000/editor
+1. Go to http://localhost:5175/editor
 2. Leave title empty
 3. Click "Submit for Review"
 4. **Expected:** Error shows "Please fill in title, content, and category"

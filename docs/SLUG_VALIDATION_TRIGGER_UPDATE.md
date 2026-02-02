@@ -136,7 +136,7 @@ The `.slug-validation-message` class in `ArticleEditorPage.css` already handles:
 
 ## Testing Checklist
 
-In http://localhost:3000/editor:
+In http://localhost:5175/editor:
 
 - [ ] **Edit slug directly** - Type in slug field, watch validation trigger
 - [ ] **Check badge progression** - Badge shows "Checking..." during API call

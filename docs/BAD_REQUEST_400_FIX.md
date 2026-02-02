@@ -10,7 +10,7 @@
 
 When clicking "Save Draft" or "Preview" in the article editor, users got:
 ```
-POST http://localhost:8000/api/v1/internal/articles/ 400 (Bad Request)
+POST http://localhost:8002/api/v1/internal/articles/ 400 (Bad Request)
 Save draft error: Error: save_draft_failed
 ```
 
@@ -229,7 +229,7 @@ Added similar bilingual validation to `InternalArticleUpdateSerializer` to ensur
 
 3. **Navigate to editor:**
    ```
-   http://localhost:3000/editor
+   http://localhost:5175/editor
    ```
 
 4. **Test Save Draft (should work now):**

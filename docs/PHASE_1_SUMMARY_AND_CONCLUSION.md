@@ -187,7 +187,7 @@ formatFileSize(bytes)    // Convert bytes to human-readable
 - [x] Translations complete
 
 ### Ready to Test
-✅ Go to `http://localhost:3000/editor`  
+✅ Go to `http://localhost:5175/editor`  
 ✅ Create/edit article  
 ✅ Click "Save Draft"  
 ✅ Scroll to "File Attachments"  

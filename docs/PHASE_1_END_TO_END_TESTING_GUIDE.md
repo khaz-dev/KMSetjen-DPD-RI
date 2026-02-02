@@ -28,7 +28,7 @@ cd backend
 python manage.py runserver
 
 # Expected output:
-# Starting development server at http://127.0.0.1:8000/
+# Starting development server at http://127.0.0.1:8002/
 # Quit the server with CONTROL-C
 ```
 
@@ -43,13 +43,13 @@ npm start
 
 # Expected output:
 # Compiled successfully!
-# On Your Network: http://xxx.xxx.x.xxx:3000
+# On Your Network: http://xxx.xxx.x.xxx:5175
 ```
 
 ### Step 3: Open Browser
 
 ```
-Go to: http://localhost:3000/editor
+Go to: http://localhost:5175/editor
 ```
 
 ---
@@ -59,7 +59,7 @@ Go to: http://localhost:3000/editor
 ### Test 1: Create Article
 
 ```
-[ ] Navigate to http://localhost:3000/editor
+[ ] Navigate to http://localhost:5175/editor
 [ ] Fill in Title (English)
 [ ] Fill in Title (Indonesian) 
 [ ] Select Category
@@ -567,7 +567,7 @@ Everything is now implemented and ready for testing.
 **Start here:**
 1. Start backend: `python manage.py runserver`
 2. Start frontend: `npm start`
-3. Go to: `http://localhost:3000/editor`
+3. Go to: `http://localhost:5175/editor`
 4. Follow the testing checklist above
 5. Report any issues found
 

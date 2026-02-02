@@ -22,7 +22,7 @@ Comprehensive project-wide update of organizational contact information across a
 | Email (Support) | `support@dpdri.go.id` | `support@dpd.go.id` |
 | Email (Security) | `security@dpdri.go.id` | `security@dpd.go.id` |
 | Email (Privacy) | `privacy@dpdri.go.id` | `privacy@dpd.go.id` |
-| Phone | `+62-21-3868-3000` | `+62-81-3948-4805` |
+| Phone | `+62-21-3868-5175` | `+62-81-3948-4805` |
 | API Base URL | `https://api.kms.dpdri.go.id` | `https://api.kms.dpd.go.id` |
 
 ---
@@ -86,7 +86,7 @@ Comprehensive project-wide update of organizational contact information across a
 ## Verification Results
 
 ### Search Verification - Old Contact Information
-- **Query:** `dpdri\.go\.id|info@dpdri|21-3868-3000`
+- **Query:** `dpdri\.go\.id|info@dpdri|21-3868-5175`
 - **Result:** ✅ No matches found (all old information removed)
 
 ### Search Verification - New Contact Information
@@ -155,7 +155,7 @@ Website: "https://dpdri.go.id"
 Email (Primary): "info@dpdri.go.id"
 Email (Support): "support@dpdri.go.id"
 Email (Security): "security@dpdri.go.id"
-Phone: "+62-21-3868-3000"
+Phone: "+62-21-3868-5175"
 API URL: "https://api.kms.dpdri.go.id/v1"
 ```
 

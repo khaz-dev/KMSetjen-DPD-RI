@@ -331,25 +331,25 @@ Estimated: 1-2 sessions
 cd frontend
 npm install
 npm start
-# Runs on http://localhost:3000
+# Runs on http://localhost:5175
 
 # Terminal 2 - Backend
 cd backend
 python manage.py runserver
-# Runs on http://localhost:8000
+# Runs on http://localhost:8002
 ```
 
 ### Environment Setup
 Create `.env` in frontend folder:
 ```
-REACT_APP_API_BASE_URL=http://localhost:8000/api
+REACT_APP_API_BASE_URL=http://localhost:8002/api
 REACT_APP_API_TIMEOUT=10000
 ```
 
 ### Create Article
 ```
-1. Login at http://localhost:3000/login
-2. Go to http://localhost:3000/editor
+1. Login at http://localhost:5175/login
+2. Go to http://localhost:5175/editor
 3. Fill form and click "Save as Draft"
 4. Click "Submit for Review"
 ```
@@ -357,7 +357,7 @@ REACT_APP_API_TIMEOUT=10000
 ### Review Articles
 ```
 1. Login as editor
-2. Go to http://localhost:3000/editor-dashboard
+2. Go to http://localhost:5175/editor-dashboard
 3. Click "Pending Review" tab
 4. Click article and approve/reject
 ```

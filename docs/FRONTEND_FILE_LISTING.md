@@ -546,7 +546,7 @@ App
 Create `.env` file in frontend directory:
 
 ```env
-REACT_APP_API_BASE_URL=http://localhost:8000/api
+REACT_APP_API_BASE_URL=http://localhost:8002/api
 REACT_APP_API_TIMEOUT=10000
 ```
 
@@ -557,7 +557,7 @@ REACT_APP_API_TIMEOUT=10000
 ### Development
 ```bash
 npm start
-# Runs on http://localhost:3000
+# Runs on http://localhost:5175
 # Hot reload enabled
 ```
 

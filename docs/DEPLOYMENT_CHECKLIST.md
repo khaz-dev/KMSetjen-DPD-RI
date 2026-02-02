@@ -135,7 +135,7 @@ npm run build
 ```bash
 npm install -g serve
 serve -s build
-# Open http://localhost:3000
+# Open http://localhost:5175
 ```
 - [ ] All pages load
 - [ ] Language switching works

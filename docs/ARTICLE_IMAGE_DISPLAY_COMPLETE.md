@@ -238,7 +238,7 @@ Backend                               Frontend
 ## Testing Instructions
 
 1. **Navigate to Dashboard**
-   - Go to: `http://localhost:3000/dashboard`
+   - Go to: `http://localhost:5175/dashboard`
    - Expected: Articles with images display 100px×80px thumbnails
    - Expected: Articles without images show 📄 placeholder
 
@@ -279,4 +279,4 @@ Backend                               Frontend
 
 **Implementation Date:** January 14, 2026  
 **Status:** ✅ Complete and Ready for Production  
-**Tested:** Local development (localhost:3000)
+**Tested:** Local development (localhost:5175)

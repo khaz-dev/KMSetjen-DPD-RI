@@ -48,7 +48,7 @@
 | **Frontend Library** | React OAuth 2.0 | Custom implementation | `googleService.js` |
 | **Backend Framework** | Django REST | Framework | `rest_framework` |
 | **Token Type** | JWT (JSON Web Token) | Security | `djangorestframework-simplejwt` |
-| **Redirect URI** | `http://localhost:3000/google/callback` | URL | Code + Console |
+| **Redirect URI** | `http://localhost:5175/google/callback` | URL | Code + Console |
 | **Scopes** | `profile email openid` | Permissions | Code |
 | **CSRF Protection** | State parameter | Security | `googleService.js` |
 | **Client Secret** | Backend only | Security | `backend/.env` |
@@ -99,7 +99,7 @@ Action: MUST BE ROTATED (being done now)
    - Google asks for permission
 
 4. **Frontend Callback**
-   - Google redirects back to: `http://localhost:3000/google/callback?code=...&state=...`
+   - Google redirects back to: `http://localhost:5175/google/callback?code=...&state=...`
    - Frontend extracts authorization code
    - Frontend verifies CSRF state
    - Frontend sends code to backend
@@ -147,14 +147,14 @@ REACT_APP_GOOGLE_CLIENT_ID=123456789-abc.apps.googleusercontent.com
 ```python
 GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID', default='')
 GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET', default='')
-GOOGLE_REDIRECT_URI = env('GOOGLE_REDIRECT_URI', default='http://localhost:3000/google/callback')
+GOOGLE_REDIRECT_URI = env('GOOGLE_REDIRECT_URI', default='http://localhost:5175/google/callback')
 ```
 
 **File**: `backend/.env`
 ```
 GOOGLE_CLIENT_ID=123456789-abc.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSP_xxxxx
-GOOGLE_REDIRECT_URI=http://localhost:3000/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:5175/google/callback
 ```
 
 ---
@@ -255,8 +255,8 @@ d:\Project\KMSetjen DPD RI\
 4. **Create Credentials**
    - Type: Web application
    - Name: `KMSetjen DPD RI`
-   - Origins: `http://localhost:3000`, `http://localhost:8000`
-   - Redirect URI: `http://localhost:3000/google/callback`
+   - Origins: `http://localhost:5175`, `http://localhost:8002`
+   - Redirect URI: `http://localhost:5175/google/callback`
 
 5. **Copy Credentials**
    - Copy: Client ID
@@ -269,7 +269,7 @@ d:\Project\KMSetjen DPD RI\
 7. **Test**
    - Run: Backend `python manage.py runserver`
    - Run: Frontend `npm start`
-   - Test: Google login at `http://localhost:3000`
+   - Test: Google login at `http://localhost:5175`
 
 ### Expected Outcome
 

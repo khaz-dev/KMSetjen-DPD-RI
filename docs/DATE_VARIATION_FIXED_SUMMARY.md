@@ -10,7 +10,7 @@
 ### Problem
 When viewing articles sorted by "Terbaru" (Newest) or "Tertua" (Oldest) at:
 ```
-http://localhost:3000/articles?sort=date&page=1
+http://localhost:5175/articles?sort=date&page=1
 ```
 The first 3 articles all showed the same date: **"2 hari yang lalu"** (2 days ago)
 
@@ -69,7 +69,7 @@ Updated all articles with **more varied publication dates** using different time
 
 ### Before (❌ All Same Date)
 ```
-http://localhost:3000/articles?sort=date&page=1
+http://localhost:5175/articles?sort=date&page=1
 
 Article 1: "2 hari yang lalu"
 Article 2: "2 hari yang lalu"  ← SAME
@@ -78,7 +78,7 @@ Article 3: "2 hari yang lalu"  ← SAME
 
 ### After (✅ All Different Dates)
 ```
-http://localhost:3000/articles?sort=date&page=1
+http://localhost:5175/articles?sort=date&page=1
 
 Article 1: "3 jam yang lalu"     ← DIFFERENT (3 hours)
 Article 2: "12 jam yang lalu"    ← DIFFERENT (12 hours)
@@ -146,7 +146,7 @@ Article 3: "1 hari yang lalu"    ← DIFFERENT (1 day)
 ## How to Verify
 
 ### In Frontend
-1. **Go to:** http://localhost:3000/articles?sort=date&page=1
+1. **Go to:** http://localhost:5175/articles?sort=date&page=1
 2. **Select dropdown:** "Urutkan Berdasarkan"
 3. **Choose:** "Terbaru" (Newest)
 4. **Observe:**
@@ -182,5 +182,5 @@ Article 3: "1 hari yang lalu"    ← DIFFERENT (1 day)
 - Shows "3 jam yang lalu", "12 jam yang lalu", "1 hari yang lalu", etc.
 - No more duplicates
 
-**Ready to test at:** http://localhost:3000/articles?sort=date&page=1 ✅
+**Ready to test at:** http://localhost:5175/articles?sort=date&page=1 ✅
 

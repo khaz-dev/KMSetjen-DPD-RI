@@ -52,7 +52,7 @@ read-only access to articles, categories, and tags.
 
 Example:
 ```bash
-curl "http://localhost:8000/api/v1/public/articles/?search=government&category=1&ordering=-published_at"
+curl "http://localhost:8002/api/v1/public/articles/?search=government&category=1&ordering=-published_at"
 ```
 
 **GET /api/v1/public/articles/{id}/**
@@ -64,7 +64,7 @@ curl "http://localhost:8000/api/v1/public/articles/?search=government&category=1
 
 Example:
 ```bash
-curl "http://localhost:8000/api/v1/public/articles/1/"
+curl "http://localhost:8002/api/v1/public/articles/1/"
 ```
 
 **GET /api/v1/public/articles/trending/**
@@ -75,7 +75,7 @@ curl "http://localhost:8000/api/v1/public/articles/1/"
 
 Example:
 ```bash
-curl "http://localhost:8000/api/v1/public/articles/trending/"
+curl "http://localhost:8002/api/v1/public/articles/trending/"
 ```
 
 **GET /api/v1/public/articles/latest/**
@@ -86,7 +86,7 @@ curl "http://localhost:8000/api/v1/public/articles/trending/"
 
 Example:
 ```bash
-curl "http://localhost:8000/api/v1/public/articles/latest/"
+curl "http://localhost:8002/api/v1/public/articles/latest/"
 ```
 
 **POST /api/v1/public/articles/{id}/view/**
@@ -99,7 +99,7 @@ curl "http://localhost:8000/api/v1/public/articles/latest/"
 
 Example:
 ```bash
-curl -X POST "http://localhost:8000/api/v1/public/articles/1/view/"
+curl -X POST "http://localhost:8002/api/v1/public/articles/1/view/"
 ```
 
 ### Categories Endpoints
@@ -112,7 +112,7 @@ curl -X POST "http://localhost:8000/api/v1/public/articles/1/view/"
 
 Example:
 ```bash
-curl "http://localhost:8000/api/v1/public/categories/?search=policy"
+curl "http://localhost:8002/api/v1/public/categories/?search=policy"
 ```
 
 **GET /api/v1/public/categories/{id}/**
@@ -123,7 +123,7 @@ curl "http://localhost:8000/api/v1/public/categories/?search=policy"
 
 Example:
 ```bash
-curl "http://localhost:8000/api/v1/public/categories/1/"
+curl "http://localhost:8002/api/v1/public/categories/1/"
 ```
 
 ### Tags Endpoints
@@ -136,7 +136,7 @@ curl "http://localhost:8000/api/v1/public/categories/1/"
 
 Example:
 ```bash
-curl "http://localhost:8000/api/v1/public/tags/?ordering=-usage_count"
+curl "http://localhost:8002/api/v1/public/tags/?ordering=-usage_count"
 ```
 
 **GET /api/v1/public/tags/{id}/**
@@ -146,7 +146,7 @@ curl "http://localhost:8000/api/v1/public/tags/?ordering=-usage_count"
 
 Example:
 ```bash
-curl "http://localhost:8000/api/v1/public/tags/1/"
+curl "http://localhost:8002/api/v1/public/tags/1/"
 ```
 
 **GET /api/v1/public/tags/{id}/articles/**
@@ -157,7 +157,7 @@ curl "http://localhost:8000/api/v1/public/tags/1/"
 
 Example:
 ```bash
-curl "http://localhost:8000/api/v1/public/tags/1/articles/"
+curl "http://localhost:8002/api/v1/public/tags/1/articles/"
 ```
 
 ## Features Implemented
@@ -205,38 +205,38 @@ curl "http://localhost:8000/api/v1/public/tags/1/articles/"
 
 **Search for articles about "regulation"**
 ```bash
-curl "http://localhost:8000/api/v1/public/articles/?search=regulation"
+curl "http://localhost:8002/api/v1/public/articles/?search=regulation"
 ```
 
 **Get articles from category 1, sorted by newest**
 ```bash
-curl "http://localhost:8000/api/v1/public/articles/?category=1&ordering=-published_at"
+curl "http://localhost:8002/api/v1/public/articles/?category=1&ordering=-published_at"
 ```
 
 **Get articles with tags 1 or 2**
 ```bash
-curl "http://localhost:8000/api/v1/public/articles/?tags=1&tags=2"
+curl "http://localhost:8002/api/v1/public/articles/?tags=1&tags=2"
 ```
 
 **Get articles published in last month**
 ```bash
-curl "http://localhost:8000/api/v1/public/articles/?published_after=2026-01-01"
+curl "http://localhost:8002/api/v1/public/articles/?published_after=2026-01-01"
 ```
 
 **Get trending articles**
 ```bash
-curl "http://localhost:8000/api/v1/public/articles/trending/?page=1&page_size=20"
+curl "http://localhost:8002/api/v1/public/articles/trending/?page=1&page_size=20"
 ```
 
 **Get specific article and increment view**
 ```bash
-curl "http://localhost:8000/api/v1/public/articles/1/"
-curl -X POST "http://localhost:8000/api/v1/public/articles/1/view/"
+curl "http://localhost:8002/api/v1/public/articles/1/"
+curl -X POST "http://localhost:8002/api/v1/public/articles/1/view/"
 ```
 
 **Get all tags and filter by popular**
 ```bash
-curl "http://localhost:8000/api/v1/public/tags/?popular=true"
+curl "http://localhost:8002/api/v1/public/tags/?popular=true"
 ```
 
 ## Response Format
@@ -245,7 +245,7 @@ curl "http://localhost:8000/api/v1/public/tags/?popular=true"
 ```json
 {
   "count": 42,
-  "next": "http://localhost:8000/api/v1/public/articles/?page=2",
+  "next": "http://localhost:8002/api/v1/public/articles/?page=2",
   "previous": null,
   "results": [
     {
@@ -323,7 +323,7 @@ curl "http://localhost:8000/api/v1/public/tags/?popular=true"
     {
       "id": 1,
       "original_filename": "document.pdf",
-      "file": "http://localhost:8000/media/articles/2026/01/document.pdf",
+      "file": "http://localhost:8002/media/articles/2026/01/document.pdf",
       "file_size": 102400,
       "file_size_display": "100.0KB",
       "mime_type": "application/pdf",
@@ -449,15 +449,15 @@ pytest tests/api/test_public_api.py -v
 ```
 
 **Access API in browser:**
-- http://localhost:8000/api/v1/public/articles/
-- http://localhost:8000/api/v1/public/categories/
-- http://localhost:8000/api/v1/public/tags/
+- http://localhost:8002/api/v1/public/articles/
+- http://localhost:8002/api/v1/public/categories/
+- http://localhost:8002/api/v1/public/tags/
 
 **Test with curl:**
 ```bash
-curl "http://localhost:8000/api/v1/public/articles/?page=1"
-curl "http://localhost:8000/api/v1/public/articles/1/"
-curl -X POST "http://localhost:8000/api/v1/public/articles/1/view/"
+curl "http://localhost:8002/api/v1/public/articles/?page=1"
+curl "http://localhost:8002/api/v1/public/articles/1/"
+curl -X POST "http://localhost:8002/api/v1/public/articles/1/view/"
 ```
 
 ---

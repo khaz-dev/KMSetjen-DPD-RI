@@ -124,7 +124,7 @@ Body:
 ## Configuration
 
 ### Frontend
-- **API Base URL:** `http://localhost:8000/api` (from `.env.local`)
+- **API Base URL:** `http://localhost:8002/api` (from `.env.local`)
 - **Endpoint Path:** `/v1/public/contact/send-email/`
 
 ### Backend
@@ -180,7 +180,7 @@ EMAIL_HOST_PASSWORD=your-app-password
 
 ### Test the Contact Form
 
-1. **Visit:** `http://localhost:3000/contact`
+1. **Visit:** `http://localhost:5175/contact`
 
 2. **Fill Form:**
    - Name: Your Name
@@ -201,7 +201,7 @@ EMAIL_HOST_PASSWORD=your-app-password
 
 Run API directly:
 ```bash
-curl -X POST http://localhost:8000/api/v1/public/contact/send-email/ \
+curl -X POST http://localhost:8002/api/v1/public/contact/send-email/ \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Test User",

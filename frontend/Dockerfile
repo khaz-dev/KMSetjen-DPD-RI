@@ -1,48 +1,47 @@
 # ==============================================================================
-# Multi-stage Dockerfile for React Frontend
+# Multi-stage Dockerfile for React Frontend (Vite)
 # ==============================================================================
 # Stage 1: Build
-FROM node:18-alpine as builder
+FROM node:20-alpine as builder
 
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --legacy-peer-deps
+# Install dependencies (use npm install if no lock file, otherwise npm ci for reproducible builds)
+RUN if [ -f package-lock.json ]; then npm ci --legacy-peer-deps; else npm install --legacy-peer-deps; fi
 
 # Copy source code
 COPY . .
 
-# Build application
+# Build application with Vite (outputs to dist/)
 RUN npm run build
 
 # ==============================================================================
 # Stage 2: Runtime
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
 # Install serve to run the app
 RUN npm install -g serve
 
-# Copy built application from builder
-COPY --from=builder /app/build ./build
+# Copy built application from builder (Vite outputs to dist/)
+COPY --from=builder /app/dist ./dist
 
-# Create non-root user for security
-RUN addgroup -g 1000 node && \
-    adduser -D -u 1000 -G node node && \
-    chown -R node:node /app
+# Node:20-alpine already has a 'node' user, just use it
+# Ensure proper permissions
+RUN chown -R node:node /app
 
 USER node
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost:3000/ || exit 1
+    CMD wget --quiet --tries=1 --spider http://localhost:5175/ || exit 1
 
 # Expose port
-EXPOSE 3000
+EXPOSE 5175
 
-# Start application
-CMD ["serve", "-s", "build", "-l", "3000"]
+# Start application from dist/ directory (Vite output)
+CMD ["serve", "-s", "dist", "-l", "5175"]

@@ -460,13 +460,13 @@ Overall Completion            ██████████░░ 62.5%
 cd frontend
 npm install
 npm start
-# Opens http://localhost:3000
+# Opens http://localhost:5175
 ```
 
 ### Environment Setup
 ```bash
 # Create .env file
-REACT_APP_API_BASE_URL=http://localhost:8000/api
+REACT_APP_API_BASE_URL=http://localhost:8002/api
 REACT_APP_API_TIMEOUT=10000
 ```
 

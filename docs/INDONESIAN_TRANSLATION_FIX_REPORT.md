@@ -237,7 +237,7 @@ The ArticleEditorPage uses these translation keys throughout:
 
 ## Expected Behavior After Fixes
 
-When user navigates to `http://localhost:3000/editor`:
+When user navigates to `http://localhost:5175/editor`:
 
 **In English:**
 - Title: "New Article" or "Edit Article"

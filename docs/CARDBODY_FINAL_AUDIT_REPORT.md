@@ -1,7 +1,7 @@
 ## 🔍 Complete Card-Body Deep Scan - Final Report
 
 ### Question
-**User:** "On http://localhost:3000/articles/6 in card-body - is it using real data or just static data? Please do deep and thorough scan to find the culprit then fix it"
+**User:** "On http://localhost:5175/articles/6 in card-body - is it using real data or just static data? Please do deep and thorough scan to find the culprit then fix it"
 
 ---
 

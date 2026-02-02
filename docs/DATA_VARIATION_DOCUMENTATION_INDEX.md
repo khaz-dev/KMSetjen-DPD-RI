@@ -209,7 +209,7 @@
 ## Common Questions
 
 ### Q: Do I need to do anything?
-**A:** No! The database is already updated. Just refresh your browser and visit http://localhost:3000/articles
+**A:** No! The database is already updated. Just refresh your browser and visit http://localhost:5175/articles
 
 ### Q: How do I know it's working?
 **A:** Follow the [QUICK_TEST_GUIDE.md](QUICK_TEST_GUIDE.md) - you'll see articles reorder with different metrics.
@@ -228,7 +228,7 @@
 
 ## Next Steps
 
-1. **Open browser** → http://localhost:3000/articles
+1. **Open browser** → http://localhost:5175/articles
 2. **Refresh page** → Ctrl+Shift+R (hard refresh)
 3. **Try sort options** → Click dropdown, select each option
 4. **Observe changes** → Articles reorder, metrics highlight
@@ -257,5 +257,5 @@ If you have questions:
 
 **The sorting feature is now visually obvious and testable!** 🎉
 
-Visit http://localhost:3000/articles to see it in action.
+Visit http://localhost:5175/articles to see it in action.
 

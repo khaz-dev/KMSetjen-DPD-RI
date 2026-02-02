@@ -381,7 +381,7 @@ DashboardPage loads successfully ✓
 
 ### Quick Test (5 minutes):
 
-1. Go to http://localhost:3769 (or 3000)
+1. Go to http://localhost:3769 (or 5175)
 2. Click "Masuk dengan Google"
 3. Log in with your Google account
 4. Verify:

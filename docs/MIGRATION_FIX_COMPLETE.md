@@ -54,10 +54,10 @@ Result: Article model fields: ['like_count']
 
 ### Step 6: Started Server ✅
 ```bash
-Command: python manage.py runserver 0.0.0.0:8000
+Command: python manage.py runserver 0.0.0.0:8002
 Result: 
   - INFO: System check identified no issues (0 silenced)
-  - Starting development server at http://0.0.0.0:8000/
+  - Starting development server at http://0.0.0.0:8002/
   - NO ERRORS
 ```
 
@@ -96,7 +96,7 @@ ERROR: Server could not start
 ```
 INFO: System check identified no issues (0 silenced)
 INFO: Django version 4.2.7
-INFO: Starting development server at http://0.0.0.0:8000/
+INFO: Starting development server at http://0.0.0.0:8002/
 ✓ Server running without errors
 ✓ Database column exists
 ✓ Model field accessible
@@ -114,7 +114,7 @@ The system is now ready:
 4. ✅ Sort by likes feature fully functional
 
 ### Test the Feature
-1. Navigate to `http://localhost:3000/articles`
+1. Navigate to `http://localhost:5175/articles`
 2. Select "Paling Banyak Disukai" from sort dropdown
 3. Verify articles load without errors
 4. API request should include `ordering=-like_count`

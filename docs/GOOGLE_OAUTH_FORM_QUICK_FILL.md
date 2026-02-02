@@ -28,22 +28,22 @@ KMSetjen-DPD-RI
 
 #### Origin 1
 ```
-http://localhost:3000
+http://localhost:5175
 ```
 
 #### Origin 2
 ```
-http://localhost:8000
+http://localhost:8002
 ```
 
 #### Origin 3
 ```
-http://127.0.0.1:3000
+http://127.0.0.1:5175
 ```
 
 #### Origin 4
 ```
-http://127.0.0.1:8000
+http://127.0.0.1:8002
 ```
 
 ---
@@ -54,12 +54,12 @@ http://127.0.0.1:8000
 
 #### Redirect 1
 ```
-http://localhost:3000/google/callback
+http://localhost:5175/google/callback
 ```
 
 #### Redirect 2
 ```
-http://127.0.0.1:3000/google/callback
+http://127.0.0.1:5175/google/callback
 ```
 
 ---
@@ -71,14 +71,14 @@ Application Type:  Web application ✅
 Name:             KMSetjen-DPD-RI ✅
 
 JavaScript Origins:
-  1. http://localhost:3000
-  2. http://localhost:8000
-  3. http://127.0.0.1:3000
-  4. http://127.0.0.1:8000
+  1. http://localhost:5175
+  2. http://localhost:8002
+  3. http://127.0.0.1:5175
+  4. http://127.0.0.1:8002
 
 Redirect URIs:
-  1. http://localhost:3000/google/callback
-  2. http://127.0.0.1:3000/google/callback
+  1. http://localhost:5175/google/callback
+  2. http://127.0.0.1:5175/google/callback
 ```
 
 ---
@@ -88,7 +88,7 @@ Redirect URIs:
 - ❌ NO HTTPS for localhost (use http://)
 - ❌ NO trailing slashes (callback not callback/)
 - ❌ Don't include example text
-- ❌ Include ALL ports (3000, 8000)
+- ❌ Include ALL ports (5175, 8002)
 - ✅ Use BOTH localhost and 127.0.0.1
 
 ---
@@ -108,4 +108,4 @@ Redirect URIs:
 - Client ID (copy to backend/.env and frontend/.env.local)
 - Client Secret (copy to backend/.env only)
 
-**Then test login at: http://localhost:3000**
+**Then test login at: http://localhost:5175**

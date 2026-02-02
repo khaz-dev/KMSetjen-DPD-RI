@@ -144,7 +144,7 @@ import TermsPage from './pages/TermsPage';
 #### Contact Page
 - Contact Information:
   - Email: info@dpdri.go.id
-  - Phone: +62-21-3868-3000
+  - Phone: +62-21-3868-5175
   - Address: Jakarta, Indonesia
 - Contact Form:
   - Name field
@@ -224,16 +224,16 @@ import TermsPage from './pages/TermsPage';
 
 ### Route Testing
 ```
-GET http://localhost:3000/about
+GET http://localhost:5175/about
 ✅ Returns AboutPage component (no 404)
 
-GET http://localhost:3000/contact
+GET http://localhost:5175/contact
 ✅ Returns ContactPage component (no 404)
 
-GET http://localhost:3000/privacy
+GET http://localhost:5175/privacy
 ✅ Returns PrivacyPage component (no 404)
 
-GET http://localhost:3000/terms
+GET http://localhost:5175/terms
 ✅ Returns TermsPage component (no 404)
 ```
 
