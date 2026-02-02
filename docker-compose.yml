@@ -44,7 +44,7 @@ services:
       # Django Settings
       DEBUG: ${DEBUG:-True}
       SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,django}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,django,kms.dpd.go.id}
       
       # Database Configuration (uses local PostgreSQL on host machine)
       DB_ENGINE: django.db.backends.postgresql
@@ -52,16 +52,23 @@ services:
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-Okkdpdri2026}
       DB_HOST: ${DB_HOST:-host.docker.internal}
-      DB_PORT: 5432
+      DB_PORT: ${DB_PORT:-5432}
       
       # Redis Configuration
       REDIS_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis123}
+      CACHE_BACKEND: ${CACHE_BACKEND:-django_redis.cache.RedisCache}
+      CACHE_LOCATION: ${CACHE_LOCATION:-redis://:${REDIS_PASSWORD:-redis123}@redis:6379/0}
       CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/1
       CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-redis123}@redis:6379/2
       
       # CORS & Security
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5175,http://localhost:5175}
-      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-localhost,127.0.0.1}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5175,https://kms.dpd.go.id}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-localhost,127.0.0.1,kms.dpd.go.id}
+      SECURE_SSL_REDIRECT: ${SECURE_SSL_REDIRECT:-True}
+      DISABLE_SSL_REDIRECT: ${DISABLE_SSL_REDIRECT:-False}
       
       # Email Configuration
       EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
@@ -73,19 +80,33 @@ services:
       # JWT
       JWT_ACCESS_TOKEN_LIFETIME_HOURS: 1
       JWT_REFRESH_TOKEN_LIFETIME_DAYS: 7
+      JWT_ALGORITHM: HS256
       
       # Google OAuth Configuration
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:5175/google/callback}
+
+      # SSO Configuration
+      SSO_ENABLED: ${SSO_ENABLED:-False}
+      SSO_URL: ${SSO_URL:-https://sso.server.com}
+      SSO_CALLBACK_URL: ${SSO_CALLBACK_URL:-http://localhost:5175/api/auth/sso/callback}
+
+      RECAPTCHA_SITE_KEY: ${RECAPTCHA_SITE_KEY:-}
+      RECAPTCHA_SECRET_KEY: ${RECAPTCHA_SECRET_KEY:-}
+      ENABLE_CAPTCHA: ${ENABLE_CAPTCHA:-True}
+
+      MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE:-2621440}
+      ALLOWED_FILE_EXTENSIONS: ${ALLOWED_FILE_EXTENSIONS:-.jpg,.jpeg,.png,.pdf,.docx,.xlsx}
       
       # Logging
       LOG_LEVEL: INFO
+      LOG_FILE_PATH: /app/logs/django.log
     volumes:
       - ./backend:/app
-      - django_static:/app/staticfiles
-      - django_media:/app/media
-      - django_logs:/app/logs
+      - kms_django_static:/app/staticfiles
+      - kms_django_media:/app/media
+      - kms_django_logs:/app/logs
     ports:
       - "8002:8002"
     networks:
@@ -111,17 +132,18 @@ services:
       - django
     environment:
       # API configuration for docker environment
-      VITE_API_BASE_URL: http://django:8002/api
-      VITE_API_URL: http://django:8002
-      VITE_API_TIMEOUT: 10000
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://django:8002/api}
+      VITE_API_URL: ${VITE_API_URL:-http://django:8002}
+      VITE_API_TIMEOUT: ${VITE_API_TIMEOUT:-10000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5175}
       
       # SSO Configuration
-      VITE_SSO_URL: https://nusadpd.duckdns.org
-      VITE_SSO_CLIENT_ID: kms-dpd-ri
+      VITE_SSO_URL: ${VITE_SSO_URL:-https://nusadpd.duckdns.org}
+      VITE_SSO_CLIENT_ID: ${VITE_SSO_CLIENT_ID:-kms-dpd-ri}
       
       # Google OAuth
       VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
-      VITE_GOOGLE_REDIRECT_URI: http://localhost:5175/callback/google
+      VITE_GOOGLE_REDIRECT_URI: ${VITE_GOOGLE_REDIRECT_URI:-http://localhost:5175/callback/google}
       
       # reCAPTCHA
       VITE_RECAPTCHA_SITE_KEY: ${VITE_RECAPTCHA_SITE_KEY:-}
@@ -134,38 +156,17 @@ services:
       timeout: 10s
       retries: 3
 
-  # ==============================================================================
-  # Nginx Reverse Proxy (Optional - for production)
-  # ==============================================================================
-  # Uncomment this section for production-grade reverse proxy
-  # nginx:
-  #   image: nginx:alpine
-  #   container_name: kms_nginx
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   volumes:
-  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
-  #     - ./ssl:/etc/nginx/ssl:ro
-  #     - django_static:/app/staticfiles:ro
-  #     - django_media:/app/media:ro
-  #   depends_on:
-  #     - django
-  #   networks:
-  #     - kms_network
-  #   restart: unless-stopped
-
 # ==============================================================================
 # Volumes for persistent data
 # ==============================================================================
 volumes:
   redis_data:
     driver: local
-  django_static:
+  kms_django_static:
     driver: local
-  django_media:
+  kms_django_media:
     driver: local
-  django_logs:
+  kms_django_logs:
     driver: local
 
 # ==============================================================================
