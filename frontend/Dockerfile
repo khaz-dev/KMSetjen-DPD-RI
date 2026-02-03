@@ -15,6 +15,28 @@ RUN if [ -f package-lock.json ]; then npm ci --legacy-peer-deps; else npm instal
 # Copy source code
 COPY . .
 
+# Accept build arguments for Vite environment variables
+ARG VITE_API_BASE_URL
+ARG VITE_API_URL
+ARG VITE_API_TIMEOUT
+ARG FRONTEND_URL
+ARG VITE_SSO_URL
+ARG VITE_SSO_CLIENT_ID
+ARG VITE_GOOGLE_CLIENT_ID
+ARG VITE_GOOGLE_REDIRECT_URI
+ARG VITE_RECAPTCHA_SITE_KEY
+
+# Set environment variables for build
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL \
+    VITE_API_URL=$VITE_API_URL \
+    VITE_API_TIMEOUT=$VITE_API_TIMEOUT \
+    FRONTEND_URL=$FRONTEND_URL \
+    VITE_SSO_URL=$VITE_SSO_URL \
+    VITE_SSO_CLIENT_ID=$VITE_SSO_CLIENT_ID \
+    VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID \
+    VITE_GOOGLE_REDIRECT_URI=$VITE_GOOGLE_REDIRECT_URI \
+    VITE_RECAPTCHA_SITE_KEY=$VITE_RECAPTCHA_SITE_KEY
+
 # Build application with Vite (outputs to dist/)
 RUN npm run build
 

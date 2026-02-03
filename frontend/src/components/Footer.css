@@ -68,3 +68,10 @@
 .footer-dark hr {
   border-color: #333;
 }
+
+.brand-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 10;
+}

@@ -4,8 +4,8 @@
  */
 
 const SSO_PROVIDER_URL = import.meta.env.VITE_SSO_URL || 'https://nusadpd.duckdns.org';
-const SSO_CLIENT_ID = import.meta.env.VITE_SSO_CLIENT_ID || 'kms-dpd-ri';
-const REDIRECT_URI = `${window.location.origin}/sso/callback`;
+const SSO_CLIENT_ID = import.meta.env.VITE_SSO_CLIENT_ID || 'KMS';
+const REDIRECT_URI = `${window.location.origin}/dashboard`;
 
 /**
  * Get authorization URL for redirecting user to SSO provider
@@ -16,14 +16,11 @@ export const getSSOAuthorizationUrl = () => {
   sessionStorage.setItem('sso_state', state);
   
   const params = new URLSearchParams({
-    client_id: SSO_CLIENT_ID,
+    app: SSO_CLIENT_ID,
     redirect_uri: REDIRECT_URI,
-    response_type: 'code',
-    scope: 'openid profile email',
-    state: state,
   });
 
-  return `${SSO_PROVIDER_URL}/oauth/authorize?${params.toString()}`;
+  return `${SSO_PROVIDER_URL}?${params.toString()}`;
 };
 
 /**

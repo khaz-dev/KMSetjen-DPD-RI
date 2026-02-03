@@ -329,7 +329,7 @@ VITE_API_TIMEOUT=10000
 
 # Authentication
 VITE_SSO_URL=https://nusadpd.duckdns.org
-VITE_SSO_CLIENT_ID=kms-dpd-ri
+VITE_SSO_CLIENT_ID=KMS
 VITE_GOOGLE_CLIENT_ID=...
 VITE_GOOGLE_REDIRECT_URI=http://localhost:5175/callback/google
 

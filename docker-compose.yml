@@ -128,6 +128,17 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # Pass build arguments from .env to Docker build
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://django:8002/api}
+        VITE_API_URL: ${VITE_API_URL:-http://django:8002}
+        VITE_API_TIMEOUT: ${VITE_API_TIMEOUT:-10000}
+        FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5175}
+        VITE_SSO_URL: ${VITE_SSO_URL:-https://nusadpd.duckdns.org}
+        VITE_SSO_CLIENT_ID: ${VITE_SSO_CLIENT_ID:-KMS}
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+        VITE_GOOGLE_REDIRECT_URI: ${VITE_GOOGLE_REDIRECT_URI:-http://localhost:5175/callback/google}
+        VITE_RECAPTCHA_SITE_KEY: ${VITE_RECAPTCHA_SITE_KEY:-}
     container_name: kms_frontend
     ports:
       - "5175:5175"
@@ -143,7 +154,7 @@ services:
       
       # SSO Configuration
       VITE_SSO_URL: ${VITE_SSO_URL:-https://nusadpd.duckdns.org}
-      VITE_SSO_CLIENT_ID: ${VITE_SSO_CLIENT_ID:-kms-dpd-ri}
+      VITE_SSO_CLIENT_ID: ${VITE_SSO_CLIENT_ID:-KMS}
       
       # Google OAuth
       VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
