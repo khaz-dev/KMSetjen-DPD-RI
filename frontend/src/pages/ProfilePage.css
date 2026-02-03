@@ -94,6 +94,17 @@
 .nav-tabs {
   border-bottom: 2px solid var(--border-color);
   transition: border-color 0.3s ease;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap;
+  list-style: none !important;
+  padding-left: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.nav-tabs > li {
+  display: inline-block !important;
+  margin-bottom: 0 !important;
 }
 
 .nav-tabs .nav-link {

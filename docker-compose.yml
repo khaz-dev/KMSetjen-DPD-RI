@@ -6,7 +6,7 @@ services:
   # - Port: 5432
   # - Database: kmsdb
   # - User: postgres
-  # - Password: Okkdpdri2026
+  # - Password: Okkdpdri@2026
   # ==============================================================================
 
   # ==============================================================================
@@ -50,7 +50,7 @@ services:
       DB_ENGINE: django.db.backends.postgresql
       DB_NAME: ${DB_NAME:-kmsdb}
       DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-Okkdpdri2026}
+      DB_PASSWORD: ${DB_PASSWORD:-Okkdpdri@2026}
       DB_HOST: ${DB_HOST:-host.docker.internal}
       DB_PORT: ${DB_PORT:-5432}
       

@@ -10,7 +10,7 @@
 |---|-----------|--------|---------|
 | 1 | Remove SQLite completely | ✅ COMPLETE | All references removed from active code |
 | 2 | Remove Docker PostgreSQL | ✅ COMPLETE | Service removed from docker-compose.yml |
-| 3 | Configure local PostgreSQL | ✅ COMPLETE | Port 5432, kmsdb, postgres/Okkdpdri2026 |
+| 3 | Configure local PostgreSQL | ✅ COMPLETE | Port 5432, kmsdb, postgres/Okkdpdri@2026 |
 | 4 | Update docker-compose.yml | ✅ COMPLETE | PostgreSQL removed, Django updated |
 | 5 | Maintain compatibility | ✅ COMPLETE | No breaking changes to existing code |
 
@@ -41,7 +41,7 @@
 │  ✅ postgres                         │
 │                                      │
 │  Database Password                   │
-│  ✅ Okkdpdri2026                     │
+│  ✅ Okkdpdri@2026                     │
 │                                      │
 │  Configuration Source                │
 │  ✅ Environment Variables (.env)     │
@@ -215,7 +215,7 @@
 
 - [ ] PostgreSQL 12+ installed locally
 - [ ] Database `kmsdb` created
-- [ ] User `postgres` with password `Okkdpdri2026`
+- [ ] User `postgres` with password `Okkdpdri@2026`
 - [ ] Port 5432 accessible
 
 ### Installation Steps
@@ -299,7 +299,7 @@ npm run dev
 
 ### Database Connection String
 ```
-PostgreSQL://postgres:Okkdpdri2026@localhost:5432/kmsdb
+PostgreSQL://postgres:Okkdpdri@2026@localhost:5432/kmsdb
 ```
 
 ### Django Configuration
@@ -309,7 +309,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'kmsdb',
         'USER': 'postgres',
-        'PASSWORD': 'Okkdpdri2026',
+        'PASSWORD': 'Okkdpdri@2026',
         'HOST': 'localhost',
         'PORT': '5432',
     }
@@ -322,7 +322,7 @@ DB_HOST: host.docker.internal
 DB_PORT: 5432
 DB_NAME: kmsdb
 DB_USER: postgres
-DB_PASSWORD: Okkdpdri2026
+DB_PASSWORD: Okkdpdri@2026
 ```
 
 ---

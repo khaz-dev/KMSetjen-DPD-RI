@@ -17,7 +17,7 @@
 - **Port:** `5432` (reads from `.env` as `DB_PORT`)
 - **Database:** `kmsdb` (reads from `.env` as `DB_NAME`)
 - **User:** `postgres` (reads from `.env` as `DB_USER`)
-- **Password:** `Okkdpdri2026` (reads from `.env` as `DB_PASSWORD`)
+- **Password:** `Okkdpdri@2026` (reads from `.env` as `DB_PASSWORD`)
 - **Connection Options:** 
   - `CONN_MAX_AGE: 0` (no persistent connections)
   - `connect_timeout: 10` seconds
@@ -31,7 +31,7 @@ DATABASES = {
         'ENGINE': env('DB_ENGINE', default='django.db.backends.postgresql'),
         'NAME': env('DB_NAME', default='kmsdb'),
         'USER': env('DB_USER', default='postgres'),
-        'PASSWORD': env('DB_PASSWORD', default='Okkdpdri2026'),
+        'PASSWORD': env('DB_PASSWORD', default='Okkdpdri@2026'),
         'HOST': env('DB_HOST', default='localhost'),
         'PORT': env('DB_PORT', default='5432'),
         'CONN_MAX_AGE': 0,
@@ -48,7 +48,7 @@ DATABASES = {
   DB_ENGINE=django.db.backends.postgresql
   DB_NAME=kmsdb
   DB_USER=postgres
-  DB_PASSWORD=Okkdpdri2026
+  DB_PASSWORD=Okkdpdri@2026
   DB_HOST=localhost
   DB_PORT=5432
   ```
@@ -73,7 +73,7 @@ DATABASES = {
   4. ✅ Updated Django service:
      - Removed `depends_on: postgres` dependency
      - Changed `DB_HOST` from `postgres` to `host.docker.internal`
-     - Set `DB_PASSWORD` to `Okkdpdri2026`
+     - Set `DB_PASSWORD` to `Okkdpdri@2026`
   5. ✅ Kept Redis service (independent, for caching/sessions)
 
 **File Location:** [docker-compose.yml](docker-compose.yml)
@@ -96,7 +96,7 @@ services:
       # Database Configuration (uses local PostgreSQL on host machine)
       DB_ENGINE: django.db.backends.postgresql
       DB_HOST: ${DB_HOST:-host.docker.internal}  # Points to host machine
-      DB_PASSWORD: ${DB_PASSWORD:-Okkdpdri2026}
+      DB_PASSWORD: ${DB_PASSWORD:-Okkdpdri@2026}
       # ...
 ```
 
@@ -124,7 +124,7 @@ services:
 │  │        Port: 5432                                      │ │
 │  │        Database: kmsdb                                 │ │
 │  │        User: postgres                                  │ │
-│  │        Password: Okkdpdri2026                          │ │
+│  │        Password: Okkdpdri@2026                          │ │
 │  │                                                         │ │
 │  │        Status: LOCAL INSTALLATION ONLY ✅              │ │
 │  └────────────────────────────────────────────────────────┘ │
@@ -157,7 +157,7 @@ REMOVED:
 ## 4. Verification Checklist
 
 - ✅ **Settings.py** - Configured for PostgreSQL with `localhost:5432`
-- ✅ **.env file** - Contains correct credentials (`postgres/Okkdpdri2026`)
+- ✅ **.env file** - Contains correct credentials (`postgres/Okkdpdri@2026`)
 - ✅ **docker-compose.yml** - PostgreSQL service removed, Redis kept
 - ✅ **No SQLite in Python code** - Verified all `*.py` files
 - ✅ **No SQLite database files** - Project directory clean
@@ -249,7 +249,7 @@ FATAL: password authentication failed for user "postgres"
 ```
 **Solution:** Verify credentials in `.env`:
 - User: `postgres`
-- Password: `Okkdpdri2026`
+- Password: `Okkdpdri@2026`
 - Host: `localhost`
 - Port: `5432`
 
@@ -272,7 +272,7 @@ psql -U postgres -c "CREATE DATABASE kmsdb;"
 | **Backend** | Port 8002 | Port 8002 ✅ |
 | **Frontend** | Port 5175 | Port 5175 ✅ |
 | **Docker DB** | postgres:15-alpine | ❌ Removed |
-| **DB Password** | Okkdpdri2026 | Okkdpdri2026 ✅ |
+| **DB Password** | Okkdpdri@2026 | Okkdpdri@2026 ✅ |
 | **Django Config** | env() variables | env() variables ✅ |
 | **Docker Redis** | Keep | Keep ✅ |
 

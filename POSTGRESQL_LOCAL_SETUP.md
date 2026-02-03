@@ -4,7 +4,7 @@
 
 - PostgreSQL 12+ running on `localhost:5432`
 - Username: `postgres`
-- Password: `Okkdpdri2026`
+- Password: `Okkdpdri@2026`
 - Database: `kmsdb`
 
 ## 2. Before First Run
@@ -67,7 +67,7 @@ npm run dev
 DB_ENGINE=django.db.backends.postgresql
 DB_NAME=kmsdb
 DB_USER=postgres
-DB_PASSWORD=Okkdpdri2026
+DB_PASSWORD=Okkdpdri@2026
 DB_HOST=localhost
 DB_PORT=5432
 ```
@@ -80,7 +80,7 @@ DATABASES = {
         'ENGINE': env('DB_ENGINE', default='django.db.backends.postgresql'),
         'NAME': env('DB_NAME', default='kmsdb'),
         'USER': env('DB_USER', default='postgres'),
-        'PASSWORD': env('DB_PASSWORD', default='Okkdpdri2026'),
+        'PASSWORD': env('DB_PASSWORD', default='Okkdpdri@2026'),
         'HOST': env('DB_HOST', default='localhost'),
         'PORT': env('DB_PORT', default='5432'),
         'CONN_MAX_AGE': 0,

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../contexts/ThemeContext';
 import { Container, Table, Spinner, Alert, Card, Badge, Pagination, Form } from 'react-bootstrap';
 import AdminSidebar from '../components/AdminSidebar';
 import axios from 'axios';
@@ -7,6 +8,7 @@ import './ManagementPage.css';
 
 function AuditLogPage({ onLogout }) {
   const { t } = useTranslation();
+  const { isDarkMode } = useTheme();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -52,10 +54,10 @@ function AuditLogPage({ onLogout }) {
   };
 
   return (
-    <div className="admin-wrapper">
+    <div className={`admin-wrapper ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
       <AdminSidebar onLogout={onLogout} />
       <div className="admin-content">
-        <Container fluid>
+        <Container>
           <div className="admin-header">
             <div>
               <h1>Audit Logs</h1>

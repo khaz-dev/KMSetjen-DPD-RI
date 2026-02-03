@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../contexts/ThemeContext';
 import {
   Container, Table, Button, Modal, Form, Spinner, Alert,
   Pagination, Card, Badge
@@ -15,6 +16,7 @@ import './RoleManagementPage.css';
  */
 function RoleManagementPage({ onLogout }) {
   const { t } = useTranslation();
+  const { isDarkMode } = useTheme();
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -84,9 +86,9 @@ function RoleManagementPage({ onLogout }) {
       setSelectedRole(role);
       setFormData({
         code: role.code,
-        name: role.name,
-        description: role.description || '',
-        permissions: role.permissions?.map((p) => p.id) || [],
+        name: role.name_id || role.name_en || '',
+        description: (role.description_id || role.description_en || ''),
+        permissions: Array.isArray(role.permissions) ? role.permissions : [],
       });
     } else {
       setModalMode('create');
@@ -181,11 +183,11 @@ function RoleManagementPage({ onLogout }) {
   };
 
   return (
-    <div className="admin-wrapper">
+    <div className={`admin-wrapper ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
       <AdminSidebar onLogout={onLogout} />
 
       <div className="admin-content">
-        <Container fluid>
+        <Container>
           {/* Header */}
           <div className="admin-header">
             <div>
@@ -237,25 +239,25 @@ function RoleManagementPage({ onLogout }) {
                             <code className="role-code">{role.code}</code>
                           </td>
                           <td>
-                            <strong>{role.name}</strong>
+                            <strong>{role.name_id || role.name_en || '-'}</strong>
                           </td>
-                          <td>{role.description || '-'}</td>
+                          <td>{role.description_id || role.description_en || '-'}</td>
                           <td>
                             <div className="permission-badges">
-                              {role.permissions && role.permissions.length > 0 ? (
-                                role.permissions.slice(0, 3).map((perm) => (
+                              {role.permissions && Array.isArray(role.permissions) && role.permissions.length > 0 ? (
+                                role.permissions.slice(0, 3).map((perm, idx) => (
                                   <Badge
-                                    key={perm.id}
+                                    key={`perm-${role.id}-${idx}`}
                                     bg="info"
                                     className="permission-badge"
                                   >
-                                    {perm.code}
+                                    {typeof perm === 'string' ? perm : perm.code || perm}
                                   </Badge>
                                 ))
                               ) : (
                                 <span className="text-muted">No permissions</span>
                               )}
-                              {role.permissions && role.permissions.length > 3 && (
+                              {role.permissions && Array.isArray(role.permissions) && role.permissions.length > 3 && (
                                 <Badge bg="secondary" className="permission-badge">
                                   +{role.permissions.length - 3}
                                 </Badge>

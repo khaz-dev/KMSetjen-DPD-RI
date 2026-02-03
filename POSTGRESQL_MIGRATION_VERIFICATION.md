@@ -16,7 +16,7 @@ All configurations have been successfully updated to use **local PostgreSQL only
 | Host | ✅ localhost | From `.env` → `DB_HOST=localhost` |
 | Port | ✅ 5432 | From `.env` → `DB_PORT=5432` |
 | User | ✅ postgres | From `.env` → `DB_USER=postgres` |
-| Password | ✅ Okkdpdri2026 | From `.env` → `DB_PASSWORD=Okkdpdri2026` |
+| Password | ✅ Okkdpdri@2026 | From `.env` → `DB_PASSWORD=Okkdpdri@2026` |
 | Connection Type | ✅ env() variables | Reads from `.env` file |
 
 ### ✅ Docker Configuration
@@ -45,7 +45,7 @@ All configurations have been successfully updated to use **local PostgreSQL only
 ✅ DB_ENGINE=django.db.backends.postgresql
 ✅ DB_NAME=kmsdb
 ✅ DB_USER=postgres
-✅ DB_PASSWORD=Okkdpdri2026
+✅ DB_PASSWORD=Okkdpdri@2026
 ✅ DB_HOST=localhost
 ✅ DB_PORT=5432
 ```
@@ -57,7 +57,7 @@ All configurations have been successfully updated to use **local PostgreSQL only
         'ENGINE': env('DB_ENGINE', default='django.db.backends.postgresql'),
         'NAME': env('DB_NAME', default='kmsdb'),
         'USER': env('DB_USER', default='postgres'),
-        'PASSWORD': env('DB_PASSWORD', default='Okkdpdri2026'),
+        'PASSWORD': env('DB_PASSWORD', default='Okkdpdri@2026'),
         'HOST': env('DB_HOST', default='localhost'),
         'PORT': env('DB_PORT', default='5432'),
         'CONN_MAX_AGE': 0,
@@ -74,7 +74,7 @@ All configurations have been successfully updated to use **local PostgreSQL only
 ✅ Django service updated:
    - Removed: depends_on postgres
    - Added: DB_HOST=host.docker.internal
-   - Added: DB_PASSWORD=Okkdpdri2026
+   - Added: DB_PASSWORD=Okkdpdri@2026
 ✅ Redis service: KEPT
 ```
 
@@ -93,7 +93,7 @@ LOCAL DEVELOPMENT MACHINE
 ├── PostgreSQL (localhost:5432)
 │   ├── Database: kmsdb
 │   ├── User: postgres
-│   └── Password: Okkdpdri2026
+│   └── Password: Okkdpdri@2026
 ├── Django Backend (Port 8002)
 │   └── Connects to → PostgreSQL
 └── React Frontend (Port 5175)
@@ -193,7 +193,7 @@ npm run dev
 - Update `.env` with production PostgreSQL host/credentials
 - Set `DEBUG=False` in `.env`
 - Ensure database user has limited privileges
-- Use strong passwords (not `Okkdpdri2026`)
+- Use strong passwords (not `Okkdpdri@2026`)
 
 ---
 

@@ -202,13 +202,13 @@ docs/
 - **Host:** localhost:5432
 - **Database:** kmsdb
 - **User:** postgres
-- **Password:** Okkdpdri2026
+- **Password:** Okkdpdri@2026
 - **Articles Seeded:** 22 (all preserved)
 - **Migrations Applied:** 27 (all applied)
 
 **Configuration Location:** Root `.env`
 ```
-DATABASE_URL=postgresql://postgres:Okkdpdri2026@localhost:5432/kmsdb
+DATABASE_URL=postgresql://postgres:Okkdpdri@2026@localhost:5432/kmsdb
 ```
 
 ---

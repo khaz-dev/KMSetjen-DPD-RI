@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Nav, NavLink } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../contexts/ThemeContext';
 import {
   FiHome, FiUsers, FiLayers, FiFolder, FiFileText,
   FiActivity, FiMenu, FiX, FiLogOut
@@ -14,6 +15,7 @@ import './AdminSidebar.css';
  */
 function AdminSidebar({ onLogout }) {
   const { t } = useTranslation();
+  const { isDarkMode } = useTheme();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -35,7 +37,7 @@ function AdminSidebar({ onLogout }) {
   };
 
   return (
-    <div className={`admin-sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+    <div className={`admin-sidebar ${isCollapsed ? 'collapsed' : ''} ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
       {/* Toggle Button */}
       <button
         className="sidebar-toggle"

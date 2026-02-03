@@ -375,7 +375,6 @@ class SystemStatisticsViewSet(viewsets.ViewSet):
     
     permission_classes = [IsAuthenticated, IsAdmin]
     
-    @action(detail=False, methods=['get'])
     def list(self, request):
         """
         Get comprehensive system statistics.

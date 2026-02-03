@@ -16,7 +16,7 @@
 - ✅ **Updated** Django service:
   - Removed dependency on PostgreSQL service
   - Changed DB_HOST from `postgres` to `host.docker.internal`
-  - Set DB_PASSWORD to `Okkdpdri2026`
+  - Set DB_PASSWORD to `Okkdpdri@2026`
 - ✅ **Kept** Redis service (still useful for caching/sessions)
 
 ### 2. Backend Configuration Verified
@@ -32,7 +32,7 @@
   - `DB_PORT=5432`
   - `DB_NAME=kmsdb`
   - `DB_USER=postgres`
-  - `DB_PASSWORD=Okkdpdri2026`
+  - `DB_PASSWORD=Okkdpdri@2026`
 
 ### 4. SQLite Cleanup Verified
 - ✅ **No** SQLite engine in settings.py
@@ -56,7 +56,7 @@ Host:            localhost
 Port:            5432
 Database:        kmsdb
 User:            postgres
-Password:        Okkdpdri2026
+Password:        Okkdpdri@2026
 Connection:      Environment variables (.env)
 ```
 
@@ -128,7 +128,7 @@ Removed Services:
 │  │  Port: 5432                     │    │
 │  │  DB: kmsdb                      │    │
 │  │  User: postgres                 │    │
-│  │  Password: Okkdpdri2026         │    │
+│  │  Password: Okkdpdri@2026         │    │
 │  │                                 │    │
 │  │  Status: LOCAL ONLY (NO DOCKER) │    │
 │  └─────────────────────────────────┘    │
@@ -153,7 +153,7 @@ Removed Services:
 | Port Configuration | ✅ | 5432 (verified in .env) |
 | Database Name | ✅ | kmsdb (verified in .env) |
 | User Account | ✅ | postgres (verified in .env) |
-| Password | ✅ | Okkdpdri2026 (verified in .env) |
+| Password | ✅ | Okkdpdri@2026 (verified in .env) |
 | SQLite References | ✅ | None found in code |
 | Docker PostgreSQL | ✅ | Removed from docker-compose.yml |
 | Backend Port | ✅ | 8002 (maintained) |

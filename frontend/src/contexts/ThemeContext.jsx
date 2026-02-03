@@ -34,7 +34,8 @@ export const ThemeProvider = ({ children }) => {
   const value = {
     theme,
     toggleTheme,
-    isDark: theme === 'dark'
+    isDark: theme === 'dark',
+    isDarkMode: theme === 'dark'  // Added for compatibility with pages
   };
 
   return (

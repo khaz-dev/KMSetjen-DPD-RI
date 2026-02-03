@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../contexts/ThemeContext';
 import {
   Container, Table, Button, Modal, Form, Spinner, Alert,
-  Pagination, Card, Badge
+  Pagination, Card, Badge, Row
 } from 'react-bootstrap';
 import { FiEdit2, FiTrash2, FiPlus, FiSearch } from 'react-icons/fi';
 import AdminSidebar from '../components/AdminSidebar';
@@ -15,6 +16,7 @@ import './UserManagementPage.css';
  */
 function UserManagementPage({ onLogout }) {
   const { t } = useTranslation();
+  const { isDarkMode } = useTheme();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -178,11 +180,11 @@ function UserManagementPage({ onLogout }) {
   };
 
   return (
-    <div className="admin-wrapper">
+    <div className={`admin-wrapper ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
       <AdminSidebar onLogout={onLogout} />
 
       <div className="admin-content">
-        <Container fluid>
+        <Container>
           {/* Header */}
           <div className="admin-header">
             <div>
@@ -395,7 +397,7 @@ function UserManagementPage({ onLogout }) {
               />
             </Form.Group>
 
-            <Form.Row className="mb-3">
+            <Row className="mb-3">
               <div className="col-md-6">
                 <Form.Group>
                   <Form.Label>{t('users.first_name')}</Form.Label>
@@ -420,7 +422,7 @@ function UserManagementPage({ onLogout }) {
                   />
                 </Form.Group>
               </div>
-            </Form.Row>
+            </Row>
 
             <Form.Group className="mb-3">
               <Form.Check

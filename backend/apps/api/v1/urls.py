@@ -14,6 +14,7 @@ def v1_api_root(request):
         'endpoints': {
             'public': '/api/v1/public/',
             'internal': '/api/v1/internal/',
+            'admin': '/api/v1/admin/',
         }
     })
 
@@ -21,4 +22,5 @@ urlpatterns = [
     path('', v1_api_root, name='v1-api-root'),
     path('public/', include('apps.api.v1.public.urls')),
     path('internal/', include('apps.api.v1.internal.urls')),
+    path('admin/', include('apps.api.v1.admin.urls')),
 ]

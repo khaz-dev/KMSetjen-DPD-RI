@@ -172,6 +172,7 @@ function AppContent() {
           />
           
           {/* Error Pages */}
+          <Route path="/403" element={<ForbiddenPage />} />
           <Route path="/forbidden" element={<ForbiddenPage />} />
           <Route path="*" element={<div className="container py-5"><h1>404 - Page Not Found</h1><p>The page you're looking for doesn't exist.</p></div>} />
         </Routes>

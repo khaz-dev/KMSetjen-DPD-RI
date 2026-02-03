@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../contexts/ThemeContext';
 import { Container, Table, Button, Modal, Form, Spinner, Alert, Card, Badge, Pagination, Tabs, Tab } from 'react-bootstrap';
 import { FiEye, FiCheck, FiX } from 'react-icons/fi';
 import AdminSidebar from '../components/AdminSidebar';
@@ -8,6 +9,7 @@ import './ManagementPage.css';
 
 function ArticleModerationPage({ onLogout }) {
   const { t } = useTranslation();
+  const { isDarkMode } = useTheme();
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -75,10 +77,10 @@ function ArticleModerationPage({ onLogout }) {
   };
 
   return (
-    <div className="admin-wrapper">
+    <div className={`admin-wrapper ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
       <AdminSidebar onLogout={onLogout} />
       <div className="admin-content">
-        <Container fluid>
+        <Container>
           <div className="admin-header">
             <div>
               <h1>{t('moderation.title')}</h1>

@@ -7,6 +7,48 @@
   display: flex;
   min-height: 100vh;
   background: #f5f7fa;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 1320px;
+  width: 100%;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+/* Dark Mode Support */
+.admin-dashboard-wrapper.dark-mode,
+[data-theme="dark"] .admin-dashboard-wrapper {
+  background: #1a1a1a;
+}
+
+@media (min-width: 576px) {
+  .admin-dashboard-wrapper {
+    max-width: 540px;
+  }
+}
+
+@media (min-width: 768px) {
+  .admin-dashboard-wrapper {
+    max-width: 720px;
+  }
+}
+
+@media (min-width: 992px) {
+  .admin-dashboard-wrapper {
+    max-width: 960px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .admin-dashboard-wrapper {
+    max-width: 1140px;
+  }
+}
+
+@media (min-width: 1400px) {
+  .admin-dashboard-wrapper {
+    max-width: 1320px;
+  }
 }
 
 .admin-content {
@@ -14,6 +56,11 @@
   padding: 2rem;
   overflow-y: auto;
   background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+}
+
+.admin-dashboard-wrapper.dark-mode .admin-content,
+[data-theme="dark"] .admin-dashboard-wrapper .admin-content {
+  background: linear-gradient(135deg, #1a1a1a 0%, #252525 100%);
 }
 
 /* Admin Header */
@@ -26,6 +73,11 @@
   border-bottom: 2px solid rgba(52, 152, 219, 0.1);
 }
 
+.admin-dashboard-wrapper.dark-mode .admin-header,
+[data-theme="dark"] .admin-dashboard-wrapper .admin-header {
+  border-bottom-color: rgba(52, 152, 219, 0.2);
+}
+
 .header-content h1 {
   margin: 0;
   font-size: 2rem;
@@ -33,9 +85,19 @@
   color: #2c3e50;
 }
 
+.admin-dashboard-wrapper.dark-mode .header-content h1,
+[data-theme="dark"] .admin-dashboard-wrapper .header-content h1 {
+  color: #ffffff;
+}
+
 .header-content p {
   margin: 0.25rem 0 0 0;
   font-size: 0.95rem;
+}
+
+.admin-dashboard-wrapper.dark-mode .header-content p,
+[data-theme="dark"] .admin-dashboard-wrapper .header-content p {
+  color: #b0b0b0;
 }
 
 .btn-refresh {

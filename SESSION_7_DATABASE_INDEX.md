@@ -120,7 +120,7 @@
    - postgres_data volume: REMOVED
    - Django dependencies: Updated
    - Django DB_HOST: Updated to host.docker.internal
-   - Django DB_PASSWORD: Updated to Okkdpdri2026
+   - Django DB_PASSWORD: Updated to Okkdpdri@2026
 
 ✅ Backend Configuration
    - Verified PostgreSQL engine
@@ -145,7 +145,7 @@
 - ✅ Port: `5432`
 - ✅ Database: `kmsdb`
 - ✅ User: `postgres`
-- ✅ Password: `Okkdpdri2026`
+- ✅ Password: `Okkdpdri@2026`
 
 ### SQLite Status
 - ✅ No SQLite engine in settings
@@ -265,7 +265,7 @@ Need help with...
 - **Database Port:** 5432
 - **Database Name:** kmsdb
 - **Database User:** postgres
-- **Database Password:** Okkdpdri2026
+- **Database Password:** Okkdpdri@2026
 - **Backend Port:** 8002
 - **Frontend Port:** 5175
 

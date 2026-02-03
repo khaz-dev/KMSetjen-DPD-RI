@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Container, Row, Col, Card, Spinner, Alert } from 'react-bootstrap';
 import { FiUsers, FiFileText, FiActivity, FiTrendingUp } from 'react-icons/fi';
 import AdminSidebar from '../components/AdminSidebar';
+import { useTheme } from '../contexts/ThemeContext';
 import axios from 'axios';
 import './AdminDashboardPage.css';
 
@@ -12,6 +13,7 @@ import './AdminDashboardPage.css';
  */
 function AdminDashboardPage({ onLogout }) {
   const { t } = useTranslation();
+  const { isDarkMode } = useTheme();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -61,11 +63,11 @@ function AdminDashboardPage({ onLogout }) {
   );
 
   return (
-    <div className="admin-dashboard-wrapper">
+    <div className={`admin-dashboard-wrapper ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
       <AdminSidebar onLogout={onLogout} />
 
       <div className="admin-content">
-        <Container fluid>
+        <Container>
           {/* Header */}
           <div className="admin-header">
             <div className="header-content">

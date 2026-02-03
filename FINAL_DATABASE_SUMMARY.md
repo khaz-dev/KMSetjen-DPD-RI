@@ -15,7 +15,7 @@
 | **Port** | N/A | 5432 | ✅ Configured |
 | **Database Name** | N/A | kmsdb | ✅ Configured |
 | **User** | N/A | postgres | ✅ Configured |
-| **Password** | N/A | Okkdpdri2026 | ✅ Configured |
+| **Password** | N/A | Okkdpdri@2026 | ✅ Configured |
 | **Backend Port** | 8002 | 8002 | ✅ Maintained |
 | **Frontend Port** | 5175 | 5175 | ✅ Maintained |
 | **Configuration** | env() variables | env() variables | ✅ Maintained |
@@ -31,7 +31,7 @@
 DB_ENGINE=django.db.backends.postgresql
 DB_NAME=kmsdb
 DB_USER=postgres
-DB_PASSWORD=Okkdpdri2026
+DB_PASSWORD=Okkdpdri@2026
 DB_HOST=localhost
 DB_PORT=5432
 ```
@@ -49,7 +49,7 @@ DATABASES = {
         'ENGINE': env('DB_ENGINE', default='django.db.backends.postgresql'),
         'NAME': env('DB_NAME', default='kmsdb'),
         'USER': env('DB_USER', default='postgres'),
-        'PASSWORD': env('DB_PASSWORD', default='Okkdpdri2026'),
+        'PASSWORD': env('DB_PASSWORD', default='Okkdpdri@2026'),
         'HOST': env('DB_HOST', default='localhost'),
         'PORT': env('DB_PORT', default='5432'),
         'CONN_MAX_AGE': 0,
@@ -71,7 +71,7 @@ DATABASES = {
 - ✅ Removed postgres_data volume
 - ✅ Removed `depends_on: postgres` from Django
 - ✅ Updated `DB_HOST` to `host.docker.internal` (for Docker to reach host)
-- ✅ Updated `DB_PASSWORD` to `Okkdpdri2026`
+- ✅ Updated `DB_PASSWORD` to `Okkdpdri@2026`
 - ✅ Added documentation comment showing local PostgreSQL config
 - ✅ Kept Redis service (independent)
 
@@ -145,7 +145,7 @@ AFTER (Session 7):
 │     localhost:5432                               │
 │     Database: kmsdb                              │
 │     User: postgres                               │
-│     Password: Okkdpdri2026                       │
+│     Password: Okkdpdri@2026                       │
 │                                                   │
 │     Status: LOCAL INSTALLATION ONLY              │
 │     NOT running in Docker                        │
@@ -162,7 +162,7 @@ AFTER (Session 7):
 | DB_ENGINE | django.db.backends.postgresql | settings.py | Database |
 | DB_NAME | kmsdb | settings.py | Database |
 | DB_USER | postgres | settings.py | Database |
-| DB_PASSWORD | Okkdpdri2026 | settings.py | Database |
+| DB_PASSWORD | Okkdpdri@2026 | settings.py | Database |
 | DB_HOST | localhost | settings.py | Database |
 | DB_PORT | 5432 | settings.py | Database |
 | BACKEND_PORT | 8002 | run_server.py | Server |
@@ -175,7 +175,7 @@ AFTER (Session 7):
 ```bash
 ✅ PostgreSQL installed locally
 ✅ Database "kmsdb" exists
-✅ Credentials correct: postgres/Okkdpdri2026
+✅ Credentials correct: postgres/Okkdpdri@2026
 ✅ Port 5432 accessible
 ```
 
@@ -259,7 +259,7 @@ find . -name "*.sqlite3" -o -name "*.db"
 
 ✅ **Verified Configuration:**
 - backend/config/settings.py: PostgreSQL properly configured
-- backend/.env: Correct credentials (postgres/Okkdpdri2026)
+- backend/.env: Correct credentials (postgres/Okkdpdri@2026)
 - .gitignore: SQLite excluded
 
 ✅ **Cleanup:**
@@ -325,7 +325,7 @@ psql -U postgres -c "CREATE DATABASE kmsdb;"
 Error: FATAL: password authentication failed
 ```
 **Solution:**
-- Verify password in .env is `Okkdpdri2026`
+- Verify password in .env is `Okkdpdri@2026`
 - Check PostgreSQL user is `postgres`
 - Verify host is `localhost`
 

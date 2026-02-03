@@ -13,7 +13,7 @@ Successfully migrated project database configuration from SQLite to **exclusive 
 - **PostgreSQL:** localhost:5432
 - **Database:** kmsdb
 - **User:** postgres
-- **Password:** Okkdpdri2026
+- **Password:** Okkdpdri@2026
 - **Environment:** Local machine only (no Docker PostgreSQL)
 
 ---
@@ -45,7 +45,7 @@ postgres_data:
 # - Port: 5432
 # - Database: kmsdb
 # - User: postgres
-# - Password: Okkdpdri2026
+# - Password: Okkdpdri@2026
 ```
 
 **Updated Django Service:**
@@ -57,7 +57,7 @@ depends_on:
 environment:
   # Database Configuration (uses local PostgreSQL on host machine)
   DB_HOST: ${DB_HOST:-host.docker.internal}  # Changed from 'postgres'
-  DB_PASSWORD: ${DB_PASSWORD:-Okkdpdri2026}  # Changed from 'postgres'
+  DB_PASSWORD: ${DB_PASSWORD:-Okkdpdri@2026}  # Changed from 'postgres'
 ```
 
 ### 2. Backend Configuration Verification ✅
@@ -71,7 +71,7 @@ DATABASES = {
         'ENGINE': env('DB_ENGINE', default='django.db.backends.postgresql'),
         'NAME': env('DB_NAME', default='kmsdb'),
         'USER': env('DB_USER', default='postgres'),
-        'PASSWORD': env('DB_PASSWORD', default='Okkdpdri2026'),
+        'PASSWORD': env('DB_PASSWORD', default='Okkdpdri@2026'),
         'HOST': env('DB_HOST', default='localhost'),
         'PORT': env('DB_PORT', default='5432'),
         'CONN_MAX_AGE': 0,
@@ -97,7 +97,7 @@ Verified all credentials are correct:
 DB_ENGINE=django.db.backends.postgresql
 DB_NAME=kmsdb
 DB_USER=postgres
-DB_PASSWORD=Okkdpdri2026
+DB_PASSWORD=Okkdpdri@2026
 DB_HOST=localhost
 DB_PORT=5432
 ```
@@ -132,7 +132,7 @@ These are **documentation only**, not code configuration.
 |-------|--------|---------|
 | PostgreSQL Engine | ✅ Pass | `django.db.backends.postgresql` |
 | Database Config | ✅ Pass | localhost:5432/kmsdb |
-| Credentials | ✅ Pass | postgres/Okkdpdri2026 |
+| Credentials | ✅ Pass | postgres/Okkdpdri@2026 |
 | Docker SQLite | ✅ Pass | Completely removed |
 | Python Code | ✅ Pass | No SQLite references |
 | .gitignore | ✅ Pass | Excludes *.sqlite3 |
@@ -192,7 +192,7 @@ These are **documentation only**, not code configuration.
 │  │   PostgreSQL (localhost:5432)   │   │
 │  │   Database: kmsdb               │   │
 │  │   User: postgres                │   │
-│  │   Password: Okkdpdri2026        │   │
+│  │   Password: Okkdpdri@2026        │   │
 │  └─────────────────────────────────┘   │
 │                                          │
 └─────────────────────────────────────────┘

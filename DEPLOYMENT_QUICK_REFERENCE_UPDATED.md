@@ -150,7 +150,7 @@ DB_HOST=host.docker.internal            # From Docker, connects to host
 DB_PORT=5432
 DB_NAME=kmsdb
 DB_USER=postgres
-DB_PASSWORD=Okkdpdri2026
+DB_PASSWORD=Okkdpdri@2026
 
 # Redis
 REDIS_PASSWORD=redis123

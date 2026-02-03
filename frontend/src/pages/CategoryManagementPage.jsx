@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../contexts/ThemeContext';
 import { Container, Table, Button, Modal, Form, Spinner, Alert, Card, Badge, Pagination } from 'react-bootstrap';
 import { FiEdit2, FiTrash2, FiPlus } from 'react-icons/fi';
 import AdminSidebar from '../components/AdminSidebar';
@@ -8,6 +9,7 @@ import './ManagementPage.css';
 
 function CategoryManagementPage({ onLogout }) {
   const { t } = useTranslation();
+  const { isDarkMode } = useTheme();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -83,10 +85,10 @@ function CategoryManagementPage({ onLogout }) {
   };
 
   return (
-    <div className="admin-wrapper">
+    <div className={`admin-wrapper ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
       <AdminSidebar onLogout={onLogout} />
       <div className="admin-content">
-        <Container fluid>
+        <Container>
           <div className="admin-header">
             <div>
               <h1>{t('categories.title')}</h1>

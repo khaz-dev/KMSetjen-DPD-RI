@@ -18,6 +18,13 @@
   z-index: 1000;
 }
 
+/* Dark Mode Support */
+.admin-sidebar.dark-mode,
+[data-theme="dark"] .admin-sidebar {
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.5);
+}
+
 .admin-sidebar.collapsed {
   width: 70px;
 }
@@ -73,7 +80,7 @@
   overflow-y: auto;
 }
 
-.nav-item {
+.nav-menu .nav-item {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -91,13 +98,13 @@
   width: calc(100% - 1rem);
 }
 
-.nav-item:hover {
+.nav-menu .nav-item:hover {
   background: rgba(255, 255, 255, 0.1);
   color: #ecf0f1;
   padding-left: 1.75rem;
 }
 
-.nav-item.active {
+.nav-menu .nav-item.active {
   background: linear-gradient(90deg, #3498db, #2980b9);
   color: #fff;
   border-left: 4px solid #e74c3c;
@@ -176,7 +183,7 @@
     width: 70px;
   }
   
-  .nav-item {
+  .nav-menu .nav-item {
     padding: 0.65rem 1rem;
     margin: 0.2rem 0.4rem;
     font-size: 0.9rem;
@@ -188,7 +195,7 @@
     padding: 1rem;
   }
   
-  .nav-item {
+  .nav-menu .nav-item {
     padding: 0.75rem 1.5rem;
   }
 }

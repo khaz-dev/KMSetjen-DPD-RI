@@ -185,12 +185,55 @@ body {
   border-color: var(--table-border);
 }
 
+.table tbody {
+  background-color: var(--table-bg);
+}
+
 .table tbody td {
   border-color: var(--table-border);
+  background-color: var(--table-bg);
+  color: var(--table-text);
+}
+
+.table tbody tr {
+  background-color: var(--table-bg);
 }
 
 .table tbody tr:hover {
   background-color: var(--table-hover-bg);
+}
+
+.table-hover tbody tr:hover {
+  background-color: var(--table-hover-bg);
+}
+
+/* Navigation Tabs */
+.nav-tabs {
+  border-bottom-color: var(--border-color);
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap;
+  list-style: none !important;
+  padding-left: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.nav-tabs > li {
+  display: inline-block !important;
+  margin-bottom: 0 !important;
+}
+
+.nav-tabs .nav-link {
+  color: var(--text-secondary);
+}
+
+.nav-tabs .nav-link:hover {
+  color: #0d6efd;
+}
+
+.nav-tabs .nav-link.active {
+  color: #0d6efd;
+  border-bottom-color: #0d6efd;
 }
 
 .badge {

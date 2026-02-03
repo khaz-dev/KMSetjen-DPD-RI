@@ -30,12 +30,12 @@ class PermissionSerializer(serializers.ModelSerializer):
 class RoleSerializer(serializers.ModelSerializer):
     """Role serializer for list and detail."""
     
-    permissions = PermissionSerializer(many=True, read_only=True)
+    permissions = serializers.JSONField(read_only=True)
     user_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Role
-        fields = ['id', 'code', 'name', 'description', 'permissions', 'user_count', 'created_at', 'updated_at']
+        fields = ['id', 'code', 'name_id', 'name_en', 'description_id', 'description_en', 'permissions', 'is_active', 'user_count', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
     
     def get_user_count(self, obj):
@@ -46,15 +46,9 @@ class RoleSerializer(serializers.ModelSerializer):
 class RoleCreateUpdateSerializer(serializers.ModelSerializer):
     """Role creation and update serializer."""
     
-    permissions = serializers.PrimaryKeyRelatedField(
-        queryset=Permission.objects.all(),
-        many=True,
-        required=False
-    )
-    
     class Meta:
         model = Role
-        fields = ['code', 'name', 'description', 'permissions']
+        fields = ['code', 'name_id', 'name_en', 'description_id', 'description_en', 'permissions', 'is_active']
     
     def validate_code(self, value):
         """Validate role code is unique (except in update)."""
@@ -65,29 +59,6 @@ class RoleCreateUpdateSerializer(serializers.ModelSerializer):
             if Role.objects.filter(code=value).exists():
                 raise serializers.ValidationError("A role with this code already exists.")
         return value.upper()
-    
-    def create(self, validated_data):
-        """Create role with permissions."""
-        permissions = validated_data.pop('permissions', [])
-        role = Role.objects.create(**validated_data)
-        if permissions:
-            role.permissions.set(permissions)
-        return role
-    
-    def update(self, instance, validated_data):
-        """Update role with permissions."""
-        permissions = validated_data.pop('permissions', None)
-        
-        # Update basic fields
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        
-        # Update permissions if provided
-        if permissions is not None:
-            instance.permissions.set(permissions)
-        
-        return instance
 
 
 class UserListSerializer(serializers.ModelSerializer):
@@ -240,14 +211,14 @@ class UserSetPasswordSerializer(serializers.Serializer):
 class AuditLogSerializer(serializers.ModelSerializer):
     """Audit log detail serializer."""
     
-    user_name = serializers.CharField(source='user.username', read_only=True)
+    user_name = serializers.CharField(source='user.username', read_only=True, allow_null=True)
     changes = serializers.JSONField(read_only=True)
     
     class Meta:
         model = AuditLog
         fields = [
-            'id', 'action', 'resource_type', 'resource_id', 'user', 'user_name',
-            'changes', 'ip_address', 'user_agent', 'timestamp', 'details'
+            'id', 'action', 'content_type', 'content_id', 'content_display',
+            'user', 'user_name', 'changes', 'ip_address', 'user_agent', 'timestamp'
         ]
         read_only_fields = fields
 

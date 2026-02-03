@@ -24,7 +24,7 @@
 - [x] .env has correct credentials
 - [x] .env database: kmsdb
 - [x] .env user: postgres
-- [x] .env password: Okkdpdri2026
+- [x] .env password: Okkdpdri@2026
 - [x] .env host: localhost
 - [x] .env port: 5432
 
@@ -34,7 +34,7 @@
 - [x] postgres_data volume removed
 - [x] Django depends_on updated (only Redis)
 - [x] Django DB_HOST updated (host.docker.internal)
-- [x] Django DB_PASSWORD updated (Okkdpdri2026)
+- [x] Django DB_PASSWORD updated (Okkdpdri@2026)
 - [x] Redis service preserved
 - [x] Django port still 8002
 - [x] Frontend port documentation exists
@@ -86,7 +86,7 @@
 - [x] PostgreSQL on localhost:5432
 - [x] Database name: kmsdb
 - [x] User: postgres
-- [x] Password: Okkdpdri2026
+- [x] Password: Okkdpdri@2026
 - [x] No SQLite alternatives
 - [x] No Docker database service
 

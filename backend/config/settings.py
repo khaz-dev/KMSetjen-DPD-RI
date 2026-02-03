@@ -24,7 +24,7 @@ environ.Env.read_env(os.path.join(PROJECT_ROOT, '.env'))
 # ============================================================================
 SECRET_KEY = env('SECRET_KEY', default='unsafe-dev-key-change-in-prod')
 DEBUG = env.bool('DEBUG', default=True)
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', 'testserver'])
 
 # ============================================================================
 # DJANGO APPS
@@ -110,7 +110,7 @@ DATABASES = {
         'ENGINE': env('DB_ENGINE', default='django.db.backends.postgresql'),
         'NAME': env('DB_NAME', default='kmsdb'),
         'USER': env('DB_USER', default='postgres'),
-        'PASSWORD': env('DB_PASSWORD', default='Okkdpdri2026'),
+        'PASSWORD': env('DB_PASSWORD', default='Okkdpdri@2026'),
         'HOST': env('DB_HOST', default='localhost'),
         'PORT': env('DB_PORT', default='5432'),
         'CONN_MAX_AGE': 0,  # Disable persistent connections
