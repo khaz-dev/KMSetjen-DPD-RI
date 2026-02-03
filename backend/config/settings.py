@@ -406,7 +406,7 @@ FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
 # CORS Configuration (Origin-based Access Control)
 CORS_ALLOWED_ORIGINS = env.list(
     'CORS_ALLOWED_ORIGINS',
-    default=['http://localhost:5175', 'http://localhost:5175']
+    default=['http://localhost:5175', 'http://127.0.0.1:5175', 'https://kms.dpd.go.id', 'https://kms-be.dpd.go.id']
 )
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [

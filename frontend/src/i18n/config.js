@@ -10,6 +10,7 @@ i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
+    lng: 'id',  // Set default language to Indonesian
     fallbackLng: 'id',
     defaultNS: 'translation',
     ns: ['translation'],
@@ -25,7 +26,7 @@ i18n
     },
 
     detection: {
-      order: ['localStorage', 'navigator'],
+      order: ['localStorage', 'querystring'],  // Prioritize localStorage, ignore navigator
       caches: ['localStorage']
     }
   });

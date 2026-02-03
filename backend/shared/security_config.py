@@ -113,6 +113,8 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:5175',
     'http://localhost:8002',
     'http://127.0.0.1:8002',
+    'https://kms.dpd.go.id',
+    'https://kms-be.dpd.go.id',
 ]
 
 CORS_ALLOW_CREDENTIALS = True

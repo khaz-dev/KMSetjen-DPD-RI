@@ -40,6 +40,9 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file: .env
     environment:
       # Django Settings
       DEBUG: ${DEBUG:-True}
@@ -130,6 +133,7 @@ services:
       - "5175:5175"
     depends_on:
       - django
+    env_file: .env
     environment:
       # API configuration for docker environment
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://django:8002/api}
