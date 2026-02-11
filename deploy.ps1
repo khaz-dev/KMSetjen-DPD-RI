@@ -304,12 +304,51 @@ function Check-Services {
 
 function Setup-Database {
     Log-Info "Running migrations..."
-    docker-compose exec -T django python manage.py migrate --noinput 2>&1 | Out-Null
-    Log-Success "Migrations completed"
+    
+    # Check if migrations are needed first
+    Log-Info "Checking pending migrations..."
+    docker-compose exec -T django python manage.py migrate --check 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Log-Info "Pending migrations detected, running migrations now..."
+    } else {
+        Log-Success "No pending migrations found"
+    }
+    
+    # Run migrations with full output
+    Log-Info "Executing migrations..."
+    docker-compose exec -T django python manage.py migrate --noinput
+    if ($LASTEXITCODE -ne 0) {
+        Log-Error "Migration failed! Check database connection, permissions, and migration files."
+        exit 1
+    }
+    
+    # Verify migrations ran successfully
+    Log-Info "Verifying migrations..."
+    docker-compose exec -T django python manage.py migrate --check
+    if ($LASTEXITCODE -ne 0) {
+        Log-Error "Migrations verification failed! Some migrations may have failed."
+        exit 1
+    }
+    
+    Log-Success "Migrations completed and verified"
     
     Log-Info "Collecting static files..."
-    docker-compose exec -T django python manage.py collectstatic --noinput 2>&1 | Out-Null
-    Log-Success "Static files collected"
+    docker-compose exec -T django python manage.py collectstatic --noinput
+    if ($LASTEXITCODE -ne 0) {
+        Log-Warning "Static files collection had issues but continuing deployment"
+    } else {
+        Log-Success "Static files collected"
+    }
+    
+    # Verify database is accessible and models are loaded
+    Log-Info "Verifying database connection..."
+    docker-compose exec -T django python manage.py check
+    if ($LASTEXITCODE -eq 0) {
+        Log-Success "Database and application check passed"
+    } else {
+        Log-Error "Database connection or application check failed"
+        Log-Error "Migrations may have succeeded, but application verification failed"
+    }
 }
 
 # ==============================================================================

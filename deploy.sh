@@ -329,12 +329,47 @@ check_services() {
 
 setup_database() {
     log_info "Running migrations..."
-    docker-compose exec -T django python manage.py migrate --noinput 2>/dev/null
-    log_success "Migrations completed"
+    
+    # Check if migrations are needed first
+    log_info "Checking pending migrations..."
+    if ! docker-compose exec -T django python manage.py migrate --check 2>&1; then
+        log_info "Pending migrations detected, running migrations now..."
+    else
+        log_success "No pending migrations found"
+    fi
+    
+    # Run migrations with full output
+    log_info "Executing migrations..."
+    if ! docker-compose exec -T django python manage.py migrate --noinput; then
+        log_error "Migration failed! See detailed output above."
+        log_error "Check database connection, permissions, and migration files."
+        exit 1
+    fi
+    
+    # Verify migrations ran successfully
+    log_info "Verifying migrations..."
+    if ! docker-compose exec -T django python manage.py migrate --check; then
+        log_error "Migrations verification failed! Some migrations may have failed."
+        exit 1
+    fi
+    
+    log_success "Migrations completed and verified"
     
     log_info "Collecting static files..."
-    docker-compose exec -T django python manage.py collectstatic --noinput 2>/dev/null
-    log_success "Static files collected"
+    if ! docker-compose exec -T django python manage.py collectstatic --noinput; then
+        log_warning "Static files collection had issues but continuing deployment"
+    else
+        log_success "Static files collected"
+    fi
+    
+    # Verify database is accessible and models are loaded
+    log_info "Verifying database connection..."
+    if docker-compose exec -T django python manage.py check; then
+        log_success "Database and application check passed"
+    else
+        log_error "Database connection or application check failed"
+        log_error "Migrations may have succeeded, but application verification failed"
+    fi
 }
 
 # ==============================================================================
