@@ -613,13 +613,13 @@ sudo apt-get install redis-server
 
 # Configure Django to use Redis
 # In backend/.env:
-CACHE_URL=redis://localhost:6379/0
+CACHE_URL=redis://localhost:6382/0
 
 # In settings.py:
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',
+        'LOCATION': 'redis://127.0.0.1:6382/1',
     }
 }
 ```

@@ -68,7 +68,7 @@ Successfully completed comprehensive deployment of **KMSetjen DPD RI** applicati
 #### Backend Architecture
 - **Framework**: Django 4.2.8 with Django REST Framework 3.14.0
 - **Database**: PostgreSQL 15+ (localhost:5432)
-- **Cache**: Redis 7-alpine (6379)
+- **Cache**: Redis 7-alpine (6382)
 - **WSGI Server**: Gunicorn 21.2.0 (4 workers)
 - **User Model**: Custom `core.User`
 - **Authentication**: JWT (djangorestframework-simplejwt) + Google OAuth
@@ -110,7 +110,7 @@ Successfully completed comprehensive deployment of **KMSetjen DPD RI** applicati
 #### Docker Configuration
 - **docker-compose.yml**: 194 lines, 3 services
 - **Services**:
-  1. Redis (port 6379)
+  1. Redis (port 6382)
   2. Django (port 8002)
   3. Frontend (port 5175)
 - **Networks**: Custom bridge network `kms_network`
@@ -314,7 +314,7 @@ Timeline:
 NAMES          STATUS                 PORTS
 kms_frontend   Up 2+ minutes (healthy) 0.0.0.0:5175->5175/tcp
 kms_django     Up 2+ minutes (healthy) 0.0.0.0:8002->8002/tcp
-kms_redis      Up 3+ minutes (healthy) 0.0.0.0:6379->6379/tcp
+kms_redis      Up 3+ minutes (healthy) 0.0.0.0:6382->6382/tcp
 ```
 
 #### Django Service Health
@@ -361,7 +361,7 @@ Applied migrations: admin, audit, auth, content,
 | `http://localhost:8002/health/` | ✅ 200 OK | Health status JSON |
 | `http://localhost:8002/api/` | ✅ 200 OK | API root endpoints |
 | `http://localhost:5175/` | ✅ 200 OK | index.html (HTML document) |
-| `localhost:6379` (Redis) | ✅ Connected | Cache operational |
+| `localhost:6382` (Redis) | ✅ Connected | Cache operational |
 | `localhost:5432` (PostgreSQL) | ✅ Connected | Database accessible |
 
 ### Results
@@ -432,7 +432,7 @@ Applied migrations: admin, audit, auth, content,
 ║ ✅ FRONTEND               http://localhost:5175    ║
 ║    React + Vite           Status: HEALTHY          ║
 ║                                                     ║
-║ ✅ REDIS CACHE            localhost:6379           ║
+║ ✅ REDIS CACHE            localhost:6382           ║
 ║    In-memory caching      Status: HEALTHY          ║
 ║                                                     ║
 ║ ✅ POSTGRESQL             localhost:5432           ║
@@ -605,7 +605,7 @@ docker-compose up -d --build
 - Database changes: Run migrations
 
 ### Performance Considerations
-- Redis caching enabled (6379)
+- Redis caching enabled (6382)
 - Gunicorn with 4 workers
 - Vite with optimized bundling
 - Multi-stage Docker builds

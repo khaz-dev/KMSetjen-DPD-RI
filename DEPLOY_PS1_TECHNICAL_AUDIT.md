@@ -532,7 +532,7 @@ Total Time: ~3 minutes
 ```yaml
 redis:
   ✅ Image: redis:7-alpine
-  ✅ Port: 6379
+  ✅ Port: 6382
   ✅ Health check: redis-cli ping
   ✅ Volumes: redis_data
   ✅ Network: kms_network

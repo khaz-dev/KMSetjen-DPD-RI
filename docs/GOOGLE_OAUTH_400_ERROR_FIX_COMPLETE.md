@@ -128,7 +128,7 @@ docker-compose ps
 NAME           IMAGE                    STATUS              PORTS
 kms_django     kmsetjendpdri-django     Up (healthy)        0.0.0.0:8002->8002/tcp
 kms_frontend   kmsetjendpdri-frontend   Up (healthy)        0.0.0.0:5175->5175/tcp
-kms_redis      redis:7-alpine           Up (healthy)        0.0.0.0:6379->6379/tcp
+kms_redis      redis:7-alpine           Up (healthy)        0.0.0.0:6382->6382/tcp
 ```
 
 ### Step 2: Verify Django Can Read Google Credentials

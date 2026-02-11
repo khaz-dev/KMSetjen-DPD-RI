@@ -16,7 +16,7 @@ Successfully deployed **KMSetjen DPD RI** application to local Docker-based stag
 |---------|--------|------|--------|
 | **Django API** | ✅ Running | 8002 | Healthy (200 OK) |
 | **Frontend (React)** | ✅ Running | 5175 | Healthy (serving) |
-| **Redis Cache** | ✅ Running | 6379 | Healthy |
+| **Redis Cache** | ✅ Running | 6382 | Healthy |
 | **PostgreSQL** | ✅ Connected | 5432 | Ready (local) |
 
 ### Container Information
@@ -59,7 +59,7 @@ http://localhost:8002/health/
 
 ### Redis Cache
 ```
-localhost:6379
+localhost:6382
 Password: redis123
 ```
 ✅ Connected and healthy  

@@ -316,7 +316,7 @@ EMAIL_HOST_USER=your-email@gmail.com
 EMAIL_HOST_PASSWORD=your-password
 
 # Redis (cache & sessions)
-REDIS_URL=redis://localhost:6379/0
+REDIS_URL=redis://localhost:6382/0
 
 # File uploads
 MAX_UPLOAD_SIZE=52428800  # 50MB in bytes
@@ -788,7 +788,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "6382:6382"
 
   backend:
     build: ./backend
@@ -799,7 +799,7 @@ services:
       - "8002:8002"
     environment:
       - DB_HOST=db
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6382/0
     depends_on:
       - db
       - redis

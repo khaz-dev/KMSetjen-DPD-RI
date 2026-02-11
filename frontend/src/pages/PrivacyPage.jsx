@@ -165,7 +165,7 @@ const PrivacyPage = () => {
               <hr className="my-5" />
 
               <p className="text-muted small">
-                &copy; {currentYear} DPD RI. {t('privacy.copyright', 'All rights reserved.')}
+                &copy; {currentYear} BPSDM. {t('privacy.copyright', 'All rights reserved.')}
               </p>
             </Col>
           </Row>

@@ -271,8 +271,8 @@ CACHES = {
 # ============================================================================
 # CELERY (OPTIONAL)
 # ============================================================================
-CELERY_BROKER_URL = env('REDIS_URL', default='redis://127.0.0.1:6379/0')
-CELERY_RESULT_BACKEND = env('REDIS_URL', default='redis://127.0.0.1:6379/0')
+CELERY_BROKER_URL = env('REDIS_URL', default='redis://127.0.0.1:6382/0')
+CELERY_RESULT_BACKEND = env('REDIS_URL', default='redis://127.0.0.1:6382/0')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 

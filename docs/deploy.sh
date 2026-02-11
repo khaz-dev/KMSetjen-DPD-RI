@@ -281,7 +281,7 @@ Log File:           $LOG_FILE
 
 Services Started:
   - PostgreSQL      [RUNNING] :5432
-  - Redis           [RUNNING] :6379
+  - Redis           [RUNNING] :6382
   - Django          [RUNNING] :8002
   - Frontend        [READY]   (if configured)
 

@@ -1021,7 +1021,7 @@ try {
 
 | Service | Image | Port | Role |
 |---------|-------|------|------|
-| **Redis** | redis:7-alpine | 6379 | Cache & sessions |
+| **Redis** | redis:7-alpine | 6382 | Cache & sessions |
 | **Django** | kmsetjendpdri-django | 8002 | API backend |
 | **Frontend** | kmsetjendpdri-frontend | 5175 | Web UI |
 
