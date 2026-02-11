@@ -263,12 +263,13 @@ class AuditLogAPITest(APITestCase):
         )
         
         # Create audit logs
+        actions = ['create', 'update', 'delete', 'publish', 'approve']
         for i in range(5):
             AuditLog.objects.create(
                 user=self.user,
-                action=f"action_{i}",
-                description=f"Test action {i}",
-                status="success"
+                action=actions[i],
+                content_type='Article',
+                content_id=str(i + 1)
             )
 
     def test_audit_log_list_endpoint(self):

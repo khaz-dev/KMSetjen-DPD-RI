@@ -5,41 +5,65 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+  color: #2c3e50;
   padding: 2rem;
+}
+
+.error-page.dark-mode {
+  background: linear-gradient(135deg, #1a1a1a 0%, #252525 100%);
+  color: #ffffff;
 }
 
 .error-content {
   text-align: center;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.95);
   padding: 3rem 2rem;
   border-radius: 12px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
   max-width: 600px;
+}
+
+.error-page.dark-mode .error-content {
+  background: rgba(45, 45, 45, 0.95);
 }
 
 .error-code {
   font-size: 5rem;
-  font-weight: 700;
+  font-weight: 800;
   margin-bottom: 1rem;
-  color: #ffffff;
+  color: #e74c3c;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  line-height: 1;
+}
+
+.error-page.dark-mode .error-code {
+  color: #ff6b6b;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .error-title {
   font-size: 2rem;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 1rem;
+  color: #2c3e50;
+}
+
+.error-page.dark-mode .error-title {
   color: #ffffff;
 }
 
+.error-description,
 .error-message {
   font-size: 1.1rem;
   margin-bottom: 2rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: #7f8c8d;
   line-height: 1.6;
+}
+
+.error-page.dark-mode .error-description,
+.error-page.dark-mode .error-message {
+  color: #b0b0b0;
 }
 
 .error-actions {
@@ -47,6 +71,46 @@
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.error-help {
+  padding-top: 1.5rem;
+  border-top: 1px solid #ecf0f1;
+}
+
+.error-page.dark-mode .error-help {
+  border-top-color: #404040;
+}
+
+.error-help p {
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  color: #7f8c8d;
+}
+
+.error-page.dark-mode .error-help p {
+  color: #b0b0b0;
+}
+
+.error-help a {
+  color: #3498db;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.error-help a:hover {
+  color: #2980b9;
+  text-decoration: underline;
+}
+
+.error-page.dark-mode .error-help a {
+  color: #5dade2;
+}
+
+.error-page.dark-mode .error-help a:hover {
+  color: #7ec8e3;
 }
 
 .error-actions .btn {

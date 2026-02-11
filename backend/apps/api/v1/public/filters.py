@@ -47,6 +47,16 @@ class ArticleFilter(django_filters.FilterSet):
         label='Language'
     )
     
+    # Access level filter
+    access_level = django_filters.ChoiceFilter(
+        choices=[
+            ('public', 'Public (tanpa login)'),
+            ('internal', 'Internal (semua ASN)'),
+            ('role_based', 'Role-based (specific roles)'),
+        ],
+        label='Access Level'
+    )
+    
     # Ordering
     ordering = django_filters.OrderingFilter(
         fields=(
@@ -62,7 +72,7 @@ class ArticleFilter(django_filters.FilterSet):
     
     class Meta:
         model = Article
-        fields = ['search', 'category', 'tags', 'published_after', 'published_before', 'language']
+        fields = ['search', 'category', 'tags', 'published_after', 'published_before', 'language', 'access_level']
     
     def filter_search(self, queryset, name, value):
         """Full-text search across title and content."""

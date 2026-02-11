@@ -13,6 +13,7 @@
   padding: 0;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
   overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
   transition: width 0.3s ease;
   z-index: 1000;
@@ -96,6 +97,7 @@
   font-size: 0.95rem;
   font-weight: 500;
   width: calc(100% - 1rem);
+  box-sizing: border-box;
 }
 
 .nav-menu .nav-item:hover {
@@ -142,7 +144,8 @@
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: 500;
-  margin: 0.5rem;
+  margin: 0.5rem 0;
+  box-sizing: border-box;
 }
 
 .btn-logout:hover {

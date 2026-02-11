@@ -24,23 +24,34 @@ File endpoints:
 - DELETE /api/v1/internal/articles/{article_id}/files/{id}/ - Delete file
 - POST /api/v1/internal/articles/{article_id}/files/reorder/ - Reorder files
 """
-from django.urls import path, include
+from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
 from .views import ArticleViewSet, FileViewSet
 
 # Create router and register viewsets
 router = DefaultRouter()
 router.register(r'articles', ArticleViewSet, basename='article')
-# Register FileViewSet with nested article_id
-router.register(
-    r'articles/(?P<article_id>\d+)/files',
-    FileViewSet,
-    basename='article-files'
-)
 
 # Internal API URLs
 urlpatterns = [
     # Explicit URL for check-slug action must come FIRST to take priority over router
     path('articles/check-slug/', ArticleViewSet.as_view({'get': 'check_slug'}), name='article-check-slug'),
+    # Router for articles with detail actions (submit-review, publish, etc.)
     path('', include(router.urls)),
+    # Nested file endpoints - use explicit re_path to properly capture article_id
+    re_path(
+        r'^articles/(?P<article_id>\d+)/files/$',
+        FileViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='article-files-list'
+    ),
+    re_path(
+        r'^articles/(?P<article_id>\d+)/files/(?P<pk>\d+)/$',
+        FileViewSet.as_view({'get': 'retrieve', 'patch': 'partial_update', 'delete': 'destroy'}),
+        name='article-files-detail'
+    ),
+    re_path(
+        r'^articles/(?P<article_id>\d+)/files/reorder/$',
+        FileViewSet.as_view({'post': 'reorder'}),
+        name='article-files-reorder'
+    ),
 ]

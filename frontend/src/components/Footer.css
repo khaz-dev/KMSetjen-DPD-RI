@@ -69,9 +69,33 @@
   border-color: #333;
 }
 
+.footer-row {
+  display: flex !important;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
 .brand-name {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   z-index: 10;
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+}
+
+/* Explicit footer column widths to override Bootstrap defaults */
+.footer .row > .col-md-5 {
+  flex: 0 0 calc(41.66667% - 0px) !important;
+  max-width: 41.66667% !important;
+}
+
+.footer .row > .col-md-3 {
+  flex: 0 0 calc(25% - 0px) !important;
+  max-width: 25% !important;
+}
+
+.footer .row > .col-md-6 {
+  flex: 0 0 calc(50% - 0px) !important;
+  max-width: 50% !important;
 }

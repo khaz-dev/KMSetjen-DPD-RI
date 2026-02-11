@@ -451,3 +451,6 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 
+# External API Configuration
+EXTERNAL_API_BASE_URL = env('EXTERNAL_API_BASE_URL', default='https://Cmb2.duckdns.org')
+EXTERNAL_API_TOKEN = env('EXTERNAL_API_TOKEN', default='hY89aCK6tgMmGQNootpLYsw9otfwmNAv24cZ3QIljC8aI8DQ4RbxQlHPn0cVBbgdtwuJpWbxfbu4qGCwTycKtAiIDwX8ePEcWRtBhu2LfKmsY87eGuCDXBv8pAvbLtEH')

@@ -14,6 +14,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from apps.core.models import Role
 from apps.audit.models import AuditLog
+from apps.content.models import Tag
 
 User = get_user_model()
 
@@ -52,13 +53,50 @@ class RoleCreateUpdateSerializer(serializers.ModelSerializer):
     
     def validate_code(self, value):
         """Validate role code is unique (except in update)."""
+        if not value:
+            raise serializers.ValidationError("Role code is required and cannot be empty.")
+        
+        # Ensure code is uppercase
+        value = value.upper()
+        
         if self.instance:  # Update case
             if Role.objects.filter(code=value).exclude(pk=self.instance.pk).exists():
                 raise serializers.ValidationError("A role with this code already exists.")
         else:  # Create case
             if Role.objects.filter(code=value).exists():
                 raise serializers.ValidationError("A role with this code already exists.")
-        return value.upper()
+        
+        return value
+    
+    def validate_name_id(self, value):
+        """Validate name_id is provided."""
+        if not value or not value.strip():
+            raise serializers.ValidationError("Indonesian name (name_id) is required.")
+        return value
+    
+    def validate_name_en(self, value):
+        """Validate name_en is provided."""
+        if not value or not value.strip():
+            raise serializers.ValidationError("English name (name_en) is required.")
+        return value
+    
+    def validate_permissions(self, value):
+        """Validate permissions is a list of valid permission IDs."""
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Permissions must be a list of IDs.")
+        
+        # Validate that all permission IDs exist in database
+        from django.contrib.auth.models import Permission
+        if value:
+            invalid_ids = []
+            for perm_id in value:
+                if not Permission.objects.filter(id=perm_id).exists():
+                    invalid_ids.append(perm_id)
+            
+            if invalid_ids:
+                raise serializers.ValidationError(f"Invalid permission IDs: {', '.join(map(str, invalid_ids))}")
+        
+        return value
 
 
 class UserListSerializer(serializers.ModelSerializer):
@@ -69,7 +107,7 @@ class UserListSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'nip', 'is_active', 'primary_role', 'role_count', 'last_login', 'date_joined']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'nip', 'jabatan', 'unit_organisasi', 'jenis_jabatan', 'is_active', 'is_staff', 'primary_role', 'role_count', 'last_login', 'date_joined']
         read_only_fields = ['id', 'last_login', 'date_joined']
     
     def get_primary_role(self, obj):
@@ -92,7 +130,8 @@ class UserDetailSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name', 'phone',
-            'nip', 'department', 'is_active', 'is_staff', 'roles', 'primary_role',
+            'nip', 'jabatan', 'unit_organisasi', 'jenis_jabatan',
+            'is_active', 'is_staff', 'roles', 'primary_role',
             'preferred_language', 'theme_mode', 'last_login', 'date_joined', 'updated_at'
         ]
         read_only_fields = ['id', 'last_login', 'date_joined', 'updated_at']
@@ -103,7 +142,8 @@ class UserDetailSerializer(serializers.ModelSerializer):
         return {
             'id': role.id,
             'code': role.code,
-            'name': role.name
+            'name_id': role.name_id,
+            'name_en': role.name_en
         } if role else None
 
 
@@ -121,8 +161,9 @@ class UserCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'username', 'email', 'password', 'password_confirm',
-            'first_name', 'last_name', 'phone', 'nip', 'department',
+            'email', 'password', 'password_confirm',
+            'first_name', 'last_name', 'phone', 'nip',
+            'jabatan', 'unit_organisasi', 'jenis_jabatan',
             'is_active', 'is_staff', 'roles'
         ]
     
@@ -131,12 +172,6 @@ class UserCreateSerializer(serializers.ModelSerializer):
         if data['password'] != data.pop('password_confirm'):
             raise serializers.ValidationError({'password': 'Passwords do not match.'})
         return data
-    
-    def validate_username(self, value):
-        """Validate username is unique."""
-        if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError("A user with this username already exists.")
-        return value
     
     def validate_email(self, value):
         """Validate email is unique."""
@@ -148,6 +183,10 @@ class UserCreateSerializer(serializers.ModelSerializer):
         """Create user with password."""
         roles = validated_data.pop('roles', [])
         password = validated_data.pop('password')
+        email = validated_data.get('email')
+        
+        # Use email as username
+        validated_data['username'] = email
         
         user = User.objects.create_user(password=password, **validated_data)
         
@@ -169,7 +208,8 @@ class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'email', 'first_name', 'last_name', 'phone', 'nip', 'department',
+            'email', 'first_name', 'last_name', 'phone', 'nip',
+            'jabatan', 'unit_organisasi', 'jenis_jabatan',
             'is_active', 'is_staff', 'preferred_language', 'theme_mode', 'roles'
         ]
     
@@ -213,11 +253,12 @@ class AuditLogSerializer(serializers.ModelSerializer):
     
     user_name = serializers.CharField(source='user.username', read_only=True, allow_null=True)
     changes = serializers.JSONField(read_only=True)
+    resource_type = serializers.CharField(source='content_type', read_only=True)
     
     class Meta:
         model = AuditLog
         fields = [
-            'id', 'action', 'content_type', 'content_id', 'content_display',
+            'id', 'action', 'content_type', 'content_id', 'content_display', 'resource_type',
             'user', 'user_name', 'changes', 'ip_address', 'user_agent', 'timestamp'
         ]
         read_only_fields = fields
@@ -227,7 +268,7 @@ class AuditLogFilterSerializer(serializers.Serializer):
     """Serializer for audit log filtering."""
     
     action = serializers.ChoiceField(
-        choices=['CREATE', 'UPDATE', 'DELETE', 'PUBLISH', 'APPROVE', 'REJECT', 'REVIEW', 'ARCHIVE'],
+        choices=['create', 'update', 'delete', 'publish', 'unpublish', 'approve', 'reject', 'review', 'view'],
         required=False
     )
     resource_type = serializers.CharField(required=False)
@@ -251,3 +292,26 @@ class SystemStatisticsSerializer(serializers.Serializer):
     articles_by_status = serializers.DictField()
     audit_logs_by_action = serializers.DictField()
     recent_audit_logs = AuditLogSerializer(many=True)
+
+
+class TagSerializer(serializers.ModelSerializer):
+    """Tag serializer for list and detail."""
+    
+    article_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Tag
+        fields = ['id', 'name_id', 'name_en', 'description_id', 'description_en', 'color', 'slug', 'is_active', 'usage_count', 'article_count', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'slug', 'usage_count', 'created_at', 'updated_at']
+    
+    def get_article_count(self, obj):
+        """Count articles with this tag."""
+        return obj.articles.count()
+
+
+class TagCreateUpdateSerializer(serializers.ModelSerializer):
+    """Tag creation and update serializer."""
+    
+    class Meta:
+        model = Tag
+        fields = ['name_id', 'name_en', 'description_id', 'description_en', 'color', 'is_active']

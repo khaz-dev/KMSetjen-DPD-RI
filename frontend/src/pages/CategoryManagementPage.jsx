@@ -20,6 +20,9 @@ function CategoryManagementPage({ onLogout }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({ name_en: '', name_id: '', description: '' });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteCategoryId, setDeleteCategoryId] = useState(null);
+  const [deleteCategoryName, setDeleteCategoryName] = useState('');
 
   const loadItems = useCallback(async () => {
     try {
@@ -73,15 +76,85 @@ function CategoryManagementPage({ onLogout }) {
     }
   };
 
-  const handleDeleteItem = async (id) => {
-    if (!window.confirm(t('categories.confirm_delete'))) return;
+  const handleDeleteItem = (id) => {
+    console.log('[CategoryManagement DELETE] Button clicked for categoryId:', id);
+    
+    // Find the category name for display in confirmation modal
+    const category = items.find(item => item.id === id);
+    const categoryName = category ? category.name_en : `Category ${id}`;
+    
+    console.log('[CategoryManagement DELETE] Opening confirmation modal for category:', categoryName);
+    setDeleteCategoryId(id);
+    setDeleteCategoryName(categoryName);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    const categoryId = deleteCategoryId;
+    console.log('[CategoryManagement DELETE] User confirmed, sending DELETE request...');
+    
     try {
-      await axios.delete(`${import.meta.env.VITE_API_URL}/api/v1/public/categories/${id}/`,
-        { headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` } });
+      const apiUrl = `${import.meta.env.VITE_API_URL}/api/v1/public/categories/${categoryId}/`;
+      const token = localStorage.getItem('access_token');
+      
+      console.log('[CategoryManagement DELETE] API URL:', apiUrl);
+      console.log('[CategoryManagement DELETE] Has token:', !!token);
+      
+      const response = await axios.delete(apiUrl, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log('[CategoryManagement DELETE] Success! Response:', response.status, response.data);
+      
+      // Show success alert
+      alert(`Success: ${response.data.detail || 'Category deleted successfully'}`);
+      
+      setError(null);
       loadItems();
+      console.log('[CategoryManagement DELETE] Categories reloaded');
+      setShowDeleteModal(false);
+      setDeleteCategoryId(null);
+      setDeleteCategoryName('');
     } catch (err) {
-      setError(err.response?.data?.detail || t('categories.category_error'));
+      console.error('[CategoryManagement DELETE] Error deleting category:', err);
+      console.error('[CategoryManagement DELETE] Error status:', err.response?.status);
+      console.error('[CategoryManagement DELETE] Error data:', err.response?.data);
+      console.error('[CategoryManagement DELETE] Error message:', err.message);
+      
+      // Get detailed error message from backend response
+      let errorDetail = t('categories.category_error');
+      
+      if (err.response?.data?.detail) {
+        errorDetail = err.response.data.detail;
+      } else if (err.response?.data?.message) {
+        errorDetail = err.response.data.message;
+      } else if (err.response?.status === 400) {
+        errorDetail = 'Cannot delete this category. It may have dependent articles.';
+      } else if (err.response?.status === 403) {
+        errorDetail = 'You do not have permission to delete this category.';
+      } else if (err.response?.status === 404) {
+        errorDetail = 'Category not found.';
+      } else if (err.response?.status === 500) {
+        errorDetail = 'Server error occurred while deleting the category.';
+      }
+      
+      // Show error alert
+      alert(`Error: ${errorDetail}`);
+      
+      setError(errorDetail);
+      setShowDeleteModal(false);
+      setDeleteCategoryId(null);
+      setDeleteCategoryName('');
     }
+  };
+
+  const handleCancelDelete = () => {
+    console.log('[CategoryManagement DELETE] User cancelled delete');
+    setShowDeleteModal(false);
+    setDeleteCategoryId(null);
+    setDeleteCategoryName('');
   };
 
   return (
@@ -167,7 +240,7 @@ function CategoryManagementPage({ onLogout }) {
         </Container>
       </div>
 
-      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
+      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" className={isDarkMode ? 'dark-mode' : ''}>
         <Modal.Header closeButton>
           <Modal.Title>{modalMode === 'create' ? t('categories.add_category') : t('categories.edit_category')}</Modal.Title>
         </Modal.Header>
@@ -190,6 +263,51 @@ function CategoryManagementPage({ onLogout }) {
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowModal(false)}>{t('buttons.cancel')}</Button>
           <Button variant="primary" onClick={handleSubmitForm} disabled={submitting}>{submitting ? t('common.saving') : t('buttons.save')}</Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal show={showDeleteModal} onHide={handleCancelDelete} size="sm" className={isDarkMode ? 'dark-mode' : ''} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <span style={{ color: '#e74c3c' }}>⚠️ {t('categories.delete_confirmation')}</span>
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ marginBottom: '1rem', fontSize: '1.05rem' }}>
+              {t('categories.confirm_delete')}
+            </p>
+            <div style={{
+              backgroundColor: isDarkMode ? '#2c3e50' : '#f8f9fa',
+              padding: '1rem',
+              borderRadius: '6px',
+              marginBottom: '1rem',
+              border: '2px solid #e74c3c'
+            }}>
+              <p style={{ margin: 0, fontWeight: 'bold', fontSize: '1.1rem', color: '#e74c3c' }}>
+                {deleteCategoryName}
+              </p>
+            </div>
+            <p style={{ fontSize: '0.95rem', color: '#7f8c8d', marginBottom: 0 }}>
+              {t('categories.delete_warning') || 'This action cannot be undone.'}
+            </p>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="secondary"
+            onClick={handleCancelDelete}
+          >
+            {t('buttons.cancel')}
+          </Button>
+          <Button
+            variant="danger"
+            onClick={handleConfirmDelete}
+            style={{ backgroundColor: '#e74c3c', borderColor: '#c0392b' }}
+          >
+            {t('buttons.delete') || 'Delete'}
+          </Button>
         </Modal.Footer>
       </Modal>
     </div>

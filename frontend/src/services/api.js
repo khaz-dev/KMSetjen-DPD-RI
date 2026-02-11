@@ -2,6 +2,22 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002/api';
 
+// Suppress 404 console errors for internal article GET requests
+// This is expected behavior for non-staff users accessing articles they don't own
+const originalConsoleError = console.error;
+console.error = function(...args) {
+  const errorText = args.map(arg => String(arg)).join(' ');
+  
+  // Check if this is a 404 error for internal articles
+  if (errorText.includes('404') && errorText.includes('/v1/internal/articles/')) {
+    // Silently suppress this expected error
+    return;
+  }
+  
+  // Log all other errors normally
+  return originalConsoleError.apply(console, args);
+};
+
 // Create axios instance for AUTHENTICATED requests (with JWT token)
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -9,6 +25,8 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // Default validation - 2xx and 3xx are success, everything else is error
+  validateStatus: (status) => status >= 200 && status < 300,
 });
 
 // Create axios instance for PUBLIC requests (no JWT token)
@@ -20,7 +38,7 @@ const publicClient = axios.create({
   },
 });
 
-// Add authorization header with JWT token to authenticated requests
+// Add request interceptor to handle token and suppress 404 logging for internal articles
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token');
@@ -28,18 +46,49 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
       console.debug(`[API] Added Authorization header for: ${config.method.toUpperCase()} ${config.url}`);
     }
+    
+    // For internal article GET requests, allow 404 responses so axios doesn't log them as errors
+    if (config.url?.includes('/v1/internal/articles/') && config.method?.toLowerCase() === 'get') {
+      config.validateStatus = (status) => status < 500; // Accept anything below 500 (2xx, 3xx, 4xx all OK)
+      config.suppressErrorLog = true;
+    }
+    
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Handle token expiration
+// Add optional authorization header to public client (for authenticated users accessing public endpoints)
+// This allows authenticated users to see internal articles when filtering
+publicClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.debug(`[API] Added Authorization header to publicClient for: ${config.method.toUpperCase()} ${config.url}`);
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Handle response and convert 404s on internal articles to rejections (without logging)
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Check if this is a 404 response that was allowed through by validateStatus
+    if (response.status === 404 && response.config?.suppressErrorLog) {
+      // Convert to rejection without logging (validateStatus prevented axios logging)
+      const error = new Error(`Request failed with status code 404`);
+      error.response = response;
+      error.config = response.config;
+      return Promise.reject(error);
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest?._retry) {
       // Only log as warning if not the /auth/me/ endpoint (which is checked on app init)
       if (!originalRequest.url.includes('/auth/me/')) {
         console.warn(`[API] 401 Unauthorized for: ${originalRequest.method.toUpperCase()} ${originalRequest.url}`);
@@ -155,6 +204,14 @@ export const publicAPI = {
   
   getTag: (id) =>
     publicClient.get(`/v1/public/tags/${id}/`),
+
+  // View tracking
+  recordView: (id) =>
+    publicClient.post(`/v1/public/articles/${id}/view/`),
+
+  // Like tracking
+  recordLike: (id) =>
+    publicClient.post(`/v1/public/articles/${id}/like/`),
 };
 
 // Internal API Service (Authenticated)
@@ -308,4 +365,18 @@ export const adminAPI = {
     apiClient.get('/v1/admin/statistics/audit/'),
 };
 
+/**
+ * Helper function to generate article URL
+ * Prefers slug if available, falls back to ID
+ * @param {Object} article - Article object with id and slug
+ * @returns {string} URL path for the article
+ */
+export const getArticleUrl = (article) => {
+  if (!article) return '/knowledges';
+  // Prefer slug if available, otherwise use ID
+  const identifier = article.slug || article.id;
+  return `/knowledges/${identifier}`;
+};
+
 export default apiClient;
+export { publicClient };

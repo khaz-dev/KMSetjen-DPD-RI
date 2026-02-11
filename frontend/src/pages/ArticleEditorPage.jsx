@@ -70,7 +70,8 @@ const ArticleEditor = () => {
     featured_image: '',
     featured_image_file: null,
     slug: '',
-    status: 'draft'
+    status: 'draft',
+    access_level: 'public'  // Default to public access
   });
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -104,7 +105,8 @@ const ArticleEditor = () => {
         featured_image: data.image || data.image_url || '',
         featured_image_url: data.image_url || '',
         slug: data.slug || '',
-        status: data.status || 'draft'
+        status: data.status || 'draft',
+        access_level: data.access_level || 'public'  // Load access level from API
       });
       setSelectedTags(data.tags?.map(t => t.id) || []);
       // Load associated files
@@ -170,7 +172,8 @@ const ArticleEditor = () => {
         formDataObj.append('summary_id', formData.description_id);
         formDataObj.append('summary_en', formData.description_en);
         formDataObj.append('category', formData.category_id);
-        formDataObj.append('status', 'draft');
+        formDataObj.append('access_level', formData.access_level);
+        formDataObj.append('status', formData.status || 'draft');
         formDataObj.append('slug', formData.slug || '');
         formDataObj.append('image', formData.featured_image_file);
         
@@ -191,8 +194,9 @@ const ArticleEditor = () => {
           summary_id: formData.description_id,
           summary_en: formData.description_en,
           tags: selectedTags,
-          status: 'draft',
+          status: formData.status || 'draft',
           category: formData.category_id,
+          access_level: formData.access_level,
           slug: formData.slug
         };
         
@@ -223,7 +227,22 @@ const ArticleEditor = () => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('Backend error response:', errorData);
+        console.error('=== BACKEND VALIDATION ERROR ===');
+        console.error('Status Code:', response.status);
+        console.error('Error Response:', JSON.stringify(errorData, null, 2));
+        console.error('Payload Sent:', {
+          title_id: formData.title_id,
+          title_en: formData.title_en,
+          content_id: formData.content_id,
+          content_en: formData.content_en,
+          summary_id: formData.description_id,
+          summary_en: formData.description_en,
+          category: formData.category_id,
+          tags: selectedTags,
+          status: 'draft',
+          slug: formData.slug
+        });
+        console.error('=== END ERROR ===');
         throw new Error('save_draft_failed');
       }
 
@@ -647,24 +666,17 @@ const ArticleEditor = () => {
         return;
       }
 
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002/api';
+      
+      // Use the dedicated submit-review endpoint
       const payload = {
-        title_id: formData.title_id,
-        title_en: formData.title_en,
-        content_id: formData.content_id,
-        content_en: formData.content_en,
-        summary_id: formData.description_id,
-        summary_en: formData.description_en,
-        tags: selectedTags,
-        status: 'submitted',
-        category: formData.category_id,  // Changed from category_id to category
-        slug: formData.slug
+        comment: ''  // Optional comment for reviewer
       };
 
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002/api';
       const response = await fetch(
-        id ? `${apiBaseUrl}/v1/internal/articles/${id}/` : `${apiBaseUrl}/v1/internal/articles/`,
+        `${apiBaseUrl}/v1/internal/articles/${id}/submit-review/`,
         {
-          method: id ? 'PUT' : 'POST',
+          method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
             'Content-Type': 'application/json'
@@ -752,13 +764,13 @@ const ArticleEditor = () => {
         {/* Title */}
         <Form.Group className="mb-4">
           <Form.Label>
-            {activeLanguageTab === 'id' ? t('editor.article_title') : 'Article Title (English)'} *
+            {activeLanguageTab === 'id' ? t('editor.article_title') : 'Knowledge Title (English)'} *
           </Form.Label>
           <Form.Control
             type="text"
             value={activeLanguageTab === 'id' ? formData.title_id : formData.title_en}
             onChange={handleTitleChange}
-            placeholder={activeLanguageTab === 'id' ? t('editor.article_title_placeholder') : 'Enter article title in English'}
+            placeholder={activeLanguageTab === 'id' ? t('editor.article_title_placeholder') : 'Enter knowledge title in English'}
             required={activeLanguageTab === 'id'} 
             maxLength={200}
           />
@@ -781,6 +793,23 @@ const ArticleEditor = () => {
               <option key={cat.id} value={cat.id}>{isIndonesian ? cat.name_id : cat.name_en}</option>
             ))}
           </Form.Select>
+        </Form.Group>
+
+        {/* Access Level (Tingkat Akses) */}
+        <Form.Group className="mb-4">
+          <Form.Label>{t('editor.access_level') || 'Tingkat Akses'}</Form.Label>
+          <Form.Select
+            name="access_level"
+            value={formData.access_level}
+            onChange={handleChange}
+          >
+            <option value="public">{t('editor.access_public') || 'Public (Umum)'}</option>
+            <option value="internal">{t('editor.access_internal') || 'Internal (Semua ASN)'}</option>
+            <option value="role_based">{t('editor.access_role_based') || 'Role-Based (Peran Tertentu)'}</option>
+          </Form.Select>
+          <Form.Text className="text-muted">
+            {t('editor.access_level_help') || 'Pilih siapa yang dapat melihat artikel ini'}
+          </Form.Text>
         </Form.Group>
 
         {/* Slug */}
@@ -1129,7 +1158,7 @@ const ArticleEditor = () => {
           <RichTextEditor
             value={activeLanguageTab === 'id' ? formData.content_id : formData.content_en}
             onChange={handleContentChange}
-            placeholder={activeLanguageTab === 'id' ? t('editor.write_article_content') : 'Write article content in English'}
+            placeholder={activeLanguageTab === 'id' ? t('editor.write_article_content') : 'Write knowledge content in English'}
             height="400px"
           />
           <Form.Text className="text-muted d-block mb-3">

@@ -7,7 +7,7 @@ import './SearchFilter.css';
 
 /**
  * SearchFilter Component
- * Displays search input with filters (category, sort, etc.)
+ * Displays search input with filters (category, sort, access level, etc.)
  */
 const SearchFilter = ({
   searchQuery = '',
@@ -15,6 +15,8 @@ const SearchFilter = ({
   selectedCategory = '',
   onCategoryChange,
   categories = [],
+  selectedAccessLevel = '',
+  onAccessLevelChange,
   sortBy = 'published_at',
   onSortChange,
   onReset,
@@ -71,6 +73,17 @@ const SearchFilter = ({
               {isIndonesian ? cat.name_id : cat.name_en}
             </option>
           ))}
+        </Form.Select>
+
+        <Form.Select
+          value={selectedAccessLevel}
+          onChange={(e) => onAccessLevelChange(e.target.value)}
+          className="filter-select"
+        >
+          <option value="">{t('search.all_access_levels')}</option>
+          <option value="public">{t('search.access_public')}</option>
+          <option value="internal">{t('search.access_internal')}</option>
+          <option value="role_based">{t('search.access_role_based')}</option>
         </Form.Select>
 
         <Form.Select

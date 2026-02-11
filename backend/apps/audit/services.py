@@ -2,6 +2,7 @@
 Audit logging service and utilities.
 """
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 from .models import AuditLog
 import json
 
@@ -24,7 +25,7 @@ class AuditService:
         Create an audit log entry.
         
         Args:
-            user: User object
+            user: User object (or None for anonymous users)
             action: Action type (create, update, delete, etc.)
             content_type: Type of content (Article, User, etc.)
             content_id: ID of content
@@ -33,6 +34,10 @@ class AuditService:
             ip_address: IP address of requester
             user_agent: User agent string
         """
+        # Convert AnonymousUser to None
+        if isinstance(user, AnonymousUser) or not user or not hasattr(user, 'id'):
+            user = None
+        
         AuditLog.objects.create(
             user=user,
             action=action,

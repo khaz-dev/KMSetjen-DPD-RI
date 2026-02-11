@@ -18,6 +18,7 @@ class AuditLog(models.Model):
     ACTION_REVIEW = 'review'
     ACTION_APPROVE = 'approve'
     ACTION_REJECT = 'reject'
+    ACTION_VIEW = 'view'
     
     ACTION_CHOICES = [
         (ACTION_CREATE, 'Create'),
@@ -28,6 +29,7 @@ class AuditLog(models.Model):
         (ACTION_REVIEW, 'Submit to Review'),
         (ACTION_APPROVE, 'Approve'),
         (ACTION_REJECT, 'Reject'),
+        (ACTION_VIEW, 'View'),
     ]
     
     user = models.ForeignKey(

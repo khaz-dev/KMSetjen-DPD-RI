@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../hooks/useLanguage';
-import { publicAPI } from '../services/api';
+import { publicAPI, getArticleUrl } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
 import Breadcrumbs from '../components/Breadcrumbs';
@@ -58,7 +58,7 @@ const CategoryDetailPage = () => {
         <div className="container py-4">
           <ErrorAlert
             message={t('errors.not_found')}
-            onDismiss={() => navigate('/articles')}
+            onDismiss={() => navigate('/knowledges')}
           />
         </div>
       </div>
@@ -67,7 +67,7 @@ const CategoryDetailPage = () => {
 
   const breadcrumbItems = [
     { label: 'nav.home', path: '/' },
-    { label: 'articles.title', path: '/articles' },
+    { label: 'articles.title', path: '/knowledges' },
     { label: isIndonesian ? category.name_id : category.name_en, active: true },
   ];
 
@@ -93,7 +93,7 @@ const CategoryDetailPage = () => {
             <p>{t('moderation.no_articles')}</p>
             <button
               className="btn btn-primary"
-              onClick={() => navigate('/articles')}
+              onClick={() => navigate('/knowledges')}
             >
               {t('buttons.back')}
             </button>
@@ -126,7 +126,7 @@ const CategoryDetailPage = () => {
                 </div>
                 <button
                   className="article-link-btn"
-                  onClick={() => navigate(`/articles/${article.id}`)}
+                  onClick={() => navigate(getArticleUrl(article))}
                   title={t('moderation.view_article')}
                 >
                   <FiArrowRight size={20} />

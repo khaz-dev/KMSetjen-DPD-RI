@@ -67,14 +67,14 @@ class LanguageAdmin(admin.ModelAdmin):
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     list_display = (
-        'username', 'email', 'get_full_name', 'nip', 'department',
+        'username', 'email', 'get_full_name', 'nip', 'jabatan', 'unit_organisasi',
         'is_active', 'created_at'
     )
     list_filter = (
         'is_active', 'is_staff', 'is_superuser', 'is_sso_user',
-        'department', 'created_at'
+        'created_at'
     )
-    search_fields = ('username', 'email', 'first_name', 'last_name', 'nip')
+    search_fields = ('username', 'email', 'first_name', 'last_name', 'nip', 'jabatan')
     readonly_fields = ('created_at', 'updated_at', 'last_sso_login')
     
     fieldsets = (
@@ -84,8 +84,8 @@ class UserAdmin(BaseUserAdmin):
         ('Nama & Data Pribadi', {
             'fields': ('first_name', 'last_name', 'phone', 'avatar')
         }),
-        ('Organisasi', {
-            'fields': ('department',)
+        ('Organisasi & Jabatan', {
+            'fields': ('unit_organisasi', 'jenis_jabatan', 'jabatan')
         }),
         ('Roles & Permissions', {
             'fields': ('roles', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),

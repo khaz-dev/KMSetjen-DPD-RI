@@ -18,6 +18,33 @@ function AdminDashboardPage({ onLogout }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Helper function to translate status values
+  const getStatusLabel = (status) => {
+    return t(`status.${status}`, status);
+  };
+
+  // Helper function to translate role values
+  const getRoleLabel = (role) => {
+    return t(`roles.${role}`, role);
+  };
+
+  // Helper function to translate and normalize audit action values
+  const getActionLabel = (action) => {
+    // Normalize action name to lowercase for consistent translation lookup
+    const normalizedAction = action.toLowerCase();
+    return t(`audit_actions.${normalizedAction}`, action);
+  };
+
+  // Helper function to normalize and deduplicate audit actions
+  const normalizeAuditActions = (auditLogsObj) => {
+    const normalized = {};
+    Object.entries(auditLogsObj).forEach(([action, count]) => {
+      const key = action.toLowerCase();
+      normalized[key] = (normalized[key] || 0) + count;
+    });
+    return normalized;
+  };
+
   useEffect(() => {
     loadStatistics();
   }, []);
@@ -89,10 +116,10 @@ function AdminDashboardPage({ onLogout }) {
                     aria-hidden="true"
                     style={{ marginRight: '0.5rem' }}
                   />
-                  Refreshing...
+                  {t('common.refreshing')}
                 </>
               ) : (
-                'Refresh'
+                t('common.refresh')
               )}
             </button>
           </div>
@@ -119,7 +146,7 @@ function AdminDashboardPage({ onLogout }) {
                     icon={FiUsers}
                     label={t('admin.total_users')}
                     value={stats.total_users || 0}
-                    subtext={`${stats.active_users || 0} active`}
+                    subtext={`${stats.active_users || 0} ${t('common.active')}`}
                     bgColor="blue"
                   />
                 </Col>
@@ -128,7 +155,7 @@ function AdminDashboardPage({ onLogout }) {
                     icon={FiFileText}
                     label={t('admin.total_articles')}
                     value={stats.total_articles || 0}
-                    subtext={`${stats.published_articles || 0} published`}
+                    subtext={`${stats.published_articles || 0} ${t('common.published')}`}
                     bgColor="green"
                   />
                 </Col>
@@ -146,7 +173,7 @@ function AdminDashboardPage({ onLogout }) {
                     icon={FiTrendingUp}
                     label={t('moderation.pending_review')}
                     value={stats.in_review_articles || 0}
-                    subtext={`${stats.draft_articles || 0} drafts`}
+                    subtext={`${stats.draft_articles || 0} ${t('common.drafts')}`}
                     bgColor="orange"
                   />
                 </Col>
@@ -157,14 +184,14 @@ function AdminDashboardPage({ onLogout }) {
                 <Col lg={6} className="mb-3">
                   <Card className="breakdown-card">
                     <Card.Header>
-                      <Card.Title className="mb-0">Users by Role</Card.Title>
+                      <Card.Title className="mb-0">{t('admin.users_by_role')}</Card.Title>
                     </Card.Header>
                     <Card.Body>
                       {stats.users_by_role && Object.keys(stats.users_by_role).length > 0 ? (
                         <div className="breakdown-list">
                           {Object.entries(stats.users_by_role).map(([role, count]) => (
                             <div key={role} className="breakdown-item">
-                              <span className="role-name">{role}</span>
+                              <span className="role-name">{getRoleLabel(role)}</span>
                               <span className="badge bg-primary">{count}</span>
                             </div>
                           ))}
@@ -179,14 +206,14 @@ function AdminDashboardPage({ onLogout }) {
                 <Col lg={6} className="mb-3">
                   <Card className="breakdown-card">
                     <Card.Header>
-                      <Card.Title className="mb-0">Articles by Status</Card.Title>
+                      <Card.Title className="mb-0">{t('admin.articles_by_status')}</Card.Title>
                     </Card.Header>
                     <Card.Body>
                       {stats.articles_by_status && Object.keys(stats.articles_by_status).length > 0 ? (
                         <div className="breakdown-list">
                           {Object.entries(stats.articles_by_status).map(([status, count]) => (
                             <div key={status} className="breakdown-item">
-                              <span className="status-name">{status}</span>
+                              <span className="status-name">{getStatusLabel(status)}</span>
                               <span className="badge bg-success">{count}</span>
                             </div>
                           ))}
@@ -204,16 +231,16 @@ function AdminDashboardPage({ onLogout }) {
                 <Col lg={12}>
                   <Card className="activity-card">
                     <Card.Header>
-                      <Card.Title className="mb-0">Audit Activity by Action</Card.Title>
+                      <Card.Title className="mb-0">{t('admin.audit_activity_by_action')}</Card.Title>
                     </Card.Header>
                     <Card.Body>
                       {stats.audit_logs_by_action && Object.keys(stats.audit_logs_by_action).length > 0 ? (
                         <div className="breakdown-list">
-                          {Object.entries(stats.audit_logs_by_action)
+                          {Object.entries(normalizeAuditActions(stats.audit_logs_by_action))
                             .sort((a, b) => b[1] - a[1])
                             .map(([action, count]) => (
                               <div key={action} className="breakdown-item">
-                                <span className="action-name">{action}</span>
+                                <span className="action-name">{getActionLabel(action)}</span>
                                 <span className="badge bg-info">{count}</span>
                               </div>
                             ))}

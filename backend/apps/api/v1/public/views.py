@@ -2,9 +2,10 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
@@ -55,26 +56,27 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = Article.objects.filter(
             is_published=True,
             status='published'
-        ).select_related('author', 'category').prefetch_related('tags', 'allowed_roles')
+        ).select_related('author', 'category').prefetch_related('tags', 'allowed_roles', 'files')
         
-        # Filter by access level
-        public_articles = queryset.filter(access_level='public')
-        
-        # If user is authenticated, include internal articles
+        # Filter by access level based on user authentication
         if user and user.is_authenticated:
-            internal_articles = queryset.filter(access_level='internal')
-            role_based = queryset.filter(access_level='role_based')
-            
-            # Check role-based access
+            # Authenticated users can see: public + internal + role-based (if they have the role)
+            # Use Q objects to maintain a single QuerySet that DjangoFilterBackend can properly filter
             if user.roles.exists():
-                role_based = role_based.filter(allowed_roles__in=user.roles.all())
+                queryset = queryset.filter(
+                    Q(access_level='public') | 
+                    Q(access_level='internal') | 
+                    Q(access_level='role_based', allowed_roles__in=user.roles.all())
+                )
             else:
-                role_based = Article.objects.none()
-            
-            queryset = public_articles | internal_articles | role_based
+                # User has no roles, only see public and internal
+                queryset = queryset.filter(
+                    Q(access_level='public') | 
+                    Q(access_level='internal')
+                )
         else:
             # Anonymous users only see public articles
-            queryset = public_articles
+            queryset = queryset.filter(access_level='public')
         
         return queryset.distinct()
     
@@ -84,53 +86,235 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
             return ArticleDetailSerializer
         return ArticleListSerializer
     
+    def get_object(self):
+        """
+        Override to support lookup by SLUG or ID.
+        - First tries numeric ID lookup
+        - Falls back to slug lookup
+        - Maintains proper permission filtering
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        # Get the lookup value from URL parameter (pk)
+        lookup_value = self.kwargs.get(self.lookup_field)
+        
+        if not lookup_value:
+            raise ValueError("No lookup value provided")
+        
+        # Try to parse as integer (ID lookup)
+        try:
+            lookup_id = int(lookup_value)
+            # First try to find by ID
+            try:
+                return queryset.get(id=lookup_id)
+            except Article.DoesNotExist:
+                pass
+        except (ValueError, TypeError):
+            pass
+        
+        # Try to find by slug
+        try:
+            return queryset.get(slug=lookup_value)
+        except Article.DoesNotExist:
+            # Not found by slug or ID
+            pass
+        
+        # If we get here, article not found with this slug or ID
+        # Let the default behavior handle the 404
+        return get_object_or_404(queryset, pk=lookup_value)
+    
     def retrieve(self, request, *args, **kwargs):
         """
-        Get article detail and record view.
+        Get article detail and record view (if article is published).
         """
         response = super().retrieve(request, *args, **kwargs)
         
-        # Increment view count with error handling for database locks
         article = self.get_object()
-        try:
-            article.increment_view_count()
-        except Exception as e:
-            # Don't fail the request if view count increment fails
-            # Database will retry on next request
-            print(f"Warning: Could not increment view count: {str(e)}")
         
-        # Log view in audit trail
-        try:
-            AuditService.log_action(
-                user=request.user if request.user.is_authenticated else None,
-                action='VIEW',
-                content_type='Article',
-                content_id=article.id,
-                content_display=article.title_en,
-                changes={'view_count': article.view_count},
-                ip_address=self._get_client_ip(request),
-                user_agent=request.META.get('HTTP_USER_AGENT', '')
-            )
-        except Exception:
-            # Don't fail the request if audit logging fails
-            pass
+        # Only track views for published articles
+        if article.status == Article.STATUS_PUBLISHED and article.is_published:
+            try:
+                # Record view with user and IP tracking
+                user = request.user if request.user.is_authenticated else None
+                ip_address = self._get_client_ip(request)
+                user_agent = request.META.get('HTTP_USER_AGENT', '')
+                
+                # increment_view_count handles the uniqueness check
+                # (prevents same user/IP from counting multiple times)
+                view_counted = article.increment_view_count(user=user, ip_address=ip_address)
+                
+                if view_counted:
+                    # Also log in audit trail if view was actually counted
+                    try:
+                        AuditService.log_action(
+                            user=user,
+                            action='view',
+                            content_type='Article',
+                            content_id=article.id,
+                            content_display=article.title_en,
+                            changes={},
+                            ip_address=ip_address,
+                            user_agent=user_agent
+                        )
+                    except Exception:
+                        pass
+            except Exception as e:
+                # Don't fail the request if view count increment fails
+                print(f"Warning: Could not increment view count: {str(e)}")
         
         return response
     
     @action(detail=True, methods=['post'])
     def view(self, request, pk=None):
         """
-        Record a view of the article.
+        Record a view of the article (only for published articles).
         POST /api/v1/public/articles/{id}/view/
+        
+        Returns:
+            - 200: View counted successfully OR article already viewed by this user/IP
+            - 400: Article is not published (view count not incremented)
         """
         article = self.get_object()
-        article.increment_view_count()
         
-        return Response({
-            'success': True,
-            'view_count': article.view_count,
-            'message': 'View recorded'
-        })
+        # CRITICAL: Only allow view counting for published articles
+        if article.status != Article.STATUS_PUBLISHED or not article.is_published:
+            return Response(
+                {
+                    'success': False,
+                    'view_count': article.view_count,
+                    'message': 'View counting only allowed for published articles'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Record view with user and IP tracking
+            user = request.user if request.user.is_authenticated else None
+            ip_address = self._get_client_ip(request)
+            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            
+            # increment_view_count handles the uniqueness check
+            view_counted = article.increment_view_count(user=user, ip_address=ip_address)
+            
+            if view_counted:
+                # Log the view in audit trail
+                try:
+                    AuditService.log_action(
+                        user=user,
+                        action='view',
+                        content_type='Article',
+                        content_id=article.id,
+                        content_display=article.title_en,
+                        changes={},
+                        ip_address=ip_address,
+                        user_agent=user_agent
+                    )
+                except Exception:
+                    pass
+                
+                return Response({
+                    'success': True,
+                    'view_count': article.view_count,
+                    'view_recorded': True,
+                    'message': 'View recorded successfully'
+                })
+            else:
+                # User/IP already viewed this article
+                return Response({
+                    'success': True,
+                    'view_count': article.view_count,
+                    'view_recorded': False,
+                    'message': 'Article already viewed by this user/IP'
+                })
+        except Exception as e:
+            return Response(
+                {
+                    'success': False,
+                    'view_count': article.view_count,
+                    'message': f'Error recording view: {str(e)}'
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def like(self, request, pk=None):
+        """
+        Toggle like on the article (only for published articles and authenticated users).
+        POST /api/v1/public/articles/{id}/like/
+        
+        CRITICAL: Only authenticated users can like articles.
+        
+        Returns:
+            - 200: Like toggled successfully
+            - 400: Article is not published (like not allowed) or user not authenticated
+            - 401: User not authenticated
+        """
+        article = self.get_object()
+        
+        # CRITICAL: Only allow likes on published articles
+        if article.status != Article.STATUS_PUBLISHED or not article.is_published:
+            return Response(
+                {
+                    'success': False,
+                    'like_count': article.like_count,
+                    'liked_by_user': False,
+                    'message': 'Liking only allowed for published articles'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Only authenticated users can like
+            user = request.user
+            if not user or not user.is_authenticated:
+                return Response(
+                    {
+                        'success': False,
+                        'like_count': article.like_count,
+                        'message': 'Authentication required to like articles'
+                    },
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+            
+            # toggle_like only with user (no IP-based tracking for public API)
+            result = article.toggle_like(user=user, ip_address=None)
+            
+            if 'error' in result:
+                return Response(result, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Log the like/unlike action in audit trail
+            try:
+                action = 'like' if result['liked'] else 'unlike'
+                AuditService.log_action(
+                    user=user,
+                    action=action,
+                    content_type='Article',
+                    content_id=article.id,
+                    content_display=article.title_en,
+                    changes={},
+                    ip_address=self._get_client_ip(request),
+                    user_agent=request.META.get('HTTP_USER_AGENT', '')
+                )
+            except Exception:
+                pass
+            
+            return Response({
+                'success': True,
+                'like_count': article.like_count,
+                'liked': result['liked'],
+                'liked_by_user': result['liked_by_user'],
+                'message': 'Like' if result['liked'] else 'Unlike' + ' recorded successfully'
+            })
+        except Exception as e:
+            return Response(
+                {
+                    'success': False,
+                    'like_count': article.like_count,
+                    'message': f'Error toggling like: {str(e)}'
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
     
     @action(detail=False, methods=['get'])
     def trending(self, request):

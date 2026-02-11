@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { publicAPI } from '../services/api';
+import { publicAPI, getArticleUrl } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
 import SearchFilter from '../components/SearchFilter';
@@ -12,6 +12,31 @@ import './ArticlesPage.css';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale, enUS } from 'date-fns/locale';
 import { FiEye, FiFolder, FiHeart } from 'react-icons/fi';
+
+/**
+ * Safe date format helper - handles null/invalid dates gracefully
+ */
+const formatSafeDate = (dateValue, isIndonesian) => {
+  try {
+    // Handle null/undefined inputs
+    if (!dateValue) {
+      return 'N/A';
+    }
+    
+    const dateObj = new Date(dateValue);
+    // Check if date is valid (not Invalid Date)
+    if (isNaN(dateObj.getTime())) {
+      return 'N/A'; // Return fallback for invalid dates
+    }
+    return formatDistanceToNow(dateObj, {
+      addSuffix: true,
+      locale: isIndonesian ? idLocale : enUS
+    });
+  } catch (error) {
+    // Return fallback if any error occurs
+    return 'N/A';
+  }
+};
 
 /**
  * ArticlesPage Component
@@ -32,6 +57,7 @@ const ArticlesPage = () => {
   // Get parameters from URL
   const searchQuery = searchParams.get('search') || '';
   const categoryId = searchParams.get('category') || '';
+  const accessLevel = searchParams.get('access_level') || '';
   const sortBy = searchParams.get('sort') || 'date';
   const page = parseInt(searchParams.get('page') || '1', 10);
 
@@ -54,6 +80,7 @@ const ArticlesPage = () => {
         page,
         search: searchQuery || undefined,
         category: categoryId || undefined,
+        access_level: accessLevel || undefined,
         ordering,
       };
 
@@ -69,7 +96,7 @@ const ArticlesPage = () => {
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [searchQuery, categoryId, sortBy, page]);
+  }, [searchQuery, categoryId, accessLevel, sortBy, page]);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -89,6 +116,7 @@ const ArticlesPage = () => {
     const params = new URLSearchParams();
     if (query) params.set('search', query);
     if (categoryId) params.set('category', categoryId);
+    if (accessLevel) params.set('access_level', accessLevel);
     params.set('sort', sortBy);
     params.set('page', '1');
     setSearchParams(params);
@@ -98,6 +126,17 @@ const ArticlesPage = () => {
     const params = new URLSearchParams();
     if (searchQuery) params.set('search', searchQuery);
     if (catId) params.set('category', catId);
+    if (accessLevel) params.set('access_level', accessLevel);
+    params.set('sort', sortBy);
+    params.set('page', '1');
+    setSearchParams(params);
+  };
+
+  const handleAccessLevelChange = (level) => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('search', searchQuery);
+    if (categoryId) params.set('category', categoryId);
+    if (level) params.set('access_level', level);
     params.set('sort', sortBy);
     params.set('page', '1');
     setSearchParams(params);
@@ -107,6 +146,7 @@ const ArticlesPage = () => {
     const params = new URLSearchParams();
     if (searchQuery) params.set('search', searchQuery);
     if (categoryId) params.set('category', categoryId);
+    if (accessLevel) params.set('access_level', accessLevel);
     params.set('sort', sort);
     params.set('page', '1');
     setSearchParams(params);
@@ -120,6 +160,7 @@ const ArticlesPage = () => {
     const params = new URLSearchParams();
     if (searchQuery) params.set('search', searchQuery);
     if (categoryId) params.set('category', categoryId);
+    if (accessLevel) params.set('access_level', accessLevel);
     params.set('sort', sortBy);
     params.set('page', newPage);
     setSearchParams(params);
@@ -128,7 +169,7 @@ const ArticlesPage = () => {
 
   const breadcrumbItems = [
     { label: 'nav.home', path: '/' },
-    { label: 'articles.title', path: '/articles' },
+    { label: 'articles.title', path: '/knowledges' },
   ];
 
   // Add category to breadcrumbs if selected
@@ -187,6 +228,8 @@ const ArticlesPage = () => {
           selectedCategory={categoryId}
           onCategoryChange={handleCategoryChange}
           categories={categories}
+          selectedAccessLevel={accessLevel}
+          onAccessLevelChange={handleAccessLevelChange}
           sortBy={sortBy}
           onSortChange={handleSortChange}
           onReset={handleReset}
@@ -212,7 +255,7 @@ const ArticlesPage = () => {
                 <div key={article.id} className="article-card">
                   <div className="card-image-placeholder" style={(article.image || article.image_url) ? { backgroundImage: `url(${article.image || article.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}>
                     {article.category && (
-                      <span className="category-badge">
+                      <span className="article-category-badge">
                         <FiFolder size={16} />
                         {isIndonesian ? article.category.name_id : article.category.name_en}
                       </span>
@@ -220,7 +263,7 @@ const ArticlesPage = () => {
                   </div>
                   <div className="article-card-content">
                     <h3 className="article-title">
-                      <a href={`/articles/${article.id}`} onClick={(e) => { e.preventDefault(); navigate(`/articles/${article.id}`); }}>
+                      <a href={getArticleUrl(article)} onClick={(e) => { e.preventDefault(); navigate(getArticleUrl(article)); }}>
                         {isIndonesian ? article.title_id : article.title_en}
                       </a>
                     </h3>
@@ -237,10 +280,7 @@ const ArticlesPage = () => {
                       {(sortBy === 'date' || sortBy === 'date-asc') && (
                         <>
                           <span className="meta-item meta-highlight">
-                            {formatDistanceToNow(new Date(article.published_at), {
-                              addSuffix: true,
-                              locale: isIndonesian ? idLocale : enUS
-                            })}
+                            {formatSafeDate(article.published_at || article.updated_at, isIndonesian)}
                           </span>
                           <span className="meta-item">
                             <FiEye size={16} />
@@ -260,10 +300,7 @@ const ArticlesPage = () => {
                             {article.view_count} {t('articles.views')}
                           </span>
                           <span className="meta-item">
-                            {formatDistanceToNow(new Date(article.published_at), {
-                              addSuffix: true,
-                              locale: isIndonesian ? idLocale : enUS
-                            })}
+                            {formatSafeDate(article.published_at || article.updated_at, isIndonesian)}
                           </span>
                           <span className="meta-item">
                             <FiHeart size={16} />
@@ -283,17 +320,14 @@ const ArticlesPage = () => {
                             {article.view_count} {t('articles.views')}
                           </span>
                           <span className="meta-item">
-                            {formatDistanceToNow(new Date(article.published_at), {
-                              addSuffix: true,
-                              locale: isIndonesian ? idLocale : enUS
-                            })}
+                            {formatSafeDate(article.published_at || article.updated_at, isIndonesian)}
                           </span>
                         </>
                       )}
                     </div>
                     <button
                       className="read-more-btn"
-                      onClick={() => navigate(`/articles/${article.id}`)}
+                      onClick={() => navigate(getArticleUrl(article))}
                     >
                       {t('buttons.read_more')} →
                     </button>

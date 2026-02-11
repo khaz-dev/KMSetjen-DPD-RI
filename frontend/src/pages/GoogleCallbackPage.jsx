@@ -73,11 +73,13 @@ const GoogleCallbackPage = () => {
         setLoading(false);
         console.debug('[GoogleCallback] Loading state set to false, spinner hidden');
         
-        // Tokens are valid and user is authenticated, now redirect to dashboard
-        console.debug('[GoogleCallback] Redirecting to dashboard...');
+        // Tokens are valid and user is authenticated, now redirect to home
+        console.debug('[GoogleCallback] Redirecting to home page...');
         setTimeout(() => {
-          console.debug('[GoogleCallback] Navigating to /dashboard');
-          navigate('/dashboard');
+          console.debug('[GoogleCallback] Navigating to /');
+          navigate('/', { replace: true });
+          // Also reload the page to ensure all components get auth state update
+          window.location.href = '/';
         }, 500);
       } catch (err) {
         console.error('[GoogleCallback] Error:', err);
@@ -93,7 +95,7 @@ const GoogleCallbackPage = () => {
     };
 
     processGoogleCallback();
-  }, [navigate, t]);
+  }, [navigate, t, setAuthUser]);
 
   return (
     <div className="auth-page">

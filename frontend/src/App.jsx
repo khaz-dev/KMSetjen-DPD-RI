@@ -15,6 +15,7 @@ import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
 import LoginPage from './pages/LoginPage';
 import SSOCallbackPage from './pages/SSOCallbackPage';
+import SSOTokenPage from './pages/SSOTokenPage';
 import GoogleCallbackPage from './pages/GoogleCallbackPage';
 import ProfilePage from './pages/ProfilePage';
 import DashboardPage from './pages/DashboardPage';
@@ -24,10 +25,12 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import UserManagementPage from './pages/UserManagementPage';
 import RoleManagementPage from './pages/RoleManagementPage';
 import CategoryManagementPage from './pages/CategoryManagementPage';
+import TagManagementPage from './pages/TagManagementPage';
 import ArticleModerationPage from './pages/ArticleModerationPage';
 import AuditLogPage from './pages/AuditLogPage';
 import SettingsPage from './pages/SettingsPage';
 import ForbiddenPage from './pages/ForbiddenPage';
+import NotFoundPage from './pages/NotFoundPage';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './styles/theme.css';
 import './App.css';
@@ -47,8 +50,8 @@ function AppContent() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
-          <Route path="/articles" element={<ArticlesPage />} />
-          <Route path="/articles/:id" element={<ArticleDetailPage />} />
+          <Route path="/knowledges" element={<ArticlesPage />} />
+          <Route path="/knowledges/:idOrSlug" element={<ArticleDetailPage />} />
           <Route path="/category/:categoryId" element={<CategoryDetailPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
@@ -58,6 +61,7 @@ function AppContent() {
           {/* Auth Routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/sso/callback" element={<SSOCallbackPage />} />
+          <Route path="/sso/:token" element={<SSOTokenPage />} />
           <Route path="/google/callback" element={<GoogleCallbackPage />} />
           
           {/* Protected Routes */}
@@ -154,6 +158,15 @@ function AppContent() {
           />
 
           <Route
+            path="/admin/tags"
+            element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <TagManagementPage onLogout={handleLogout} />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/admin/articles"
             element={
               <ProtectedRoute requiredRole="ADMIN">
@@ -174,7 +187,7 @@ function AppContent() {
           {/* Error Pages */}
           <Route path="/403" element={<ForbiddenPage />} />
           <Route path="/forbidden" element={<ForbiddenPage />} />
-          <Route path="*" element={<div className="container py-5"><h1>404 - Page Not Found</h1><p>The page you're looking for doesn't exist.</p></div>} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
       <Footer />

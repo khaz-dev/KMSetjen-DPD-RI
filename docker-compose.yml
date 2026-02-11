@@ -50,11 +50,12 @@ services:
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,django,kms.dpd.go.id}
       
       # Database Configuration (uses local PostgreSQL on host machine)
+      # IMPORTANT: For Docker, must use host.docker.internal, not localhost
       DB_ENGINE: django.db.backends.postgresql
       DB_NAME: ${DB_NAME:-kmsdb}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-Okkdpdri@2026}
-      DB_HOST: ${DB_HOST:-host.docker.internal}
+      DB_HOST: host.docker.internal
       DB_PORT: ${DB_PORT:-5432}
       
       # Redis Configuration

@@ -5,6 +5,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
@@ -16,7 +18,7 @@ from .serializers import (
     InternalArticleDetailSerializer, SubmitReviewSerializer,
     DashboardArticleSerializer, FileSerializer
 )
-from apps.api.v1.public.filters import ArticleFilter
+from .filters import InternalArticleFilter
 
 
 
@@ -44,7 +46,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     pagination_class = InternalAPIPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_class = ArticleFilter
+    filterset_class = InternalArticleFilter
     search_fields = ['title_id', 'title_en', 'content_id', 'content_en']
     ordering_fields = ['created_at', 'updated_at', 'published_at', 'view_count']
     ordering = ['-updated_at']
@@ -78,6 +80,10 @@ class ArticleViewSet(viewsets.ModelViewSet):
             return InternalArticleDetailSerializer
         elif self.action == 'submit_review':
             return SubmitReviewSerializer
+        elif self.action == 'list':
+            # Use lightweight serializer for list to avoid heavy nested queries
+            from .serializers import DashboardArticleSerializer
+            return DashboardArticleSerializer
         else:
             return InternalArticleDetailSerializer
     
@@ -100,6 +106,43 @@ class ArticleViewSet(viewsets.ModelViewSet):
         
         return [permission() for permission in permission_classes]
     
+    def get_object(self):
+        """
+        Override to support lookup by SLUG or ID.
+        - First tries numeric ID lookup
+        - Falls back to slug lookup
+        - Maintains proper permission filtering
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        # Get the lookup value from URL parameter (pk)
+        lookup_value = self.kwargs.get(self.lookup_field)
+        
+        if not lookup_value:
+            raise ValueError("No lookup value provided")
+        
+        # Try to parse as integer (ID lookup)
+        try:
+            lookup_id = int(lookup_value)
+            # First try to find by ID
+            try:
+                return queryset.get(id=lookup_id)
+            except Article.DoesNotExist:
+                pass
+        except (ValueError, TypeError):
+            pass
+        
+        # Try to find by slug
+        try:
+            return queryset.get(slug=lookup_value)
+        except Article.DoesNotExist:
+            # Not found by slug or ID
+            pass
+        
+        # If we get here, article not found with this slug or ID
+        # Let the default behavior handle the 404
+        return get_object_or_404(queryset, pk=lookup_value)
+    
     def create(self, request, *args, **kwargs):
         """Create new article."""
         serializer = self.get_serializer(data=request.data)
@@ -116,8 +159,8 @@ class ArticleViewSet(viewsets.ModelViewSet):
         return Response(detail_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
     
     def perform_create(self, serializer):
-        """Create article and audit log."""
-        serializer.save()
+        """Create article and set the author to current user."""
+        serializer.save(author=self.request.user)
     
     def update(self, request, *args, **kwargs):
         """Update article (full or partial)."""
@@ -142,7 +185,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
         try:
             AuditService.log_action(
                 user=request.user,
-                action='DELETE',
+                action='delete',
                 content_type='Article',
                 content_id=instance.id,
                 content_display=instance.title_en,
@@ -156,7 +199,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
     
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], url_path='submit-review', url_name='submit-review')
     def submit_review(self, request, pk=None):
         """
         Submit article for review.
@@ -185,6 +228,144 @@ class ArticleViewSet(viewsets.ModelViewSet):
             'message': 'Article submitted for review'
         })
     
+    @action(detail=True, methods=['post'])
+    def view(self, request, pk=None):
+        """
+        Record a view of the article (only for published articles).
+        POST /api/v1/internal/articles/{id}/view/
+        
+        Note: Internal API allows viewing unpublished articles (for editors),
+        but view count is only incremented for published articles.
+        
+        Returns:
+            - 200: View counted successfully OR article already viewed by this user
+            - 400: Article is not published (view count not incremented)
+        """
+        article = self.get_object()
+        
+        # CRITICAL: Only count views for published articles
+        if article.status != 'published' or not article.is_published:
+            return Response({
+                'success': False,
+                'view_count': article.view_count,
+                'message': 'View counting only allowed for published articles'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Record view with user and IP tracking
+            user = request.user if request.user.is_authenticated else None
+            ip_address = self._get_client_ip(request)
+            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            
+            # increment_view_count handles the uniqueness check
+            # (prevents same user/IP from counting multiple times)
+            view_counted = article.increment_view_count(user=user, ip_address=ip_address)
+            
+            if view_counted:
+                # Log the view in audit trail
+                try:
+                    from apps.audit.services import AuditService
+                    AuditService.log_action(
+                        user=user,
+                        action='view',
+                        content_type='Article',
+                        content_id=article.id,
+                        content_display=article.title_en,
+                        changes={},
+                        ip_address=ip_address,
+                        user_agent=user_agent
+                    )
+                except Exception:
+                    pass
+                
+                return Response({
+                    'success': True,
+                    'view_count': article.view_count,
+                    'view_recorded': True,
+                    'message': 'View recorded successfully'
+                })
+            else:
+                # User already viewed this article
+                return Response({
+                    'success': True,
+                    'view_count': article.view_count,
+                    'view_recorded': False,
+                    'message': 'Article already viewed by this user'
+                })
+        except Exception as e:
+            return Response({
+                'success': False,
+                'view_count': article.view_count,
+                'message': f'Error recording view: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['post'])
+    def like(self, request, pk=None):
+        """
+        Toggle like on the article (only for published articles).
+        POST /api/v1/internal/articles/{id}/like/
+        
+        Note: Internal API allows viewing unpublished articles (for editors),
+        but likes are only allowed on published articles.
+        
+        Returns:
+            - 200: Like toggled successfully
+            - 400: Article is not published (like not allowed)
+        """
+        article = self.get_object()
+        
+        # CRITICAL: Only allow likes on published articles
+        if article.status != 'published' or not article.is_published:
+            return Response({
+                'success': False,
+                'like_count': article.like_count,
+                'liked_by_user': False,
+                'message': 'Liking only allowed for published articles'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Toggle like with user and IP tracking
+            user = request.user if request.user.is_authenticated else None
+            ip_address = self._get_client_ip(request)
+            
+            # toggle_like handles the like/unlike logic
+            result = article.toggle_like(user=user, ip_address=ip_address)
+            
+            if 'error' in result:
+                return Response(result, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Log the like/unlike action in audit trail
+            try:
+                from apps.audit.services import AuditService
+                action = 'like' if result['liked'] else 'unlike'
+                AuditService.log_action(
+                    user=user,
+                    action=action,
+                    content_type='Article',
+                    content_id=article.id,
+                    content_display=article.title_en,
+                    changes={},
+                    ip_address=ip_address,
+                    user_agent=request.META.get('HTTP_USER_AGENT', '')
+                )
+            except Exception:
+                pass
+            
+            return Response({
+                'success': True,
+                'like_count': article.like_count,
+                'liked': result['liked'],
+                'liked_by_user': result['liked_by_user'],
+                'message': ('Like' if result['liked'] else 'Unlike') + ' recorded successfully'
+            })
+        except Exception as e:
+            return Response({
+                'success': False,
+                'like_count': article.like_count,
+                'message': f'Error toggling like: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsEditor])
     def publish(self, request, pk=None):
         """
@@ -193,14 +374,15 @@ class ArticleViewSet(viewsets.ModelViewSet):
         """
         article = self.get_object()
         
-        if article.status not in ['APPROVED', 'DRAFT', 'REVIEW']:
+        if article.status not in ['approved', 'draft', 'review']:
             return Response(
                 {'error': f'Cannot publish article with status {article.status}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        article.status = 'PUBLISHED'
+        article.status = 'published'
         article.is_published = True
+        article.published_at = timezone.now()
         article.publisher = request.user
         article.save()
         
@@ -208,7 +390,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
         try:
             AuditService.log_action(
                 user=request.user,
-                action='PUBLISH',
+                action='publish',
                 content_type='Article',
                 content_id=article.id,
                 content_display=article.title_en,
@@ -232,26 +414,28 @@ class ArticleViewSet(viewsets.ModelViewSet):
         POST /api/v1/internal/articles/{id}/approve/
         """
         article = self.get_object()
+        comment = request.data.get('comment', '')
         
-        if article.status != 'REVIEW':
+        if article.status != 'review':
             return Response(
                 {'error': 'Only articles in review can be approved'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        article.status = 'APPROVED'
+        article.status = 'approved'
         article.reviewer = request.user
+        article.approval_comment = comment
         article.save()
         
         # Log approval
         try:
             AuditService.log_action(
                 user=request.user,
-                action='APPROVE',
+                action='approve',
                 content_type='Article',
                 content_id=article.id,
                 content_display=article.title_en,
-                changes={'status': 'APPROVED'},
+                changes={'status': 'approved', 'comment': comment},
                 ip_address=self._get_client_ip(request),
                 user_agent=request.META.get('HTTP_USER_AGENT', '')
             )
@@ -273,24 +457,25 @@ class ArticleViewSet(viewsets.ModelViewSet):
         article = self.get_object()
         reason = request.data.get('reason', '')
         
-        if article.status != 'REVIEW':
+        if article.status != 'review':
             return Response(
                 {'error': 'Only articles in review can be rejected'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        article.status = 'REJECTED'
+        article.status = 'rejected'
+        article.rejection_reason = reason
         article.save()
         
         # Log rejection
         try:
             AuditService.log_action(
                 user=request.user,
-                action='REJECT',
+                action='reject',
                 content_type='Article',
                 content_id=article.id,
                 content_display=article.title_en,
-                changes={'status': 'REJECTED', 'reason': reason},
+                changes={'status': 'rejected', 'reason': reason},
                 ip_address=self._get_client_ip(request),
                 user_agent=request.META.get('HTTP_USER_AGENT', '')
             )
@@ -326,7 +511,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
         try:
             AuditService.log_action(
                 user=request.user,
-                action='ARCHIVE',
+                action='unpublish',
                 content_type='Article',
                 content_id=article.id,
                 content_display=article.title_en,
@@ -398,9 +583,11 @@ class ArticleViewSet(viewsets.ModelViewSet):
         # Calculate statistics
         return Response({
             'total_articles': articles.count(),
-            'published_articles': articles.filter(is_published=True).count(),
-            'draft_articles': articles.filter(status='DRAFT').count(),
-            'review_articles': articles.filter(status='REVIEW').count(),
+            'draft_articles': articles.filter(status=Article.STATUS_DRAFT).count(),
+            'review_articles': articles.filter(status=Article.STATUS_REVIEW).count(),
+            'rejected_articles': articles.filter(status=Article.STATUS_REJECTED).count(),
+            'approved_articles': articles.filter(status=Article.STATUS_APPROVED).count(),
+            'published_articles': articles.filter(status=Article.STATUS_PUBLISHED).count(),
             'total_views': sum(article.view_count for article in articles),
             'user': {
                 'id': user.id,

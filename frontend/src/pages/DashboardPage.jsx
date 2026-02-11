@@ -2,15 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
-import { internalAPI } from '../services/api';
+import { internalAPI, getArticleUrl } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../hooks/useLanguage';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
 import './DashboardPage.css';
-import { FiFileText, FiCheckCircle, FiAlertCircle, FiClock } from 'react-icons/fi';
+import { FiFileText, FiCheckCircle, FiAlertCircle, FiClock, FiX } from 'react-icons/fi';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale, enUS } from 'date-fns/locale';
+
+/**
+ * Safe date format helper - handles null/invalid dates gracefully
+ */
+const formatSafeDate = (dateValue, isIndonesian) => {
+  try {
+    const dateObj = new Date(dateValue);
+    if (isNaN(dateObj.getTime())) {
+      return 'N/A';
+    }
+    return formatDistanceToNow(dateObj, {
+      addSuffix: true,
+      locale: isIndonesian ? idLocale : enUS
+    });
+  } catch (error) {
+    return 'N/A';
+  }
+};
 
 /**
  * DashboardPage Component
@@ -39,7 +57,7 @@ const DashboardPage = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchArticles = async () => {
     try {
-      const response = await internalAPI.getMyArticles({ limit: 5 });
+      const response = await internalAPI.getMyArticles({ page_size: 5 });
       const articlesData = response.data.results || [];
       setArticles(articlesData);
     } catch (err) {
@@ -111,33 +129,35 @@ const DashboardPage = () => {
   return (
     <div className="dashboard-page">
       <Container className="py-5">
-        <div className="dashboard-header">
-          <h1>{t('dashboard.welcome', { name: user?.first_name || 'User' })}</h1>
-          <p className="text-muted">{t('dashboard.my_articles')}</p>
-        </div>
-
         {error && <ErrorAlert message={error} onDismiss={() => setError(null)} />}
 
-        {dashboard && (
-          <Row className="mb-4 stats-row">
-            <Col md={3} className="mb-3">
-              <Card className="stat-card">
+        <div className="dashboard-header">
+          <div className="header-content">
+            <h1>{t('dashboard.welcome', { name: user?.first_name || 'User' })}</h1>
+            <p className="text-muted">{t('dashboard.my_articles')}</p>
+          </div>
+          {dashboard && (
+            <div className="header-stats">
+              <Card className="stat-card stat-card-small">
                 <Card.Body className="text-center">
                   <FiFileText className="stat-icon" />
                   <div className="stat-value">{dashboard.total_articles}</div>
                   <div className="stat-label">{t('admin.total_articles')}</div>
                 </Card.Body>
               </Card>
-            </Col>
-            <Col md={3} className="mb-3">
-              <Card className="stat-card">
+              <Card className="stat-card stat-card-small">
                 <Card.Body className="text-center">
                   <FiCheckCircle className="stat-icon text-success" />
                   <div className="stat-value">{dashboard.published_articles}</div>
                   <div className="stat-label">{t('dashboard.status_published')}</div>
                 </Card.Body>
               </Card>
-            </Col>
+            </div>
+          )}
+        </div>
+
+        {dashboard && (
+          <Row className="mb-4 stats-row">
             <Col md={3} className="mb-3">
               <Card className="stat-card">
                 <Card.Body className="text-center">
@@ -153,6 +173,24 @@ const DashboardPage = () => {
                   <FiClock className="stat-icon text-info" />
                   <div className="stat-value">{dashboard.review_articles}</div>
                   <div className="stat-label">{t('dashboard.status_review')}</div>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={3} className="mb-3">
+              <Card className="stat-card">
+                <Card.Body className="text-center">
+                  <FiX className="stat-icon text-danger" />
+                  <div className="stat-value">{dashboard.rejected_articles || 0}</div>
+                  <div className="stat-label">{t('dashboard.rejected')}</div>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={3} className="mb-3">
+              <Card className="stat-card">
+                <Card.Body className="text-center">
+                  <FiCheckCircle className="stat-icon text-info" />
+                  <div className="stat-value">{dashboard.approved_articles || 0}</div>
+                  <div className="stat-label">{t('dashboard.status_approved')}</div>
                 </Card.Body>
               </Card>
             </Col>
@@ -190,16 +228,16 @@ const DashboardPage = () => {
                             <div className="dashboard-image-placeholder">📄</div>
                           )}
                         </div>
+                        <div className="article-badge">
+                          {getStatusBadge(article.status)}
+                          {article.files && article.files.length > 0 && (
+                            <span className="badge bg-secondary">
+                              📎 {getFileTypeBadge(article.files[0].mime_type)}
+                            </span>
+                          )}
+                        </div>
                         <div className="article-bottom-section">
                           <div className="article-content">
-                            <div className="article-badge">
-                              {getStatusBadge(article.status)}
-                              {article.files && article.files.length > 0 && (
-                                <span className="badge bg-secondary">
-                                  📎 {getFileTypeBadge(article.files[0].mime_type)}
-                                </span>
-                              )}
-                            </div>
                             <div className="dashboard-article-info">
                               <h6 className="article-title">
                                 {isIndonesian 
@@ -209,7 +247,7 @@ const DashboardPage = () => {
                               <div className="article-tags-section">
                                 {article.category && (
                                   <div className="category-badge-wrapper">
-                                    <span className="category-badge">
+                                    <span className="dashboard-category-badge">
                                       {isIndonesian 
                                         ? (article.category.name_id || article.category.name_en)
                                         : (article.category.name_en || article.category.name_id)}
@@ -251,19 +289,17 @@ const DashboardPage = () => {
                             <Button
                               variant="outline-primary"
                               size="sm"
-                              onClick={() => navigate(`/articles/${article.id}`)}
+                              onClick={() => window.open(getArticleUrl(article), '_blank')}
                             >
                               {t('buttons.view')}
                             </Button>
-                            {article.status !== 'PUBLISHED' && (
-                              <Button
-                                variant="outline-secondary"
-                                size="sm"
-                                onClick={() => navigate(`/editor/${article.id}`)}
-                              >
-                                {t('buttons.edit')}
-                              </Button>
-                            )}
+                            <Button
+                              variant="outline-secondary"
+                              size="sm"
+                              onClick={() => navigate(`/editor/${article.id}`)}
+                            >
+                              {t('buttons.edit')}
+                            </Button>
                           </div>
                         </div>
                       </div>

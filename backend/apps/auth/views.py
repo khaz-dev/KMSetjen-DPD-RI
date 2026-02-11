@@ -1,8 +1,10 @@
 """Authentication views and endpoints."""
 import requests
 import logging
+import jwt
 from django.conf import settings
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -15,6 +17,47 @@ from .captcha import verify_recaptcha
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
+
+
+def split_full_name(full_name):
+    """
+    Split a full name into first_name and last_name.
+    
+    Rules:
+    - 3+ words: First 2 words = first_name (Nama Depan), remaining = last_name (Nama Belakang)
+    - 2 words: First word = first_name, second word = last_name
+    - 1 word: first_name = word, last_name = ''
+    
+    Examples:
+    - "John Doe Smith" → first_name="John Doe", last_name="Smith"
+    - "John Doe" → first_name="John", last_name="Doe"
+    - "John" → first_name="John", last_name=""
+    
+    Args:
+        full_name (str): The full name to split
+    
+    Returns:
+        tuple: (first_name, last_name)
+    """
+    if not full_name:
+        return '', ''
+    
+    name_parts = full_name.strip().split()
+    
+    if len(name_parts) >= 3:
+        # 3+ words: first 2 words = first_name, rest = last_name
+        first_name = ' '.join(name_parts[:2])
+        last_name = ' '.join(name_parts[2:])
+    elif len(name_parts) == 2:
+        # 2 words: word 1 = first_name, word 2 = last_name
+        first_name = name_parts[0]
+        last_name = name_parts[1]
+    else:
+        # 1 word: all goes to first_name
+        first_name = name_parts[0]
+        last_name = ''
+    
+    return first_name, last_name
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -86,7 +129,6 @@ def register(request):
     
     Request body:
     {
-        "username": "username",
         "email": "user@example.com",
         "password": "password123",
         "first_name": "First",
@@ -95,7 +137,6 @@ def register(request):
         "department": "Ministry Department"
     }
     """
-    username = request.data.get('username')
     email = request.data.get('email')
     password = request.data.get('password')
     first_name = request.data.get('first_name', '')
@@ -103,20 +144,17 @@ def register(request):
     nip = request.data.get('nip', '')
     department = request.data.get('department', '')
     
+    # Use email as username
+    username = email
+    
     # Validate required fields
-    if not username or not email or not password:
+    if not email or not password:
         return Response(
-            {'error': 'username, email, and password are required'},
+            {'error': 'email and password are required'},
             status=status.HTTP_400_BAD_REQUEST
         )
     
     # Check if user exists
-    if User.objects.filter(username=username).exists():
-        return Response(
-            {'error': 'Username already exists'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
     if User.objects.filter(email=email).exists():
         return Response(
             {'error': 'Email already exists'},
@@ -416,8 +454,36 @@ def google_callback(request):
         
         # Extract user information
         email = user_info.get('email')
-        first_name = user_info.get('given_name', '')
-        last_name = user_info.get('family_name', '')
+        
+        # Extract name components from Google
+        given_name = user_info.get('given_name', '')
+        family_name = user_info.get('family_name', '')
+        full_name = user_info.get('name', '')
+        
+        # Strategy: ALWAYS use intelligent splitting to ensure first 2 words = Nama Depan
+        # Build full name from available components:
+        # Priority 1: Use 'name' field if available (most complete)
+        # Priority 2: Combine given_name + family_name if both available
+        # Priority 3: Use just given_name if that's all we have
+        
+        full_name_to_split = None
+        
+        if full_name:
+            # Use Google's 'name' field directly (it's the official full name)
+            full_name_to_split = full_name
+        elif given_name and family_name:
+            # Combine given_name and family_name to get full name for splitting
+            full_name_to_split = f"{given_name} {family_name}"
+        elif given_name:
+            # Only have given_name
+            full_name_to_split = given_name
+        
+        # Apply intelligent splitting to all cases
+        if full_name_to_split:
+            first_name, last_name = split_full_name(full_name_to_split)
+        else:
+            first_name = ''
+            last_name = ''
         
         if not email:
             logger.error('[GoogleCallback] Email not provided by Google')
@@ -431,27 +497,89 @@ def google_callback(request):
         # ====================================================================
         # Wrap only database operations in atomic() to avoid holding lock during HTTP calls
         with transaction.atomic():
-            # Generate username from email (before @)
-            username = email.split('@')[0]
+            # Use email as unique username identifier
+            username = email
             
-            # Check if user with this email already exists
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults={
-                    'username': username,
-                    'first_name': first_name,
-                    'last_name': last_name,
-                    'is_active': True,
-                }
-            )
+            # Try to find user by email first (most common case)
+            user = User.objects.filter(email=email).first()
+            created = False
             
-            # If user exists but doesn't have first/last name, update it
-            if not created:
-                if not user.first_name and first_name:
-                    user.first_name = first_name
-                if not user.last_name and last_name:
-                    user.last_name = last_name
-                user.save()
+            if user:
+                # User found by email
+                logger.info(f'[GoogleCallback] Found existing user by email: {email}')
+            else:
+                # User not found, try to create
+                try:
+                    logger.info(f'[GoogleCallback] User not found by email, creating new user: {email}')
+                    
+                    # Check if this email belongs to an existing Pegawai user (staff)
+                    # Users from Pegawai sync will have is_staff=True set
+                    pegawai_user = User.objects.filter(email=email).first()
+                    is_pegawai_user = pegawai_user.is_staff if pegawai_user else False
+                    
+                    user = User.objects.create_user(
+                        username=username,
+                        email=email,
+                        first_name=first_name,
+                        last_name=last_name,
+                        is_active=True,
+                        is_staff=is_pegawai_user,  # Set is_staff if user is in Pegawai data
+                        password='',  # No password for OAuth users (auth via Google)
+                    )
+                    created = True
+                    logger.info(f'[GoogleCallback] Created new user: {email}')
+                    
+                except Exception as e:
+                    logger.error(f'[GoogleCallback] Error creating user: {str(e)}', exc_info=True)
+                    # If creation fails, try one more time to find the user (race condition)
+                    user = User.objects.filter(email=email).first()
+                    if user:
+                        logger.info(f'[GoogleCallback] User exists (race condition), using existing user: {email}')
+                        created = False
+                    else:
+                        raise
+            
+            try:
+                # If user exists but doesn't have first/last name, update it
+                if not created:
+                    updated = False
+                    if not user.first_name and first_name:
+                        user.first_name = first_name
+                        updated = True
+                    if not user.last_name and last_name:
+                        user.last_name = last_name
+                        updated = True
+                    
+                    # Check if this email belongs to an existing Pegawai user (staff)
+                    pegawai_user = User.objects.filter(email=email).first()
+                    is_pegawai_user = pegawai_user.is_staff if pegawai_user else False
+                    
+                    # Ensure is_staff status matches Pegawai database (in case synced after Google login)
+                    if is_pegawai_user and not user.is_staff:
+                        user.is_staff = True
+                        updated = True
+                        logger.info(f'[GoogleCallback] Updated user {email} to is_staff=True (found in Pegawai data)')
+                    
+                    if updated:
+                        user.save()
+                        logger.info(f'[GoogleCallback] Updated user: {email}')
+                
+            except User.MultipleObjectsReturned:
+                # This should not happen if data is clean, but handle it gracefully
+                logger.error(f'[GoogleCallback] CRITICAL: Multiple users found with email {email}')
+                logger.error('[GoogleCallback] This indicates database corruption with duplicate emails')
+                logger.error('[GoogleCallback] Taking first (oldest) user as primary')
+                
+                # Get the oldest user with this email
+                user = User.objects.filter(email=email).order_by('created_at').first()
+                created = False
+                
+                if not user:
+                    # Should never happen, but be defensive
+                    return Response(
+                        {'error': 'Database consistency error: user lookup failed'},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    )
             
             # ====================================================================
             # Step 4: Generate JWT tokens for the user (inside atomic transaction)
@@ -494,5 +622,391 @@ def google_callback(request):
         logger.error(f'Unexpected error in google_callback: {str(e)}', exc_info=True)
         return Response(
             {'error': f'Server error processing Google callback: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def sso_callback(request):
+    """
+    Handle NUSA DPD SSO callback.
+    POST /api/auth/sso/callback/
+    
+    This endpoint processes the SSO callback from NUSA DPD SSO server.
+    Users logging via SSO are government staff (Pegawai ASN).
+    
+    Request body:
+    {
+        "nip": "123456789",
+        "email": "user@dpd.go.id",
+        "first_name": "John",
+        "last_name": "Doe",
+        "department": "IT Division",
+        "token": "sso_token_from_server"
+    }
+    
+    Response:
+    {
+        "access": "jwt_access_token",
+        "refresh": "jwt_refresh_token",
+        "user": {
+            "id": 1,
+            "username": "123456789",
+            "email": "user@dpd.go.id",
+            "first_name": "John",
+            "last_name": "Doe",
+            "nip": "123456789",
+            "department": "IT Division",
+            "is_staff": true,
+            "is_sso_user": true
+        }
+    }
+    """
+    try:
+        # Extract SSO data from request
+        nip = request.data.get('nip')
+        email = request.data.get('email')
+        first_name = request.data.get('first_name', '')
+        last_name = request.data.get('last_name', '')
+        department = request.data.get('department', '')
+        sso_token = request.data.get('token')
+        
+        # If first_name and last_name are empty, try to split full_name field
+        if not first_name and not last_name:
+            full_name = request.data.get('full_name') or request.data.get('name', '')
+            if full_name:
+                # Split full name using intelligent logic: first 2 words = first_name, rest = last_name
+                first_name, last_name = split_full_name(full_name)
+        
+        logger.info(f'[SSOCallback] SSO login attempt for NIP: {nip}')
+        
+        # Validate required parameters
+        if not nip or not email:
+            logger.error('[SSOCallback] NIP and email are required')
+            return Response(
+                {'error': 'NIP and email are required for SSO login'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        with transaction.atomic():
+            # Use email as unique identifier for all users
+            username = email
+            
+            # Get or create user by email (Pegawai always have email)
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    'username': username,
+                    'nip': nip,
+                    'first_name': first_name,
+                    'last_name': last_name,
+                    'department': department,
+                    'is_active': True,
+                    'is_staff': True,  # SSO users are always Pegawai (staff)
+                    'is_sso_user': True,  # Mark as SSO user
+                    'is_superuser': False,  # SSO users are not superusers
+                    'password': '',  # No password for SSO users (auth via SSO provider)
+                }
+            )
+            
+            # Update existing user info if they've changed
+            if not created:
+                updated = False
+                if user.username != username:
+                    user.username = username
+                    updated = True
+                if user.email != email:
+                    user.email = email
+                    updated = True
+                if user.nip != nip and nip:
+                    user.nip = nip
+                    updated = True
+                if user.first_name != first_name and first_name:
+                    user.first_name = first_name
+                    updated = True
+                if user.last_name != last_name and last_name:
+                    user.last_name = last_name
+                    updated = True
+                if user.department != department and department:
+                    user.department = department
+                    updated = True
+                
+                # Ensure is_staff and is_sso_user are set
+                if not user.is_staff:
+                    user.is_staff = True
+                    updated = True
+                if not user.is_sso_user:
+                    user.is_sso_user = True
+                    updated = True
+                
+                # Update last SSO login timestamp
+                user.last_sso_login = timezone.now()
+                updated = True
+                
+                if updated:
+                    user.save()
+                    logger.info(f'[SSOCallback] Updated SSO user: {nip}')
+            else:
+                logger.info(f'[SSOCallback] Created new SSO user: {nip}')
+            
+            # Generate JWT tokens for the user
+            refresh = RefreshToken.for_user(user)
+        
+        # Return tokens and user information
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'nip': user.nip,
+                'department': user.department,
+                'is_staff': user.is_staff,
+                'is_sso_user': user.is_sso_user,
+                'is_admin': user.is_admin(),
+                'is_editor': user.is_editor(),
+                'primary_role': user.get_primary_role().code if user.get_primary_role() else None,
+                'roles': [role.code for role in user.roles.all()],
+                'preferred_language': user.preferred_language,
+                'theme_mode': user.theme_mode,
+            }
+        }, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        logger.error(f'Error in sso_callback: {str(e)}', exc_info=True)
+        return Response(
+            {'error': f'SSO callback error: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def sso_token_verify(request):
+    """
+    Verify and process SSO JWT token from SSO provider.
+    POST /api/auth/sso/token/
+    
+    This endpoint handles direct SSO tokens sent via URL path parameter.
+    The token is a JWT from the NUSA DPD SSO server containing user information.
+    
+    Request body:
+    {
+        "token": "sso_jwt_token_from_provider"
+    }
+    
+    Response:
+    {
+        "access": "jwt_access_token",
+        "refresh": "jwt_refresh_token",
+        "user": {
+            "id": 1,
+            "username": "123456789",
+            "email": "user@dpd.go.id",
+            "first_name": "John",
+            "last_name": "Doe",
+            "nip": "123456789",
+            "department": "IT Division",
+            "is_staff": true,
+            "is_sso_user": true
+        }
+    }
+    """
+    try:
+        # Extract token from request
+        sso_token = request.data.get('token')
+        
+        if not sso_token:
+            logger.error('[SSOTokenVerify] No token provided')
+            return Response(
+                {'error': 'Token is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        logger.info('[SSOTokenVerify] Verifying SSO token')
+        
+        # Decode the JWT token without verification first to extract user data
+        # In production, you should verify the signature with the SSO provider's public key
+        try:
+            # Try to decode without verification (if SSO provider uses RS256 or HS256)
+            # For development, we decode without verification
+            # In production, you need the SSO provider's public key to verify the signature
+            decoded = jwt.decode(sso_token, options={"verify_signature": False})
+            logger.info(f'[SSOTokenVerify] Token claims available: {list(decoded.keys())}')
+            logger.debug(f'[SSOTokenVerify] Full token payload: {decoded}')
+        except jwt.DecodeError as e:
+            logger.error(f'[SSOTokenVerify] Invalid JWT token: {str(e)}')
+            return Response(
+                {'error': 'Invalid token format'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Extract user information from token claims
+        # The SSO provider should send these in the JWT payload
+        # Common claim mappings for NUSA DPD:
+        nip = decoded.get('nip') or decoded.get('user_id') or decoded.get('sub')
+        
+        # Try multiple email field names (SSO provider might use different field names)
+        email = (
+            decoded.get('email') or 
+            decoded.get('email_address') or 
+            decoded.get('mail') or 
+            decoded.get('username') or 
+            decoded.get('account_name') or
+            decoded.get('upn')  # User Principal Name
+        )
+        
+        # If email still not found but NIP exists, check if user already exists in system
+        # If they do, use their current email instead of generating a synthetic one
+        if not email and nip:
+            existing_user = User.objects.filter(nip=nip).first()
+            if existing_user:
+                email = existing_user.email
+                logger.info(f'[SSOTokenVerify] Email not in token, using existing user email: {email}')
+            else:
+                # Use NIP as a fallback identifier for email (only for new users)
+                email = f"user_{nip}@dpd.go.id"
+                logger.warning(f'[SSOTokenVerify] Email not in token and user not found, using synthetic: {email}')
+        
+        first_name = decoded.get('first_name') or decoded.get('given_name') or ''
+        last_name = decoded.get('last_name') or decoded.get('family_name') or ''
+        
+        # If first_name and last_name are empty, try to split full_name field
+        if not first_name and not last_name:
+            full_name = decoded.get('full_name') or decoded.get('name', '')
+            if full_name:
+                # Split full name using intelligent logic: first 2 words = first_name, rest = last_name
+                first_name, last_name = split_full_name(full_name)
+        
+        department = decoded.get('department') or decoded.get('org_unit') or ''
+        
+        logger.info(f'[SSOTokenVerify] Extracted user info - NIP: {nip}, Email: {email}')
+        
+        if not nip or not email:
+            logger.error('[SSOTokenVerify] NIP and email not found in token')
+            return Response(
+                {'error': 'Token does not contain required user information (nip, email)'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        with transaction.atomic():
+            # Use email as unique identifier for all users (consistent with Google and sso_callback)
+            # This ensures both Google OAuth and SSO logins use the same account
+            username = email
+            
+            # Try to find user by email first
+            user = User.objects.filter(email=email).first()
+            created = False
+            
+            # If not found by email, try to find by NIP (in case NIP already exists from previous login)
+            if not user and nip:
+                user = User.objects.filter(nip=nip).first()
+                logger.info(f'[SSOTokenVerify] User not found by email, found by NIP: {nip}')
+            
+            # If still not found, create new user
+            if not user:
+                try:
+                    user = User.objects.create_user(
+                        username=username,
+                        email=email,
+                        nip=nip,
+                        first_name=first_name,
+                        last_name=last_name,
+                        is_active=True,
+                        is_staff=True,  # SSO users are always Pegawai (staff)
+                        is_sso_user=True,  # Mark as SSO user
+                        password='',  # No password for SSO users (auth via SSO provider)
+                    )
+                    user.department = department
+                    user.save()
+                    created = True
+                    logger.info(f'[SSOTokenVerify] Created new SSO user: {nip}')
+                except Exception as e:
+                    logger.error(f'[SSOTokenVerify] Error creating user: {str(e)}')
+                    # If user creation fails, try one more fallback: maybe NIP exists with different email
+                    if nip:
+                        user = User.objects.filter(nip=nip).first()
+                        if user:
+                            logger.info(f'[SSOTokenVerify] User exists with this NIP, using existing user')
+                        else:
+                            raise
+            
+            # Update existing user info if they've changed
+            if not created and user:
+                updated = False
+                if user.username != username:
+                    user.username = username
+                    updated = True
+                if user.email != email and email:
+                    user.email = email
+                    updated = True
+                if user.nip != nip and nip:
+                    user.nip = nip
+                    updated = True
+                if user.first_name != first_name and first_name:
+                    user.first_name = first_name
+                    updated = True
+                if user.last_name != last_name and last_name:
+                    user.last_name = last_name
+                    updated = True
+                if user.department != department and department:
+                    user.department = department
+                    updated = True
+                
+                # Ensure is_staff and is_sso_user are set
+                if not user.is_staff:
+                    user.is_staff = True
+                    updated = True
+                if not user.is_sso_user:
+                    user.is_sso_user = True
+                    updated = True
+                
+                # Update last SSO login timestamp
+                user.last_sso_login = timezone.now()
+                updated = True
+                
+                if updated:
+                    user.save()
+                    logger.info(f'[SSOTokenVerify] Updated SSO user: {nip}')
+            else:
+                # For new users, set last_sso_login timestamp
+                user.last_sso_login = timezone.now()
+                user.save()
+                logger.info(f'[SSOTokenVerify] Created new SSO user: {nip}')
+            
+            # Generate JWT tokens for the user
+            refresh = RefreshToken.for_user(user)
+        
+        # Return tokens and user information
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'nip': user.nip,
+                'department': user.department,
+                'is_staff': user.is_staff,
+                'is_sso_user': user.is_sso_user,
+                'is_admin': user.is_admin(),
+                'is_editor': user.is_editor(),
+                'primary_role': user.get_primary_role().code if user.get_primary_role() else None,
+                'roles': [role.code for role in user.roles.all()],
+                'preferred_language': user.preferred_language,
+                'theme_mode': user.theme_mode,
+            }
+        }, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        logger.error(f'[SSOTokenVerify] Error: {str(e)}', exc_info=True)
+        return Response(
+            {'error': f'SSO token verification error: {str(e)}'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

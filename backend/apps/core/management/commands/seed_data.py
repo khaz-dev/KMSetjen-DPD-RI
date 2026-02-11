@@ -5,6 +5,7 @@ Usage: python manage.py seed_data
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from datetime import timedelta
+from django.contrib.auth.models import Permission
 from apps.core.models import User, Role, Language
 from apps.content.models import Category, Tag, Article
 from django.utils.text import slugify
@@ -64,7 +65,13 @@ class Command(BaseCommand):
                 'name_en': 'Administrator',
                 'description_id': 'Pengelola sistem dengan akses penuh',
                 'description_en': 'System manager with full access',
-                'permissions': ['read', 'write', 'publish', 'review', 'manage_users', 'manage_roles']
+                'permissions': [
+                    'add_user', 'change_user', 'delete_user', 'view_user',
+                    'add_article', 'change_article', 'delete_article', 'view_article',
+                    'add_category', 'change_category', 'delete_category', 'view_category',
+                    'add_role', 'change_role', 'delete_role', 'view_role',
+                    'add_tag', 'change_tag', 'delete_tag', 'view_tag',
+                ]
             },
             {
                 'code': 'editor',
@@ -72,7 +79,10 @@ class Command(BaseCommand):
                 'name_en': 'Editor',
                 'description_id': 'Penyunting konten yang dapat meninjau dan menerbitkan',
                 'description_en': 'Content editor who can review and publish',
-                'permissions': ['read', 'write', 'publish', 'review']
+                'permissions': [
+                    'add_article', 'change_article', 'view_article',
+                    'view_user', 'view_category', 'view_tag',
+                ]
             },
             {
                 'code': 'contributor',
@@ -80,7 +90,10 @@ class Command(BaseCommand):
                 'name_en': 'Contributor',
                 'description_id': 'Penulis konten yang mengirimkan untuk ditinjau',
                 'description_en': 'Content writer who submits for review',
-                'permissions': ['read', 'write']
+                'permissions': [
+                    'add_article', 'change_article', 'view_article',
+                    'view_category', 'view_tag',
+                ]
             },
             {
                 'code': 'reader',
@@ -88,7 +101,9 @@ class Command(BaseCommand):
                 'name_en': 'Reader',
                 'description_id': 'Pegawai ASN yang hanya dapat membaca konten internal',
                 'description_en': 'ASN employee who can only read internal content',
-                'permissions': ['read']
+                'permissions': [
+                    'view_article', 'view_category', 'view_tag',
+                ]
             },
             {
                 'code': 'public',
@@ -96,17 +111,40 @@ class Command(BaseCommand):
                 'name_en': 'Public',
                 'description_id': 'Pengguna publik yang dapat membaca konten publik',
                 'description_en': 'Public user who can read public content',
-                'permissions': ['read_public']
+                'permissions': [
+                    'view_article', 'view_category', 'view_tag',
+                ]
             },
         ]
         
         for role_data in roles_data:
+            # Extract permission codenames
+            permission_codenames = role_data.pop('permissions', [])
+            
             role, created = Role.objects.get_or_create(
                 code=role_data['code'],
-                defaults=role_data
+                defaults={**role_data, 'permissions': []}  # Start with empty list
             )
+            
+            # Map permission codenames to actual Permission IDs from database
+            # Do this for both new and existing roles
+            if permission_codenames:
+                permission_ids = []
+                for codename in permission_codenames:
+                    try:
+                        perm = Permission.objects.get(codename=codename)
+                        permission_ids.append(perm.id)
+                    except Permission.DoesNotExist:
+                        self.stdout.write(f"    ⚠ Warning: Permission '{codename}' not found")
+                
+                if permission_ids:
+                    role.permissions = permission_ids
+                    role.save()
+                    action = "added" if created else "updated with"
+                    self.stdout.write(f"    ✓ {action.capitalize()} {len(permission_ids)} permissions")
+            
             status = "[+]" if created else "[-]"
-            self.stdout.write(f"  {status} {role.name_id}")
+            self.stdout.write(f"  {status} {role.name_id} (permissions: {len(role.permissions) if role.permissions else 0})")
 
     def create_users(self):
         """Create sample users."""

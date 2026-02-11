@@ -31,10 +31,9 @@ class Role(models.Model):
     ]
     
     code = models.CharField(
-        max_length=20,
+        max_length=50,
         unique=True,
-        choices=ROLE_CHOICES,
-        help_text='Unique code untuk role'
+        help_text='Unique code untuk role (e.g., ADMIN, EDITOR, or custom codes)'
     )
     name_id = models.CharField(max_length=100, help_text='Nama role dalam Bahasa Indonesia')
     name_en = models.CharField(max_length=100, help_text='Nama role dalam English')
@@ -135,6 +134,23 @@ class User(AbstractUser):
         help_text='Photo profil'
     )
     
+    # Organization & Position
+    jenis_jabatan = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text='Jenis/Kategori Jabatan (e.g., Tenaga Ahli, Staff, Pimpinan)'
+    )
+    unit_organisasi = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text='Unit/Divisi Organisasi (e.g., Setjen, Bagian IT)'
+    )
+    jabatan = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text='Posisi/Jabatan (e.g., Kepala Bagian, Analyst IT)'
+    )
+    
     # Auth tracking
     is_sso_user = models.BooleanField(
         default=False,
@@ -184,6 +200,14 @@ class User(AbstractUser):
             models.Index(fields=['department']),
             models.Index(fields=['is_active']),
             models.Index(fields=['email']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['email'],
+                name='unique_email',
+                condition=models.Q(email__isnull=False),
+                violation_error_message='Email must be unique'
+            ),
         ]
     
     def __str__(self):

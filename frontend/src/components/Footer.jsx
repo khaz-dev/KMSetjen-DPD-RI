@@ -19,8 +19,8 @@ const Footer = () => {
       className={`footer mt-5 py-4 border-top ${isDarkMode ? "footer-dark" : "footer-light"}`}
     >
       <Container>
-        <Row>
-          <Col md={4} className="mb-3 mb-md-0">
+        <Row className="footer-row">
+          <Col md={5} className="mb-4 mb-md-0">
             <h5 className="brand-name">
               <img
                 src="/logo.png"
@@ -36,14 +36,14 @@ const Footer = () => {
             <p>{t("footer.description")}</p>
           </Col>
 
-          <Col md={4} className="mb-3 mb-md-0">
+          <Col md={3} className="mb-4 mb-md-0">
             <h5>{t("footer.quick_links")}</h5>
             <ul className="list-unstyled">
               <li>
                 <Link to="/">{t("nav.home")}</Link>
               </li>
               <li>
-                <Link to="/articles">{t("nav.articles")}</Link>
+                <Link to="/knowledges">{t("nav.articles")}</Link>
               </li>
               <li>
                 <Link to="/about">{t("footer.about")}</Link>
@@ -54,7 +54,7 @@ const Footer = () => {
             </ul>
           </Col>
 
-          <Col md={4}>
+          <Col md={3} className="mb-4 mb-md-0">
             <h5>{t("footer.information")}</h5>
             <ul className="list-unstyled">
               <li>

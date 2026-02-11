@@ -3,7 +3,7 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     CustomTokenObtainPairView, register, me, update_profile,
-    change_password, logout, google_callback
+    change_password, logout, google_callback, sso_callback, sso_token_verify
 )
 
 urlpatterns = [
@@ -20,4 +20,8 @@ urlpatterns = [
     
     # OAuth endpoints
     path('google/callback/', google_callback, name='google_callback'),
+    
+    # SSO endpoints
+    path('sso/callback/', sso_callback, name='sso_callback'),
+    path('sso/token/', sso_token_verify, name='sso_token_verify'),
 ]

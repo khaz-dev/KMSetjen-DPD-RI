@@ -19,10 +19,9 @@ const ForbiddenPage = () => {
           <Col md={6} className="text-center">
             <div className="error-content">
               <h1 className="error-code">403</h1>
-              <h2 className="error-title">{t('errors.unauthorized')}</h2>
+              <h2 className="error-title">{t('errors.forbidden')}</h2>
               <p className="error-message">
-                You do not have permission to access this resource. 
-                Please contact the administrator if you believe this is an error.
+                {t('errors.forbidden_description')}
               </p>
 
               <div className="error-actions">
@@ -32,14 +31,14 @@ const ForbiddenPage = () => {
                   onClick={() => navigate('/')}
                   className="me-2"
                 >
-                  {t('buttons.back')} to Home
+                  {t('common.home')}
                 </Button>
                 <Button
                   variant="outline-secondary"
                   size="lg"
                   onClick={() => navigate(-1)}
                 >
-                  Go Back
+                  {t('common.go_back')}
                 </Button>
               </div>
             </div>

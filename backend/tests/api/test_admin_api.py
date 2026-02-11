@@ -33,8 +33,16 @@ class AdminUserManagementTest(APITestCase):
     def setUpTestData(cls):
         """Set up test data."""
         # Create roles
-        cls.admin_role = Role.objects.create(code='ADMIN', name='Administrator')
-        cls.editor_role = Role.objects.create(code='EDITOR', name='Editor')
+        cls.admin_role = Role.objects.create(
+            code='ADMIN',
+            name_id='Administrator',
+            name_en='Administrator'
+        )
+        cls.editor_role = Role.objects.create(
+            code='EDITOR',
+            name_id='Editor',
+            name_en='Editor'
+        )
         
         # Create admin user
         cls.admin_user = User.objects.create_user(
@@ -191,7 +199,11 @@ class AdminRoleManagementTest(APITestCase):
     @classmethod
     def setUpTestData(cls):
         """Set up test data."""
-        cls.admin_role = Role.objects.create(code='ADMIN', name='Administrator')
+        cls.admin_role = Role.objects.create(
+            code='ADMIN',
+            name_id='Administrator',
+            name_en='Administrator'
+        )
         
         cls.admin_user = User.objects.create_user(
             username='admin',
@@ -303,7 +315,11 @@ class AdminAuditLogTest(APITestCase):
     @classmethod
     def setUpTestData(cls):
         """Set up test data."""
-        cls.admin_role = Role.objects.create(code='ADMIN', name='Administrator')
+        cls.admin_role = Role.objects.create(
+            code='ADMIN',
+            name_id='Administrator',
+            name_en='Administrator'
+        )
         
         cls.admin_user = User.objects.create_user(
             username='admin',
@@ -321,18 +337,18 @@ class AdminAuditLogTest(APITestCase):
         
         # Create test audit logs
         cls.audit_log1 = AuditLog.objects.create(
-            action='CREATE',
-            resource_type='Article',
-            resource_id=1,
+            action='create',
+            content_type='Article',
+            content_id='1',
             user=cls.test_user,
             ip_address='127.0.0.1',
             user_agent='Test Agent'
         )
         
         cls.audit_log2 = AuditLog.objects.create(
-            action='UPDATE',
-            resource_type='Article',
-            resource_id=1,
+            action='update',
+            content_type='Article',
+            content_id='1',
             user=cls.test_user,
             ip_address='127.0.0.1',
             user_agent='Test Agent',
@@ -358,16 +374,16 @@ class AdminAuditLogTest(APITestCase):
         """Test getting audit log detail."""
         response = self.client.get(f'/api/v1/admin/audit-logs/{self.audit_log1.id}/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['action'], 'CREATE')
+        self.assertEqual(response.data['action'], 'create')
     
     def test_filter_audit_logs_by_action(self):
         """Test filtering audit logs by action."""
         response = self.client.get(
-            '/api/v1/admin/audit-logs/?action=CREATE'
+            '/api/v1/admin/audit-logs/?action=create'
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
-        self.assertEqual(response.data['results'][0]['action'], 'CREATE')
+        self.assertEqual(response.data['results'][0]['action'], 'create')
     
     def test_filter_audit_logs_by_resource_type(self):
         """Test filtering audit logs by resource type."""
@@ -388,7 +404,7 @@ class AdminAuditLogTest(APITestCase):
     def test_advanced_filter(self):
         """Test advanced filtering."""
         data = {
-            'action': 'CREATE',
+            'action': 'create',
             'resource_type': 'Article'
         }
         response = self.client.post(
@@ -406,7 +422,11 @@ class AdminStatisticsTest(APITestCase):
     @classmethod
     def setUpTestData(cls):
         """Set up test data."""
-        cls.admin_role = Role.objects.create(code='ADMIN', name='Administrator')
+        cls.admin_role = Role.objects.create(
+            code='ADMIN',
+            name_id='Administrator',
+            name_en='Administrator'
+        )
         
         cls.admin_user = User.objects.create_user(
             username='admin',
@@ -492,7 +512,11 @@ class AdminPermissionTest(APITestCase):
     @classmethod
     def setUpTestData(cls):
         """Set up test data."""
-        cls.admin_role = Role.objects.create(code='ADMIN', name='Administrator')
+        cls.admin_role = Role.objects.create(
+            code='ADMIN',
+            name_id='Administrator',
+            name_en='Administrator'
+        )
         
         cls.admin_user = User.objects.create_user(
             username='admin',

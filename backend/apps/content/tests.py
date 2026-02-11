@@ -100,36 +100,38 @@ class AuditLogTests(TestCase):
         """Verify audit log is created correctly"""
         log = AuditLog.objects.create(
             user=self.user,
-            action="article_created",
-            description="User created an article",
-            status="success"
+            action="create",
+            content_type="Article",
+            content_id="1"
         )
         self.assertEqual(log.user, self.user)
-        self.assertEqual(log.action, "article_created")
+        self.assertEqual(log.action, "create")
 
     def test_audit_log_with_metadata(self):
         """Verify audit log can store metadata"""
-        metadata = {"article_id": 1, "title": "Test"}
+        changes = {"title": ["Old", "New"]}
         log = AuditLog.objects.create(
             user=self.user,
-            action="article_modified",
-            description="Article modified",
-            metadata=metadata,
-            status="success"
+            action="update",
+            content_type="Article",
+            content_id="1",
+            changes=changes
         )
-        self.assertEqual(log.metadata["article_id"], 1)
+        self.assertEqual(log.changes["title"], ["Old", "New"])
 
     def test_audit_log_status(self):
-        """Verify audit log status options work"""
-        success_log = AuditLog.objects.create(
+        """Verify audit logs can be created with valid actions"""
+        create_log = AuditLog.objects.create(
             user=self.user,
-            action="test",
-            status="success"
+            action="create",
+            content_type="Article",
+            content_id="1"
         )
-        failure_log = AuditLog.objects.create(
+        update_log = AuditLog.objects.create(
             user=self.user,
-            action="test",
-            status="failure"
+            action="update",
+            content_type="Article",
+            content_id="1"
         )
-        self.assertEqual(success_log.status, "success")
-        self.assertEqual(failure_log.status, "failure")
+        self.assertEqual(create_log.action, "create")
+        self.assertEqual(update_log.action, "update")

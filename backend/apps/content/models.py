@@ -319,6 +319,20 @@ class Article(models.Model):
         help_text='Auto-publish at this time'
     )
     
+    # Rejection feedback
+    rejection_reason = models.TextField(
+        blank=True,
+        default='',
+        help_text='Reason for rejecting the article'
+    )
+    
+    # Approval feedback
+    approval_comment = models.TextField(
+        blank=True,
+        default='',
+        help_text='Comment when approving the article'
+    )
+    
     # Metrics
     view_count = models.IntegerField(default=0, db_index=True, help_text='Total views')
     like_count = models.IntegerField(default=0, db_index=True, help_text='Total likes')
@@ -372,14 +386,165 @@ class Article(models.Model):
         
         return False
     
-    def increment_view_count(self):
-        """Increment view count atomically using F() expression.
-        This prevents race conditions and database locking issues.
+    def increment_view_count(self, user=None, ip_address=None):
         """
-        # Use F() for atomic increment - avoids read-modify-write race condition
-        Article.objects.filter(id=self.id).update(view_count=F('view_count') + 1)
-        # Refresh view_count from database
-        self.refresh_from_db(fields=['view_count'])
+        Increment view count only if:
+        1. Article is published (status='published' AND is_published=True)
+        2. This is a new view (first time this user/IP viewed this article)
+        
+        Args:
+            user: User object (optional, for authenticated users)
+            ip_address: IP address (optional, for anonymous or tracking)
+        
+        Returns:
+            bool: True if view was counted, False if already viewed or article not published
+        """
+        # CRITICAL: Only count views for published articles
+        if self.status != Article.STATUS_PUBLISHED or not self.is_published:
+            return False
+        
+        # For authenticated users, check if they already viewed this article
+        if user and user.is_authenticated:
+            # Try to create ArticleView record (unique constraint on article+user)
+            # CRITICAL: Don't set ip_address for authenticated users!
+            # The unique_together constraint has two separate rules:
+            # 1. (article, user) must be unique for authenticated users
+            # 2. (article, ip_address) must be unique for anonymous users
+            # Mixing them causes IntegrityError when multiple authenticated users from same IP try to visit
+            created = ArticleView.objects.get_or_create(
+                article=self,
+                user=user,
+                defaults={}  # Don't include ip_address for authenticated users
+            )[1]
+            
+            if created:
+                # First time this user viewed this article - increment count
+                Article.objects.filter(id=self.id).update(view_count=F('view_count') + 1)
+                self.refresh_from_db(fields=['view_count'])
+                return True
+            else:
+                # User already viewed this article - don't increment
+                return False
+        
+        # For anonymous users, check IP address
+        elif ip_address:
+            # Try to create ArticleView record (unique constraint on article+ip_address)
+            # CRITICAL: Don't set user for anonymous users to avoid unique constraint conflicts
+            created = ArticleView.objects.get_or_create(
+                article=self,
+                ip_address=ip_address,
+                defaults={}  # Don't include user for anonymous requests
+            )[1]
+            
+            if created:
+                # First time this IP viewed this article - increment count
+                Article.objects.filter(id=self.id).update(view_count=F('view_count') + 1)
+                self.refresh_from_db(fields=['view_count'])
+                return True
+            else:
+                # IP already viewed this article - don't increment
+                return False
+        
+        # No user or IP provided - can't track uniqueness, don't increment
+        return False
+
+    def toggle_like(self, user=None, ip_address=None):
+        """
+        Toggle like state for an article. Works like/unlike:
+        1. Article must be published (status='published' AND is_published=True)
+        2. If user/IP hasn't liked: add like and increment like_count
+        3. If user/IP already liked: remove like and decrement like_count
+        
+        Args:
+            user: User object (optional, for authenticated users)
+            ip_address: IP address (optional, for anonymous users)
+        
+        Returns:
+            dict: {
+                'liked': bool - True if now liked, False if unlike
+                'like_count': int - Updated like count
+                'liked_by_user': bool - True if user has liked (for frontend)
+            }
+        """
+        # CRITICAL: Only allow likes on published articles
+        if self.status != Article.STATUS_PUBLISHED or not self.is_published:
+            return {
+                'liked': False,
+                'like_count': self.like_count,
+                'liked_by_user': False,
+                'error': 'Article must be published to like'
+            }
+        
+        # For authenticated users, check if they already liked this article
+        if user and user.is_authenticated:
+            # CRITICAL: Don't set ip_address for authenticated users!
+            # The unique_together constraint has two separate rules:
+            # 1. (article, user) must be unique for authenticated users
+            # 2. (article, ip_address) must be unique for anonymous users
+            # Mixing them causes IntegrityError when multiple authenticated users from same IP try to like
+            user_like, created = UserLike.objects.get_or_create(
+                article=self,
+                user=user,
+                defaults={}  # Don't include ip_address for authenticated users
+            )
+            
+            if created:
+                # First time this user liked this article - increment count
+                Article.objects.filter(id=self.id).update(like_count=F('like_count') + 1)
+                self.refresh_from_db(fields=['like_count'])
+                return {
+                    'liked': True,
+                    'like_count': self.like_count,
+                    'liked_by_user': True
+                }
+            else:
+                # User already liked this article - unlike it
+                user_like.delete()
+                Article.objects.filter(id=self.id).update(like_count=F('like_count') - 1)
+                self.refresh_from_db(fields=['like_count'])
+                return {
+                    'liked': False,
+                    'like_count': self.like_count,
+                    'liked_by_user': False
+                }
+        
+        # For anonymous users, check IP address
+        elif ip_address:
+            # CRITICAL: Don't set user for anonymous users to avoid unique constraint conflicts
+            user_like, created = UserLike.objects.get_or_create(
+                article=self,
+                ip_address=ip_address,
+                defaults={}  # Don't include user for anonymous requests
+            )
+            
+            if created:
+                # First time this IP liked this article - increment count
+                Article.objects.filter(id=self.id).update(like_count=F('like_count') + 1)
+                self.refresh_from_db(fields=['like_count'])
+                return {
+                    'liked': True,
+                    'like_count': self.like_count,
+                    'liked_by_user': True
+                }
+            else:
+                # IP already liked this article - unlike it
+                user_like.delete()
+                Article.objects.filter(id=self.id).update(like_count=F('like_count') - 1)
+                self.refresh_from_db(fields=['like_count'])
+                return {
+                    'liked': False,
+                    'like_count': self.like_count,
+                    'liked_by_user': False
+                }
+        
+        # No user or IP provided - can't track like state
+        return {
+            'liked': False,
+            'like_count': self.like_count,
+            'liked_by_user': False,
+            'error': 'User or IP address required to like'
+        }
+
 
 
 # ============================================================================
@@ -483,3 +648,140 @@ class File(models.Model):
     
     def __str__(self):
         return self.original_filename
+
+# ============================================================================
+# ARTICLE VIEW TRACKING MODEL
+# ============================================================================
+
+# ============================================================================
+# ARTICLE VIEW MODEL
+# ============================================================================
+
+class ArticleView(models.Model):
+    """
+    Track views per user/IP to prevent view count exploitation.
+    One record = one user's one view of one article.
+    Prevents the same user from inflating view counts by refreshing.
+    """
+    article = models.ForeignKey(
+        Article,
+        on_delete=models.CASCADE,
+        related_name='views',
+        db_index=True,
+        help_text='Artikel yang dilihat'
+    )
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='article_views',
+        db_index=True,
+        help_text='User yang melihat artikel (null untuk anonymous)'
+    )
+    
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True,
+        help_text='IP address dari viewer'
+    )
+    
+    user_agent = models.TextField(
+        blank=True,
+        help_text='User agent string untuk identifikasi device'
+    )
+    
+    viewed_at = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True,
+        help_text='Waktu view'
+    )
+    
+    class Meta:
+        db_table = 'content_article_view'
+        verbose_name = 'Article View'
+        verbose_name_plural = 'Article Views'
+        # Composite index: one view per user per article
+        # For authenticated users: check (article_id, user_id)
+        # For anonymous users: check (article_id, ip_address)
+        indexes = [
+            models.Index(fields=['article', 'user']),
+            models.Index(fields=['article', 'ip_address']),
+            models.Index(fields=['article', 'viewed_at']),
+            models.Index(fields=['viewed_at']),
+        ]
+        # Prevent duplicate views from same user/IP
+        unique_together = [
+            ('article', 'user'),  # One authenticated user = one view per article
+            ('article', 'ip_address'),  # One IP address = one view per article (for anonymous)
+        ]
+    
+    def __str__(self):
+        viewer = self.user.username if self.user else self.ip_address
+        return f"{self.article.title_id} - {viewer}"
+
+
+# ============================================================================
+# USER LIKE MODEL
+# ============================================================================
+
+class UserLike(models.Model):
+    """
+    Track likes per user/IP to prevent like count exploitation.
+    One record = one user's like of one article.
+    Supports toggling (liking again removes the like).
+    Prevents the same user from inflating like counts.
+    """
+    article = models.ForeignKey(
+        Article,
+        on_delete=models.CASCADE,
+        related_name='user_likes',
+        db_index=True,
+        help_text='Artikel yang di-like'
+    )
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='article_likes',
+        db_index=True,
+        help_text='User yang like artikel (null untuk anonymous)'
+    )
+    
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True,
+        help_text='IP address dari liker'
+    )
+    
+    liked_at = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True,
+        help_text='Waktu like'
+    )
+    
+    class Meta:
+        db_table = 'content_user_like'
+        verbose_name = 'User Like'
+        verbose_name_plural = 'User Likes'
+        # Composite index: one like per user per article
+        # For authenticated users: check (article_id, user_id)
+        # For anonymous users: check (article_id, ip_address)
+        indexes = [
+            models.Index(fields=['article', 'user']),
+            models.Index(fields=['article', 'ip_address']),
+            models.Index(fields=['article', 'liked_at']),
+            models.Index(fields=['liked_at']),
+        ]
+        # Prevent duplicate likes from same user/IP
+        unique_together = [
+            ('article', 'user'),  # One authenticated user = one like per article
+            ('article', 'ip_address'),  # One IP address = one like per article (for anonymous)
+        ]
+    
+    def __str__(self):
+        liker = self.user.username if self.user else self.ip_address
+        return f"{self.article.title_id} - {liker}"

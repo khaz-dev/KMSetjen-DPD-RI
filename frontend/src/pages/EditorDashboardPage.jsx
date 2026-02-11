@@ -349,13 +349,23 @@ const EditorDashboard = () => {
                       </div>
                     </div>
 
-                    {article.review_comment && (
+                    {article.rejection_reason && (
                       <div className="rejection-reason">
                         <div className="reason-header">
                           <FiMessageSquare size={16} />
                           <strong>{t('moderation.rejection_reason_display')}</strong>
                         </div>
-                        <p className="reason-text">{article.review_comment}</p>
+                        <p className="reason-text">{article.rejection_reason}</p>
+                      </div>
+                    )}
+
+                    {article.approval_comment && (
+                      <div className="approval-comment" style={{marginTop: '10px'}}>
+                        <div className="reason-header">
+                          <FiMessageSquare size={16} />
+                          <strong>{t('moderation.approval_comments')}</strong>
+                        </div>
+                        <p className="reason-text">{article.approval_comment}</p>
                       </div>
                     )}
 

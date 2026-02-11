@@ -1,14 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
-import { Container, Table, Spinner, Alert, Card, Badge, Pagination, Form } from 'react-bootstrap';
+import { useLanguage } from '../hooks/useLanguage';
+import { Container, Table, Spinner, Alert, Card, Badge, Pagination, Form, Button, Modal } from 'react-bootstrap';
 import AdminSidebar from '../components/AdminSidebar';
 import axios from 'axios';
 import './ManagementPage.css';
 
 function AuditLogPage({ onLogout }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isDarkMode } = useTheme();
+  const { isIndonesian } = useLanguage();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -16,6 +18,8 @@ function AuditLogPage({ onLogout }) {
   const [totalPages, setTotalPages] = useState(1);
   const [filterAction, setFilterAction] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [selectedLog, setSelectedLog] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   const loadLogs = useCallback(async () => {
     try {
@@ -42,16 +46,54 @@ function AuditLogPage({ onLogout }) {
   }, [loadLogs]);
 
   const getActionBadge = (action) => {
+    const normalizedAction = (action || '').toLowerCase();
     const colors = {
-      CREATE: 'success',
-      UPDATE: 'info',
-      DELETE: 'danger',
-      PUBLISH: 'primary',
-      APPROVE: 'success',
-      REJECT: 'danger',
+      create: 'success',
+      update: 'info',
+      delete: 'danger',
+      publish: 'primary',
+      unpublish: 'warning',
+      review: 'info',
+      approve: 'success',
+      reject: 'danger',
+      login: 'secondary',
+      logout: 'secondary',
+      view: 'secondary',
     };
-    return colors[action] || 'secondary';
+    return colors[normalizedAction] || 'secondary';
   };
+
+  const getActionLabel = useCallback((action) => {
+    const normalizedAction = (action || '').toLowerCase();
+    const labels = {
+      'create': t('audit.actions.create'),
+      'update': t('audit.actions.update'),
+      'delete': t('audit.actions.delete'),
+      'publish': t('audit.actions.publish'),
+      'unpublish': t('audit.actions.unpublish'),
+      'review': t('audit.actions.review'),
+      'approve': t('audit.actions.approve'),
+      'reject': t('audit.actions.reject'),
+      'login': t('audit.actions.login'),
+      'logout': t('audit.actions.logout'),
+      'view': t('audit.actions.view'),
+    };
+    return labels[normalizedAction] || normalizedAction;
+  }, [t]);
+
+  const getResourceTypeLabel = useCallback((type) => {
+    const labels = {
+      'Article': t('audit.object_types.Article'),
+      'article': t('audit.object_types.Article'),
+      'User': t('audit.object_types.User'),
+      'user': t('audit.object_types.User'),
+      'Role': t('audit.object_types.Role'),
+      'role': t('audit.object_types.Role'),
+      'Category': t('audit.object_types.Category'),
+      'category': t('audit.object_types.Category'),
+    };
+    return labels[type] || type;
+  }, [t]);
 
   return (
     <div className={`admin-wrapper ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
@@ -60,8 +102,8 @@ function AuditLogPage({ onLogout }) {
         <Container>
           <div className="admin-header">
             <div>
-              <h1>Audit Logs</h1>
-              <p className="text-muted">System activity and change tracking</p>
+              <h1>{t('audit.title')}</h1>
+              <p className="text-muted">{t('audit.subtitle')}</p>
             </div>
           </div>
 
@@ -74,12 +116,15 @@ function AuditLogPage({ onLogout }) {
                   <Form.Label>{t('audit.action')}</Form.Label>
                   <Form.Select value={filterAction} onChange={(e) => { setFilterAction(e.target.value); setCurrentPage(1); }}>
                     <option value="">{t('audit.all_actions')}</option>
-                    <option value="CREATE">{t('audit.actions.CREATE')}</option>
-                    <option value="UPDATE">{t('audit.actions.UPDATE')}</option>
-                    <option value="DELETE">{t('audit.actions.DELETE')}</option>
-                    <option value="PUBLISH">{t('audit.actions.PUBLISH')}</option>
-                    <option value="APPROVE">{t('audit.actions.APPROVE')}</option>
-                    <option value="REJECT">{t('audit.actions.REJECT')}</option>
+                    <option value="create">{t('audit.actions.create')}</option>
+                    <option value="update">{t('audit.actions.update')}</option>
+                    <option value="delete">{t('audit.actions.delete')}</option>
+                    <option value="publish">{t('audit.actions.publish')}</option>
+                    <option value="unpublish">{t('audit.actions.unpublish')}</option>
+                    <option value="review">{t('audit.actions.review')}</option>
+                    <option value="approve">{t('audit.actions.approve')}</option>
+                    <option value="reject">{t('audit.actions.reject')}</option>
+                    <option value="view">{t('audit.actions.view')}</option>
                   </Form.Select>
                 </Form.Group>
                 <Form.Group className="filter-group">
@@ -108,23 +153,33 @@ function AuditLogPage({ onLogout }) {
                   <Table hover className="mb-0">
                     <thead className="table-header">
                       <tr>
-                        <th>Timestamp</th>
-                        <th>User</th>
-                        <th>Action</th>
-                        <th>Resource Type</th>
-                        <th>Resource ID</th>
-                        <th>IP Address</th>
+                        <th>{t('audit.timestamp')}</th>
+                        <th>{t('audit.user')}</th>
+                        <th>{t('audit.action')}</th>
+                        <th>{t('audit.resource_type')}</th>
+                        <th>{t('audit.object_id')}</th>
+                        <th>{t('audit.ip_address')}</th>
+                        <th>{t('common.actions')}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {logs.map((log) => (
                         <tr key={log.id}>
                           <td className="date-cell">{new Date(log.timestamp).toLocaleString()}</td>
-                          <td>{log.user?.username || t('common.unknown_author')}</td>
-                          <td><Badge bg={getActionBadge(log.action)}>{log.action}</Badge></td>
-                          <td>{log.resource_type}</td>
-                          <td><code>{log.resource_id}</code></td>
+                          <td>{log.user_name || t('common.unknown_author')}</td>
+                          <td><Badge bg={getActionBadge(log.action)}>{getActionLabel(log.action)}</Badge></td>
+                          <td>{getResourceTypeLabel(log.resource_type)}</td>
+                          <td><code>{log.content_id}</code></td>
                           <td className="ip-cell">{log.ip_address || '-'}</td>
+                          <td>
+                            <Button 
+                              variant="outline-info" 
+                              size="sm" 
+                              onClick={() => { setSelectedLog(log); setShowDetails(true); }}
+                            >
+                              {t('audit.view_details')}
+                            </Button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -156,6 +211,55 @@ function AuditLogPage({ onLogout }) {
           )}
         </Container>
       </div>
+
+      <Modal show={showDetails} onHide={() => setShowDetails(false)} size="lg" dialogClassName={isDarkMode ? 'dark-mode' : ''}>
+        <Modal.Header closeButton>
+          <Modal.Title>{t('audit.view_details')}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedLog && (
+            <div>
+              <div className="detail-row mb-3">
+                <strong>{t('audit.timestamp')}:</strong>
+                <p>{new Date(selectedLog.timestamp).toLocaleString()}</p>
+              </div>
+              <div className="detail-row mb-3">
+                <strong>{t('audit.user')}:</strong>
+                <p>{selectedLog.user_name || t('common.unknown_author')}</p>
+              </div>
+              <div className="detail-row mb-3">
+                <strong>{t('audit.action')}:</strong>
+                <p><Badge bg={getActionBadge(selectedLog.action)}>{getActionLabel(selectedLog.action)}</Badge></p>
+              </div>
+              <div className="detail-row mb-3">
+                <strong>{t('audit.resource_type')}:</strong>
+                <p>{getResourceTypeLabel(selectedLog.resource_type)}</p>
+              </div>
+              <div className="detail-row mb-3">
+                <strong>{t('audit.object_id')}:</strong>
+                <p><code>{selectedLog.content_id}</code></p>
+              </div>
+              <div className="detail-row mb-3">
+                <strong>{t('audit.ip_address')}:</strong>
+                <p>{selectedLog.ip_address || '-'}</p>
+              </div>
+              {selectedLog.changes && (
+                <div className="detail-row mb-3">
+                  <strong>{t('audit.changes')}:</strong>
+                  <pre style={{ backgroundColor: '#f5f5f5', padding: '10px', borderRadius: '4px' }}>
+                    {typeof selectedLog.changes === 'string' ? selectedLog.changes : JSON.stringify(selectedLog.changes, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDetails(false)}>
+            {t('common.close')}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }

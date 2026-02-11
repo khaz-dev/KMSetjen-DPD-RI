@@ -160,46 +160,48 @@ class AuditLogModelTest(TestCase):
         """Test audit log can be created"""
         log = AuditLog.objects.create(
             user=self.user,
-            action="article_created",
-            description="User created an article",
-            status="success"
+            action="create",
+            content_type="Article",
+            content_id="1"
         )
         self.assertEqual(log.user, self.user)
-        self.assertEqual(log.action, "article_created")
+        self.assertEqual(log.action, "create")
 
     def test_audit_log_with_metadata(self):
         """Test audit log with metadata"""
-        metadata = {"article_id": 1, "title": "Test"}
+        changes = {"title": ["Old Title", "New Title"]}
         log = AuditLog.objects.create(
             user=self.user,
-            action="article_modified",
-            description="Article modified",
-            metadata=metadata,
-            status="success"
+            action="update",
+            content_type="Article",
+            content_id="1",
+            changes=changes
         )
-        self.assertEqual(log.metadata["article_id"], 1)
+        self.assertEqual(log.changes["title"], ["Old Title", "New Title"])
 
     def test_audit_log_timestamp(self):
         """Test audit log timestamp"""
         log = AuditLog.objects.create(
             user=self.user,
-            action="login",
-            description="User logged in",
-            status="success"
+            action="create",
+            content_type="Article",
+            content_id="1"
         )
-        self.assertIsNotNone(log.created_at)
+        self.assertIsNotNone(log.timestamp)
 
     def test_audit_log_status_choices(self):
-        """Test audit log status choices"""
-        success_log = AuditLog.objects.create(
+        """Test audit log with different actions"""
+        create_log = AuditLog.objects.create(
             user=self.user,
-            action="test",
-            status="success"
+            action="create",
+            content_type="Article",
+            content_id="1"
         )
-        failure_log = AuditLog.objects.create(
+        delete_log = AuditLog.objects.create(
             user=self.user,
-            action="test",
-            status="failure"
+            action="delete",
+            content_type="Article",
+            content_id="1"
         )
-        self.assertEqual(success_log.status, "success")
-        self.assertEqual(failure_log.status, "failure")
+        self.assertEqual(create_log.action, "create")
+        self.assertEqual(delete_log.action, "delete")

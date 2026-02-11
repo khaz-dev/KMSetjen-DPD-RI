@@ -33,7 +33,7 @@ const Header = () => {
             alt="KMS Logo"
             style={{ height: '2.5rem', width: '2.5rem', objectFit: 'contain' }}
           />
-          <strong>KMS</strong> DPD RI
+          <strong>KMSetjen</strong> DPD RI
         </Navbar.Brand>
 
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
@@ -44,7 +44,7 @@ const Header = () => {
               {t("nav.home")}
             </Nav.Link>
 
-            <Nav.Link as={Link} to="/articles">
+            <Nav.Link as={Link} to="/knowledges">
               {t("nav.articles")}
             </Nav.Link>
 

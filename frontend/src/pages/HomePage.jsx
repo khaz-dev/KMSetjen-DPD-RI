@@ -1,13 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Form, Spinner } from 'react-bootstrap';
 import { useNavigate, Link } from 'react-router-dom';
-import { publicAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import { publicAPI, getArticleUrl } from '../services/api';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale, enUS } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../hooks/useLanguage';
 import { FiEye, FiHeart } from 'react-icons/fi';
 import './HomePage.css';
+
+/**
+ * Safe date format helper - handles null/invalid dates gracefully
+ */
+const formatSafeDate = (dateValue, isIndonesian) => {
+  try {
+    const dateObj = new Date(dateValue);
+    if (isNaN(dateObj.getTime())) {
+      return 'N/A';
+    }
+    return formatDistanceToNow(dateObj, {
+      addSuffix: true,
+      locale: isIndonesian ? idLocale : enUS
+    });
+  } catch (error) {
+    return 'N/A';
+  }
+};
 
 /**
  * HomePage Component
@@ -17,6 +36,7 @@ const HomePage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { isIndonesian } = useLanguage();
+  const { user } = useAuth();
   const [featuredArticles, setFeaturedArticles] = useState([]);
   const [categories, setCategories] = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -49,12 +69,12 @@ const HomePage = () => {
     };
 
     loadContent();
-  }, []);
+  }, [user]);
 
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      window.location.href = `/articles?search=${encodeURIComponent(searchQuery)}`;
+      window.location.href = `/knowledges?search=${encodeURIComponent(searchQuery)}`;
     }
   };
 
@@ -145,10 +165,7 @@ const HomePage = () => {
                       <div className="article-meta mt-3 mb-3">
                         <div className="meta-row mb-2">
                           <small className="text-muted">
-                            {formatDistanceToNow(new Date(article.published_at), {
-                              addSuffix: true,
-                              locale: isIndonesian ? idLocale : enUS
-                            })}
+                            {formatSafeDate(article.published_at || article.updated_at, isIndonesian)}
                           </small>
                           <span className="meta-separator">•</span>
                           <small className="text-muted d-flex align-items-center gap-1">
@@ -171,7 +188,7 @@ const HomePage = () => {
                       </div>
                     </Card.Body>
                     <Card.Footer className="bg-transparent d-flex justify-content-end">
-                      <Link to={`/articles/${article.id}`} className="btn btn-sm btn-primary">
+                      <Link to={getArticleUrl(article)} className="btn btn-sm btn-primary">
                         {t('buttons.read_more')}
                       </Link>
                     </Card.Footer>
@@ -204,7 +221,7 @@ const HomePage = () => {
               categories.map((category) => (
                 <Col md={4} key={category.id} className="mb-3">
                   <Link
-                    to={`/articles?category=${category.id}`}
+                    to={`/knowledges?category=${category.id}`}
                     className="category-link"
                   >
                     <Card className="category-card h-100">

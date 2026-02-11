@@ -30,13 +30,26 @@ class CategoryDetailSerializer(serializers.ModelSerializer):
                   'slug', 'icon', 'color', 'image', 'order_index', 'article_count', 'children']
     
     def get_article_count(self, obj):
-        """Count published PUBLIC articles in category."""
-        # Only count articles visible to anonymous users (public access level)
-        return obj.articles.filter(
-            is_published=True,
-            status='published',
-            access_level='public'
-        ).count()
+        """Count published articles based on user access level."""
+        # Get request and user from context
+        request = self.context.get('request')
+        user = request.user if request else None
+
+        # Check if user is authenticated
+        if user and user.is_authenticated:
+            # Authenticated users can see public + internal + role-based articles
+            return obj.articles.filter(
+                is_published=True,
+                status='published',
+                access_level__in=['public', 'internal', 'role_based']
+            ).count()
+        else:
+            # Anonymous users only see public articles
+            return obj.articles.filter(
+                is_published=True,
+                status='published',
+                access_level='public'
+            ).count()
     
     def get_children(self, obj):
         """Get child categories."""
@@ -66,50 +79,73 @@ class ArticleListSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
     author_name = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
+    liked_by_user = serializers.SerializerMethodField()
     
     class Meta:
         model = Article
         fields = ['id', 'uuid', 'title_id', 'title_en', 'summary_id', 'summary_en', 'image',
-                  'slug', 'category', 'tags', 'author_name', 'is_bilingual',
-                  'view_count', 'like_count', 'published_at', 'created_at']
-        read_only_fields = ['id', 'uuid', 'view_count', 'like_count', 'published_at', 'created_at']
+                  'slug', 'category', 'tags', 'author_name', 'is_bilingual', 'status', 'is_published',
+                  'view_count', 'like_count', 'liked_by_user', 'published_at', 'updated_at', 'created_at']
+        read_only_fields = ['id', 'uuid', 'view_count', 'like_count', 'published_at', 'updated_at', 'created_at']
     
     def get_author_name(self, obj):
         """Get full name of author."""
-        return f"{obj.author.first_name} {obj.author.last_name}".strip() or obj.author.username
+        if obj.author:
+            return f"{obj.author.first_name} {obj.author.last_name}".strip() or obj.author.username
+        return "Unknown Author"
     
     def get_image(self, obj):
-        """Get image URL for article."""
+        """Get image URL for article (uploaded image or external URL)."""
         if obj.image:
             request = self.context.get('request')
             if request:
                 return request.build_absolute_uri(obj.image.url)
             return f'/media/{obj.image.name}'
+        # Fallback to image_url if uploaded image is not available
+        if obj.image_url:
+            return obj.image_url
         return None
+    
+    def get_liked_by_user(self, obj):
+        """Check if current user has liked this article."""
+        request = self.context.get('request')
+        if not request:
+            return False
+        
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        
+        # Check if user has liked this article
+        from apps.content.models import UserLike
+        return UserLike.objects.filter(article=obj, user=user).exists()
 
 
 class ArticleDetailSerializer(serializers.ModelSerializer):
     """Serializer for article detail view."""
     category = CategoryDetailSerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
-    files = FileSerializer(many=True, read_only=True, source='file_set')
+    files = FileSerializer(many=True, read_only=True)
     author_name = serializers.SerializerMethodField()
     author_email = serializers.SerializerMethodField()
     allowed_roles_display = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
+    liked_by_user = serializers.SerializerMethodField()
     
     class Meta:
         model = Article
         fields = ['id', 'uuid', 'title_id', 'title_en', 'content_id', 'content_en',
                   'summary_id', 'summary_en', 'image', 'slug', 'category', 'tags', 'files',
-                  'status', 'access_level', 'allowed_roles_display', 'author_name',
+                  'status', 'is_published', 'access_level', 'allowed_roles_display', 'author_name',
                   'author_email', 'is_bilingual', 'language', 'view_count', 'like_count',
-                  'published_at', 'scheduled_at', 'created_at', 'updated_at']
+                  'liked_by_user', 'published_at', 'scheduled_at', 'created_at', 'updated_at', 'rejection_reason', 'approval_comment']
         read_only_fields = ['id', 'uuid', 'view_count', 'like_count', 'published_at', 'created_at', 'updated_at']
     
     def get_author_name(self, obj):
         """Get full name of author."""
-        return f"{obj.author.first_name} {obj.author.last_name}".strip() or obj.author.username
+        if obj.author:
+            return f"{obj.author.first_name} {obj.author.last_name}".strip() or obj.author.username
+        return "Unknown Author"
     
     def get_author_email(self, obj):
         """Get author email."""
@@ -123,13 +159,30 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
         return []
     
     def get_image(self, obj):
-        """Get image URL for article."""
+        """Get image URL for article (uploaded image or external URL)."""
         if obj.image:
             request = self.context.get('request')
             if request:
                 return request.build_absolute_uri(obj.image.url)
             return f'/media/{obj.image.name}'
+        # Fallback to image_url if uploaded image is not available
+        if obj.image_url:
+            return obj.image_url
         return None
+    
+    def get_liked_by_user(self, obj):
+        """Check if current user has liked this article."""
+        request = self.context.get('request')
+        if not request:
+            return False
+        
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        
+        # Check if user has liked this article
+        from apps.content.models import UserLike
+        return UserLike.objects.filter(article=obj, user=user).exists()
 
 
 class CategoryListSerializer(serializers.ModelSerializer):
@@ -142,13 +195,26 @@ class CategoryListSerializer(serializers.ModelSerializer):
                   'order_index', 'article_count']
     
     def get_article_count(self, obj):
-        """Count published PUBLIC articles in category."""
-        # Only count articles visible to anonymous users (public access level)
-        return obj.articles.filter(
-            is_published=True,
-            status='published',
-            access_level='public'
-        ).count()
+        """Count published articles based on user access level."""
+        # Get request and user from context
+        request = self.context.get('request')
+        user = request.user if request else None
+
+        # Check if user is authenticated
+        if user and user.is_authenticated:
+            # Authenticated users can see public + internal + role-based articles
+            return obj.articles.filter(
+                is_published=True,
+                status='published',
+                access_level__in=['public', 'internal', 'role_based']
+            ).count()
+        else:
+            # Anonymous users only see public articles
+            return obj.articles.filter(
+                is_published=True,
+                status='published',
+                access_level='public'
+            ).count()
 
 
 class SearchResultSerializer(serializers.Serializer):

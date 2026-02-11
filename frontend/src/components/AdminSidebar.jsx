@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
 import {
   FiHome, FiUsers, FiLayers, FiFolder, FiFileText,
-  FiActivity, FiMenu, FiX, FiLogOut
+  FiActivity, FiMenu, FiX, FiLogOut, FiTag
 } from 'react-icons/fi';
 import './AdminSidebar.css';
 
@@ -25,7 +25,8 @@ function AdminSidebar({ onLogout }) {
     { path: '/admin/users', icon: FiUsers, label: t('sidebar.users') || 'Users' },
     { path: '/admin/roles', icon: FiLayers, label: t('sidebar.roles') || 'Roles & Permissions' },
     { path: '/admin/categories', icon: FiFolder, label: t('sidebar.categories') || 'Categories' },
-    { path: '/admin/articles', icon: FiFileText, label: t('sidebar.articles') || 'Article Moderation' },
+    { path: '/admin/tags', icon: FiTag, label: t('sidebar.tags') || 'Tags' },
+    { path: '/admin/articles', icon: FiFileText, label: t('sidebar.articles') || 'Knowledge Moderation' },
     { path: '/admin/audit-logs', icon: FiActivity, label: t('sidebar.audit_log') || 'Audit Logs' },
   ];
 
