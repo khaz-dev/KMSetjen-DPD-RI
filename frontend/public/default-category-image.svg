@@ -1,0 +1,43 @@
+<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+  <!-- Background -->
+  <rect width="400" height="300" fill="#f0f0f0"/>
+  
+  <!-- Gradient overlay -->
+  <defs>
+    <linearGradient id="categoryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e8f8f0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d4f0e8;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="400" height="300" fill="url(#categoryGradient)"/>
+  
+  <!-- Grid/Category icon -->
+  <g transform="translate(120, 70)">
+    <!-- Large folder/box -->
+    <rect x="0" y="0" width="160" height="120" rx="6" fill="#ffffff" stroke="#b0b0b0" stroke-width="1.5"/>
+    
+    <!-- Folder tab -->
+    <g>
+      <rect x="0" y="0" width="70" height="30" rx="4,4,0,0" fill="#ffffff" stroke="#b0b0b0" stroke-width="1.5"/>
+      <rect x="0" y="28" width="160" height="2" fill="#e0e0e0"/>
+    </g>
+    
+    <!-- Grid items inside -->
+    <circle cx="40" cy="60" r="15" fill="#dceef8"/>
+    <circle cx="90" cy="60" r="15" fill="#dceef8"/>
+    <circle cx="140" cy="60" r="15" fill="#dceef8"/>
+    
+    <circle cx="40" cy="100" r="15" fill="#c8e2f0"/>
+    <circle cx="90" cy="100" r="15" fill="#c8e2f0"/>
+    <circle cx="140" cy="100" r="15" fill="#c8e2f0"/>
+  </g>
+  
+  <!-- Text label -->
+  <text x="200" y="250" font-size="16" font-weight="500" fill="#666666" text-anchor="middle" font-family="Arial, sans-serif">
+    Category Image
+  </text>
+  <text x="200" y="275" font-size="12" fill="#999999" text-anchor="middle" font-family="Arial, sans-serif">
+    No image available
+  </text>
+</svg>

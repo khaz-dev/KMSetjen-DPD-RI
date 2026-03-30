@@ -238,8 +238,8 @@
 }
 
 .action-buttons .btn-outline-primary:hover {
-  background: #3498db;
-  border-color: #3498db;
+  background: #14b8a6;
+  border-color: #14b8a6;
   color: white;
   transform: translateY(-2px);
 }
@@ -268,7 +268,7 @@
 }
 
 .loading-container .spinner-border {
-  color: #3498db;
+  color: #14b8a6;
 }
 
 /* Empty State */
@@ -298,21 +298,21 @@
 
 .page-link {
   border: 1px solid #ddd;
-  color: #3498db;
+  color: #14b8a6;
   border-radius: 4px;
   transition: all 0.3s ease;
 }
 
 .page-link:hover:not(.disabled) {
-  background: #3498db;
+  background: #14b8a6;
   color: white;
-  border-color: #3498db;
+  border-color: #14b8a6;
   transform: translateY(-2px);
 }
 
 .page-item.active .page-link {
-  background: #3498db;
-  border-color: #3498db;
+  background: #14b8a6;
+  border-color: #14b8a6;
 }
 
 /* Alert */
@@ -379,8 +379,8 @@
 }
 
 .form-control:focus {
-  border-color: #3498db;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
 }
 
 /* Permissions Grid */
@@ -409,8 +409,8 @@
 }
 
 .permission-check .form-check-input:checked {
-  background: #3498db;
-  border-color: #3498db;
+  background: #14b8a6;
+  border-color: #14b8a6;
 }
 
 .permission-check .form-check-label {
@@ -487,8 +487,8 @@
 .modal.dark-mode .form-select:focus {
   background-color: #3d3d3d !important;
   color: #e0e0e0 !important;
-  border-color: #3498db !important;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2) !important;
+  border-color: #14b8a6 !important;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.2) !important;
 }
 
 .admin-wrapper.dark-mode .form-text,
@@ -515,8 +515,8 @@
 .admin-wrapper.dark-mode .permission-check .form-check-input:checked,
 [data-theme="dark"] .admin-wrapper .permission-check .form-check-input:checked,
 .modal.dark-mode .permission-check .form-check-input:checked {
-  background-color: #3498db !important;
-  border-color: #3498db !important;
+  background-color: #14b8a6 !important;
+  border-color: #14b8a6 !important;
 }
 
 .admin-wrapper.dark-mode .permission-check .form-check-label,

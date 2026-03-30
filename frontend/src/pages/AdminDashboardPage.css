@@ -53,7 +53,7 @@
 
 .admin-content {
   flex: 1;
-  padding: 2rem;
+  padding: var(--spacing-8);
   overflow-y: auto;
   background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
 }
@@ -68,21 +68,22 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2.5rem;
-  padding: 1.5rem 0;
-  border-bottom: 2px solid rgba(52, 152, 219, 0.1);
+  margin-bottom: var(--spacing-8);
+  padding: var(--spacing-6) 0;
+  border-bottom: 2px solid rgba(20, 184, 166, 0.1);
 }
 
 .admin-dashboard-wrapper.dark-mode .admin-header,
 [data-theme="dark"] .admin-dashboard-wrapper .admin-header {
-  border-bottom-color: rgba(52, 152, 219, 0.2);
+  border-bottom-color: rgba(20, 184, 166, 0.2);
 }
 
 .header-content h1 {
   margin: 0;
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
   color: #2c3e50;
+  line-height: var(--line-height-tight);
 }
 
 .admin-dashboard-wrapper.dark-mode .header-content h1,
@@ -91,8 +92,10 @@
 }
 
 .header-content p {
-  margin: 0.25rem 0 0 0;
-  font-size: 0.95rem;
+  margin: var(--spacing-2) 0 0 0;
+  font-size: var(--font-size-base);
+  color: #7f8c8d;
+  line-height: var(--line-height-relaxed);
 }
 
 .admin-dashboard-wrapper.dark-mode .header-content p,
@@ -101,23 +104,24 @@
 }
 
 .btn-refresh {
-  padding: 0.6rem 1.5rem;
-  background: linear-gradient(90deg, #3498db, #2980b9);
+  padding: var(--spacing-3) var(--spacing-4);
+  background: linear-gradient(90deg, #14b8a6, #0d9488);
   color: #ffffff;
   border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
+  border-radius: var(--radius-lg);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  transition: all var(--transition-fast);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--spacing-3);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-refresh:hover:not(:disabled) {
-  background: linear-gradient(90deg, #2980b9, #2471a3);
+  background: linear-gradient(90deg, #0d9488, #0f766e);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+  box-shadow: var(--shadow-lg);
   color: #ffffff;
 }
 
@@ -148,15 +152,15 @@ body:not([data-theme="dark"]) .admin-dashboard-wrapper .btn-refresh:disabled {
 /* Dark Mode - Button Text Color */
 .admin-dashboard-wrapper.dark-mode .btn-refresh,
 [data-theme="dark"] .admin-dashboard-wrapper .btn-refresh {
-  background: linear-gradient(90deg, #3498db, #2980b9);
+  background: linear-gradient(90deg, #14b8a6, #0d9488);
   color: #ffffff;
   font-weight: 600;
 }
 
 .admin-dashboard-wrapper.dark-mode .btn-refresh:hover:not(:disabled),
 [data-theme="dark"] .admin-dashboard-wrapper .btn-refresh:hover:not(:disabled) {
-  background: linear-gradient(90deg, #2980b9, #2471a3);
-  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+  background: linear-gradient(90deg, #0d9488, #0f766e);
+  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.4);
   color: #ffffff;
 }
 
@@ -178,15 +182,15 @@ body:not([data-theme="dark"]) .admin-dashboard-wrapper .btn-refresh:disabled {
 }
 
 .loading-container .spinner-border {
-  color: #3498db;
+  color: #14b8a6;
 }
 
 /* Stat Cards */
 .stat-card {
-  border: none;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
   overflow: hidden;
   position: relative;
   height: 100%;
@@ -199,11 +203,11 @@ body:not([data-theme="dark"]) .admin-dashboard-wrapper .btn-refresh:disabled {
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #3498db, #2980b9);
+  background: linear-gradient(90deg, #14b8a6, #0d9488);
 }
 
 .stat-card-blue::before {
-  background: linear-gradient(90deg, #3498db, #2980b9);
+  background: linear-gradient(90deg, #14b8a6, #0d9488);
 }
 
 .stat-card-green::before {
@@ -220,18 +224,19 @@ body:not([data-theme="dark"]) .admin-dashboard-wrapper .btn-refresh:disabled {
 
 .stat-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-lg);
+  border-color: #14b8a6;
 }
 
 .stat-content {
   display: flex;
   align-items: flex-start;
-  gap: 1rem;
+  gap: var(--spacing-4);
 }
 
 .stat-icon {
-  font-size: 2rem;
-  color: #3498db;
+  font-size: var(--font-size-4xl);
+  color: #14b8a6;
   flex-shrink: 0;
 }
 
@@ -252,49 +257,53 @@ body:not([data-theme="dark"]) .admin-dashboard-wrapper .btn-refresh:disabled {
 }
 
 .stat-label {
-  font-size: 0.85rem;
+  font-size: var(--font-size-xs);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: var(--letter-spacing-wide);
   color: #7f8c8d;
   margin: 0;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .stat-value {
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
   color: #2c3e50;
-  margin: 0.5rem 0 0 0;
-  line-height: 1;
+  margin: var(--spacing-2) 0 0 0;
+  line-height: var(--line-height-tight);
 }
 
 .stat-subtext {
   color: #95a5a6;
-  font-size: 0.85rem;
-  margin-top: 0.25rem;
+  font-size: var(--font-size-sm);
+  margin-top: var(--spacing-1);
   display: block;
 }
 
 /* Breakdown Cards */
 .breakdown-card,
 .activity-card {
-  border: none;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
   height: 100%;
 }
 
 .breakdown-card:hover,
 .activity-card:hover {
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+  border-color: #14b8a6;
 }
 
 .breakdown-card .card-header,
 .activity-card .card-header {
   background: transparent;
   border-bottom: 2px solid #ecf0f1;
-  padding: 1.25rem;
+  padding: var(--spacing-5);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-lg);
 }
 
 .admin-dashboard-wrapper.dark-mode .breakdown-card .card-header,

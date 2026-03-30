@@ -19,7 +19,18 @@ function CategoryManagementPage({ onLogout }) {
   const [modalMode, setModalMode] = useState('create');
   const [selectedItem, setSelectedItem] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [formData, setFormData] = useState({ name_en: '', name_id: '', description: '' });
+  const [formData, setFormData] = useState({ 
+    name_en: '', 
+    name_id: '', 
+    description_id: '',
+    description_en: '',
+    image: '',
+    image_file: null,
+    icon: '',
+    color: '#007bff',
+    is_active: true
+  });
+  const [imagePreview, setImagePreview] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteCategoryId, setDeleteCategoryId] = useState(null);
   const [deleteCategoryName, setDeleteCategoryName] = useState('');
@@ -29,7 +40,7 @@ function CategoryManagementPage({ onLogout }) {
       setLoading(true);
       setError(null);
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/v1/public/categories/?page=${currentPage}`,
+        `${import.meta.env.VITE_API_URL}/api/v1/admin/categories/?page=${currentPage}`,
         { headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` } }
       );
       setItems(response.data.results || []);
@@ -49,11 +60,33 @@ function CategoryManagementPage({ onLogout }) {
     if (item) {
       setModalMode('edit');
       setSelectedItem(item);
-      setFormData({ name_en: item.name_en, name_id: item.name_id || '', description: item.description || '' });
+      setFormData({ 
+        name_en: item.name_en || '', 
+        name_id: item.name_id || '', 
+        description_id: item.description_id || '',
+        description_en: item.description_en || '',
+        image: item.image || '',
+        image_file: null,
+        icon: item.icon || '',
+        color: item.color || '#007bff',
+        is_active: item.is_active !== undefined ? item.is_active : true
+      });
+      setImagePreview(item.image || null);
     } else {
       setModalMode('create');
       setSelectedItem(null);
-      setFormData({ name_en: '', name_id: '', description: '' });
+      setFormData({ 
+        name_en: '', 
+        name_id: '', 
+        description_id: '',
+        description_en: '',
+        image: '',
+        image_file: null,
+        icon: '',
+        color: '#007bff',
+        is_active: true
+      });
+      setImagePreview(null);
     }
     setShowModal(true);
   };
@@ -63,14 +96,48 @@ function CategoryManagementPage({ onLogout }) {
     try {
       setSubmitting(true);
       const endpoint = modalMode === 'create'
-        ? `${import.meta.env.VITE_API_URL}/api/v1/public/categories/`
-        : `${import.meta.env.VITE_API_URL}/api/v1/public/categories/${selectedItem.id}/`;
+        ? `${import.meta.env.VITE_API_URL}/api/v1/admin/categories/`
+        : `${import.meta.env.VITE_API_URL}/api/v1/admin/categories/${selectedItem.id}/`;
       const method = modalMode === 'create' ? 'post' : 'put';
-      await axios({ method, url: endpoint, data: formData, headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` } });
+      
+      let dataToSend;
+      if (formData.image_file) {
+        // Use FormData for file upload
+        dataToSend = new FormData();
+        dataToSend.append('name_en', formData.name_en);
+        dataToSend.append('name_id', formData.name_id);
+        dataToSend.append('description_en', formData.description_en);
+        dataToSend.append('description_id', formData.description_id);
+        dataToSend.append('icon', formData.icon);
+        dataToSend.append('color', formData.color);
+        dataToSend.append('is_active', formData.is_active);
+        dataToSend.append('image', formData.image_file);
+      } else {
+        dataToSend = {
+          name_en: formData.name_en,
+          name_id: formData.name_id,
+          description_en: formData.description_en,
+          description_id: formData.description_id,
+          icon: formData.icon,
+          color: formData.color,
+          is_active: formData.is_active
+        };
+      }
+      
+      const headers = {
+        Authorization: `Bearer ${localStorage.getItem('access_token')}`
+      };
+      
+      if (!(dataToSend instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+      }
+      
+      await axios({ method, url: endpoint, data: dataToSend, headers });
       loadItems();
       setShowModal(false);
+      setError(null);
     } catch (err) {
-      setError(err.response?.data?.detail || t('categories.category_error'));
+      setError(err.response?.data?.detail || err.response?.data?.name_en?.[0] || t('categories.category_error'));
     } finally {
       setSubmitting(false);
     }
@@ -89,12 +156,52 @@ function CategoryManagementPage({ onLogout }) {
     setShowDeleteModal(true);
   };
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError(t('categories.invalid_image_type') || 'Please select a valid image file');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        setError(t('categories.image_too_large') || 'Image file is too large (max 5MB)');
+        return;
+      }
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({
+          ...prev,
+          image: reader.result,
+          image_file: file
+        }));
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+      setError(null);
+    }
+  };
+
+  const handleImageRemove = () => {
+    setFormData(prev => ({
+      ...prev,
+      image: '',
+      image_file: null
+    }));
+    setImagePreview(null);
+  };
+
   const handleConfirmDelete = async () => {
     const categoryId = deleteCategoryId;
     console.log('[CategoryManagement DELETE] User confirmed, sending DELETE request...');
     
     try {
-      const apiUrl = `${import.meta.env.VITE_API_URL}/api/v1/public/categories/${categoryId}/`;
+      const apiUrl = `${import.meta.env.VITE_API_URL}/api/v1/admin/categories/${categoryId}/`;
       const token = localStorage.getItem('access_token');
       
       console.log('[CategoryManagement DELETE] API URL:', apiUrl);
@@ -186,20 +293,45 @@ function CategoryManagementPage({ onLogout }) {
                   <Table hover className="mb-0">
                     <thead className="table-header">
                       <tr>
+                        <th style={{ width: '8%' }}></th>
                         <th>{t('categories.name_en')}</th>
                         <th>{t('categories.name_id')}</th>
                         <th>{t('categories.description')}</th>
-                        <th>{t('categories.articles')}</th>
+                        <th style={{ width: '8%', textAlign: 'center' }}>{t('categories.articles')}</th>
                         <th>{t('common.actions')}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {items.map((item) => (
                         <tr key={item.id}>
-                          <td><strong>{item.name_en}</strong></td>
+                          <td style={{ textAlign: 'center', fontSize: '20px', paddingTop: '14px' }}>
+                            {item.icon ? (
+                              <span title={item.icon}>{item.icon}</span>
+                            ) : (
+                              <span style={{ color: '#ccc', fontSize: '16px' }}>-</span>
+                            )}
+                          </td>
+                          <td>
+                            <strong>{item.name_en}</strong>
+                            {item.color && item.color !== '#007bff' && (
+                              <div 
+                                style={{
+                                  display: 'inline-block',
+                                  width: '12px',
+                                  height: '12px',
+                                  backgroundColor: item.color,
+                                  borderRadius: '3px',
+                                  marginLeft: '8px',
+                                  border: '1px solid #ddd',
+                                  verticalAlign: 'middle'
+                                }}
+                                title={`Color: ${item.color}`}
+                              ></div>
+                            )}
+                          </td>
                           <td>{item.name_id || '-'}</td>
                           <td>{item.description ? item.description.substring(0, 50) + (item.description.length > 50 ? '...' : '') : '-'}</td>
-                          <td><Badge bg="info">{item.article_count || 0}</Badge></td>
+                          <td style={{ textAlign: 'center' }}><Badge bg="info">{item.article_count || 0}</Badge></td>
                           <td>
                             <div className="action-buttons">
                               <Button variant="outline-primary" size="sm" onClick={() => handleOpenModal(item)}><FiEdit2 /></Button>
@@ -245,24 +377,196 @@ function CategoryManagementPage({ onLogout }) {
           <Modal.Title>{modalMode === 'create' ? t('categories.add_category') : t('categories.edit_category')}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
+          {error && <Alert variant="danger" onClose={() => setError(null)} dismissible>{error}</Alert>}
           <Form onSubmit={handleSubmitForm}>
+            {/* Names Section */}
             <Form.Group className="mb-3">
               <Form.Label>{t('categories.name_en')} *</Form.Label>
-              <Form.Control type="text" value={formData.name_en} onChange={(e) => setFormData({ ...formData, name_en: e.target.value })} required />
+              <Form.Control 
+                type="text" 
+                value={formData.name_en} 
+                onChange={(e) => setFormData({ ...formData, name_en: e.target.value })} 
+                required 
+              />
             </Form.Group>
+            
             <Form.Group className="mb-3">
               <Form.Label>{t('categories.name_id')}</Form.Label>
-              <Form.Control type="text" value={formData.name_id} onChange={(e) => setFormData({ ...formData, name_id: e.target.value })} />
+              <Form.Control 
+                type="text" 
+                value={formData.name_id} 
+                onChange={(e) => setFormData({ ...formData, name_id: e.target.value })} 
+              />
             </Form.Group>
+
+            {/* Descriptions Section */}
             <Form.Group className="mb-3">
-              <Form.Label>{t('categories.description')}</Form.Label>
-              <Form.Control as="textarea" rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+              <Form.Label>{t('categories.description_en')}</Form.Label>
+              <Form.Control 
+                as="textarea" 
+                rows={2} 
+                value={formData.description_en} 
+                onChange={(e) => setFormData({ ...formData, description_en: e.target.value })} 
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>{t('categories.description_id')}</Form.Label>
+              <Form.Control 
+                as="textarea" 
+                rows={2} 
+                value={formData.description_id} 
+                onChange={(e) => setFormData({ ...formData, description_id: e.target.value })} 
+              />
+            </Form.Group>
+
+            {/* Image Upload Section */}
+            <Form.Group className="mb-3">
+              <Form.Label>{t('categories.image_label')}</Form.Label>
+              <div style={{ 
+                border: '2px dashed #ccc', 
+                borderRadius: '4px', 
+                padding: '20px',
+                textAlign: 'center',
+                cursor: 'pointer',
+                backgroundColor: isDarkMode ? '#333' : '#f9f9f9'
+              }}>
+                <input
+                  type="file"
+                  id="category-image"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  style={{ display: 'none' }}
+                />
+                <label htmlFor="category-image" style={{ cursor: 'pointer', margin: 0 }}>
+                  <div>
+                    {imagePreview ? (
+                      <div>
+                        <img 
+                          src={imagePreview} 
+                          alt="Preview" 
+                          style={{ maxWidth: '100%', maxHeight: '200px', marginBottom: '10px' }}
+                        />
+                        <p>{t('categories.change_image')}</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p>📷 {t('categories.upload_image')}</p>
+                        <small>{t('categories.image_requirements')}</small>
+                      </div>
+                    )}
+                  </div>
+                </label>
+              </div>
+              {imagePreview && (
+                <Button 
+                  variant="danger" 
+                  size="sm" 
+                  onClick={handleImageRemove}
+                  className="mt-2"
+                >
+                  {t('buttons.remove_image')}
+                </Button>
+              )}
+            </Form.Group>
+
+            {/* Icon & Color Section - Optional Visual Customization */}
+            <div className="mb-3">
+              <h6 className="text-muted mb-3">
+                <small>{t('common.optional')} - {t('categories.customization_help')}</small>
+              </h6>
+            </div>
+
+            <div className="row">
+              <div className="col-md-6">
+                <Form.Group className="mb-3">
+                  <Form.Label>{t('categories.icon')} <small className="text-muted">({t('common.optional')})</small></Form.Label>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                    {['📁', '📚', '🎓', '📊', '💼', '🔧', '📱', '🌐', '📝', '⭐', '💡', '📌'].map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, icon: emoji })}
+                        style={{
+                          padding: '8px 12px',
+                          fontSize: '20px',
+                          border: formData.icon === emoji ? '2px solid #007bff' : '1px solid #ddd',
+                          borderRadius: '6px',
+                          backgroundColor: formData.icon === emoji ? '#e7f3ff' : 'white',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                        title={emoji}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                  <Form.Control 
+                    type="text" 
+                    value={formData.icon} 
+                    onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+                    placeholder="Or type emoji/text"
+                    size="sm"
+                  />
+                  <Form.Text className="text-muted small">
+                    {t('categories.icon_help')}
+                  </Form.Text>
+                </Form.Group>
+              </div>
+
+              <div className="col-md-6">
+                <Form.Group className="mb-3">
+                  <Form.Label>{t('categories.color')} <small className="text-muted">({t('common.optional')})</small></Form.Label>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <Form.Control 
+                      type="color" 
+                      value={formData.color} 
+                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                      style={{ width: '60px', height: '40px', padding: '4px', cursor: 'pointer' }}
+                    />
+                    <div
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        backgroundColor: formData.color,
+                        borderRadius: '6px',
+                        border: '1px solid #ddd',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        color: formData.icon ? 'transparent' : '#666'
+                      }}
+                    >
+                      {formData.icon}
+                    </div>
+                    <span style={{ fontSize: '12px', color: '#666' }}>{formData.color}</span>
+                  </div>
+                  <Form.Text className="text-muted small">
+                    {t('categories.color_help')}
+                  </Form.Text>
+                </Form.Group>
+              </div>
+            </div>
+
+            {/* Status Section */}
+            <Form.Group className="mb-3">
+              <Form.Check
+                type="checkbox"
+                label={t('categories.is_active')}
+                checked={formData.is_active}
+                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+              />
             </Form.Group>
           </Form>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowModal(false)}>{t('buttons.cancel')}</Button>
-          <Button variant="primary" onClick={handleSubmitForm} disabled={submitting}>{submitting ? t('common.saving') : t('buttons.save')}</Button>
+          <Button variant="primary" onClick={handleSubmitForm} disabled={submitting}>
+            {submitting ? t('common.saving') : t('buttons.save')}
+          </Button>
         </Modal.Footer>
       </Modal>
 

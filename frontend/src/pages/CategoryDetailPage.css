@@ -5,7 +5,7 @@
 }
 
 .category-header {
-  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
   color: white;
   padding: 3rem 0;
   margin: -2rem 0 2rem 0;
@@ -14,7 +14,7 @@
 
 .category-detail-page.dark-mode .category-header,
 [data-theme="dark"] .category-detail-page .category-header {
-  background: linear-gradient(135deg, #003d99 0%, #001f4d 100%);
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
 }
 
 .category-title {
@@ -67,8 +67,8 @@
 }
 
 .article-list-item:hover {
-  border-color: #0d6efd;
-  box-shadow: 0 2px 8px rgba(13, 110, 253, 0.1);
+  border-color: #14b8a6;
+  box-shadow: 0 2px 8px rgba(20, 184, 166, 0.1);
 }
 
 .article-content {
@@ -108,7 +108,7 @@
 }
 
 .article-link-btn {
-  background-color: #0d6efd;
+  background-color: #14b8a6;
   color: white;
   border: none;
   width: 40px;
@@ -124,7 +124,7 @@
 }
 
 .article-link-btn:hover {
-  background-color: #0d5adb;
+  background-color: #0d9488;
   transform: translateX(4px);
 }
 

@@ -15,7 +15,8 @@ class CategoryAdmin(admin.ModelAdmin):
         (_('Names'), {'fields': ('name_id', 'name_en')}),
         (_('Description'), {'fields': ('description_id', 'description_en')}),
         (_('Hierarchy'), {'fields': ('parent',)}),
-        (_('Display'), {'fields': ('icon', 'color', 'order_index', 'slug')}),
+        (_('Media'), {'fields': ('image', 'icon', 'color')}),
+        (_('Organization'), {'fields': ('order_index', 'slug')}),
         (_('Status'), {'fields': ('is_active',)}),
     )
 

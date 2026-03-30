@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale, enUS } from 'date-fns/locale';
 import { FiShare2, FiPrinter, FiCheck, FiFacebook, FiTwitter, FiMail, FiEye, FiHeart } from 'react-icons/fi';
+import ImageWithFallback from '../components/ImageWithFallback';
 import './ArticleDetailPage.css';
 
 /**
@@ -418,16 +419,15 @@ const ArticleDetailPage = () => {
                 
               </header>
 
-              {(article.image || article.image_url) && (
-                <div className="article-featured-image mb-5">
-                  <img 
-                    src={article.image || article.image_url} 
-                    alt={title}
-                    className="img-fluid rounded"
-                    style={{ maxHeight: '400px', objectFit: 'cover', width: '100%' }}
-                  />
-                </div>
-              )}
+              <div className="article-featured-image mb-5">
+                <ImageWithFallback 
+                  src={article.image || article.image_url} 
+                  alt={title}
+                  className="img-fluid rounded"
+                  style={{ maxHeight: '400px', objectFit: 'cover', width: '100%' }}
+                  type="article"
+                />
+              </div>
 
               {/* File Attachments */}
               {article.files && article.files.length > 0 && (

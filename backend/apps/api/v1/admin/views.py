@@ -26,7 +26,7 @@ from django.core.cache import cache
 
 from apps.core.models import Role
 from apps.audit.models import AuditLog
-from apps.content.models import Tag
+from apps.content.models import Tag, Category
 from apps.shared import IsAdmin, StandardResultsSetPagination
 from django.conf import settings
 
@@ -38,7 +38,8 @@ from .serializers import (
     RoleSerializer, RoleCreateUpdateSerializer,
     AuditLogSerializer, AuditLogFilterSerializer,
     SystemStatisticsSerializer, PermissionSerializer,
-    TagSerializer, TagCreateUpdateSerializer
+    TagSerializer, TagCreateUpdateSerializer,
+    CategorySerializer, CategoryCreateUpdateSerializer
 )
 
 User = get_user_model()
@@ -1238,6 +1239,53 @@ class SystemStatisticsViewSet(viewsets.ViewSet):
             ).count(),
         }
         return Response(stats)
+
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    """
+    Admin category management viewset.
+    
+    Endpoints:
+    - GET /api/v1/admin/categories/ - List all categories
+    - POST /api/v1/admin/categories/ - Create new category
+    - GET /api/v1/admin/categories/{id}/ - Get category detail
+    - PUT /api/v1/admin/categories/{id}/ - Full update category
+    - PATCH /api/v1/admin/categories/{id}/ - Partial update category
+    - DELETE /api/v1/admin/categories/{id}/ - Delete category
+    """
+    
+    queryset = Category.objects.all().order_by('order_index')
+    permission_classes = [IsAuthenticated, IsAdmin]
+    pagination_class = StandardResultsSetPagination
+    search_fields = ['name_id', 'name_en', 'slug']
+    filterset_fields = ['is_active', 'parent']
+    
+    def get_serializer_class(self):
+        """Return serializer based on action."""
+        if self.action in ['create', 'update', 'partial_update']:
+            return CategoryCreateUpdateSerializer
+        return CategorySerializer
+    
+    def create(self, request, *args, **kwargs):
+        """Create new category."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        
+        # Return detail view
+        category = serializer.instance
+        return Response(
+            CategorySerializer(category).data,
+            status=status.HTTP_201_CREATED
+        )
+    
+    def perform_create(self, serializer):
+        """Save new category."""
+        serializer.save()
+    
+    def perform_update(self, serializer):
+        """Save updated category."""
+        serializer.save()
 
 
 class TagViewSet(viewsets.ModelViewSet):

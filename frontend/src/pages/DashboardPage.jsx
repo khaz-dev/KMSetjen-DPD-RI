@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../hooks/useLanguage';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
+import ImageWithFallback from '../components/ImageWithFallback';
 import './DashboardPage.css';
 import { FiFileText, FiCheckCircle, FiAlertCircle, FiClock, FiX } from 'react-icons/fi';
 import { formatDistanceToNow } from 'date-fns';
@@ -218,15 +219,12 @@ const DashboardPage = () => {
                     {articles.map((article) => (
                       <div key={article.id} className="article-item">
                         <div className="dashboard-image-container">
-                          {article.image || article.image_url ? (
-                            <img
-                              src={article.image || article.image_url}
-                              alt={isIndonesian ? article.title_id : article.title_en}
-                              className="dashboard-image"
-                            />
-                          ) : (
-                            <div className="dashboard-image-placeholder">📄</div>
-                          )}
+                          <ImageWithFallback
+                            src={article.image || article.image_url}
+                            alt={isIndonesian ? article.title_id : article.title_en}
+                            className="dashboard-image"
+                            type="article"
+                          />
                         </div>
                         <div className="article-badge">
                           {getStatusBadge(article.status)}

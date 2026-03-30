@@ -182,8 +182,8 @@
 }
 
 .filter-group .form-select:focus {
-  border-color: #3498db;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
 }
 
 /* Table Card */
@@ -300,7 +300,7 @@
 }
 
 .username-cell {
-  color: #3498db;
+  color: #14b8a6;
   font-weight: 600;
 }
 
@@ -371,15 +371,15 @@ table .badge {
 }
 
 .action-buttons .btn-outline-primary:hover {
-  background: #3498db;
-  border-color: #3498db;
+  background: #14b8a6;
+  border-color: #14b8a6;
   color: white;
   transform: translateY(-2px);
 }
 
 .action-buttons .btn-outline-info:hover {
-  background: #3498db;
-  border-color: #3498db;
+  background: #14b8a6;
+  border-color: #14b8a6;
   color: white;
   transform: translateY(-2px);
 }
@@ -422,7 +422,7 @@ table .badge {
 }
 
 .loading-container .spinner-border {
-  color: #3498db;
+  color: #14b8a6;
 }
 
 /* Empty State */
@@ -457,22 +457,22 @@ table .badge {
 
 .page-link {
   border: 1px solid #ddd;
-  color: #3498db;
+  color: #14b8a6;
   border-radius: 4px;
   transition: all 0.3s ease;
   padding: 0.5rem 0.75rem;
 }
 
 .page-link:hover:not(.disabled) {
-  background: #3498db;
+  background: #14b8a6;
   color: white;
-  border-color: #3498db;
+  border-color: #14b8a6;
   transform: translateY(-2px);
 }
 
 .page-item.active .page-link {
-  background: #3498db;
-  border-color: #3498db;
+  background: #14b8a6;
+  border-color: #14b8a6;
 }
 
 /* Alert */
@@ -573,8 +573,8 @@ table .badge {
 
 .form-control:focus,
 .form-select:focus {
-  border-color: #3498db;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
 }
 
 /* Dark Mode Form Controls Focus */
@@ -584,10 +584,10 @@ table .badge {
 .admin-wrapper.dark-mode .modal-body .form-select:focus,
 [data-theme="dark"] .dark-mode .form-control:focus,
 [data-theme="dark"] .dark-mode .form-select:focus {
-  border-color: #5dade2;
+  border-color: #5eead4;
   background-color: #383838;
   color: #ffffff;
-  box-shadow: 0 0 0 3px rgba(93, 173, 226, 0.2);
+  box-shadow: 0 0 0 3px rgba(94, 234, 212, 0.2);
 }
 
 /* Form Actions */
@@ -623,8 +623,8 @@ table .badge {
 }
 
 .form-actions .btn-primary:hover:not(:disabled) {
-  background-color: #2980b9;
-  border-color: #2980b9;
+  background-color: #0d9488;
+  border-color: #0d9488;
   transform: translateY(-2px);
 }
 
@@ -780,14 +780,14 @@ table .badge {
 }
 
 .article-content a {
-  color: #0d6efd;
+  color: #14b8a6;
   text-decoration: none;
   word-break: break-word;
 }
 
 .article-content a:hover {
   text-decoration: underline;
-  color: #0b5ed7;
+  color: #0d9488;
 }
 
 /* Dark Mode Article Content */
@@ -872,7 +872,7 @@ table .badge {
 .dark-mode .article-content a,
 .admin-wrapper.dark-mode .modal-body .article-content a,
 [data-theme="dark"] .dark-mode .article-content a {
-  color: #5dade2;
+  color: #5eead4;
 }
 
 .dark-mode .article-content a:hover,
@@ -925,13 +925,13 @@ table .badge {
 }
 
 .nav-tabs .nav-link:hover {
-  color: #3498db;
+  color: #14b8a6;
   background-color: transparent;
 }
 
 .nav-tabs .nav-link.active {
-  color: #3498db;
-  border-bottom-color: #3498db;
+  color: #14b8a6;
+  border-bottom-color: #14b8a6;
   background-color: transparent;
 }
 
@@ -946,13 +946,13 @@ table .badge {
 }
 
 .admin-wrapper.dark-mode .nav-tabs .nav-link:hover {
-  color: #5dade2 !important;
+  color: #5eead4 !important;
   background-color: transparent !important;
 }
 
 .admin-wrapper.dark-mode .nav-tabs .nav-link.active {
-  color: #5dade2 !important;
-  border-bottom-color: #5dade2 !important;
+  color: #5eead4 !important;
+  border-bottom-color: #5eead4 !important;
   background-color: transparent !important;
 }
 
@@ -966,13 +966,13 @@ table .badge {
 }
 
 [data-theme="dark"] .admin-wrapper .nav-tabs .nav-link:hover {
-  color: #5dade2 !important;
+  color: #5eead4 !important;
   background-color: transparent !important;
 }
 
 [data-theme="dark"] .admin-wrapper .nav-tabs .nav-link.active {
-  color: #5dade2 !important;
-  border-bottom-color: #5dade2 !important;
+  color: #5eead4 !important;
+  border-bottom-color: #5eead4 !important;
   background-color: transparent !important;
 }
 

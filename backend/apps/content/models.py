@@ -85,9 +85,9 @@ class Category(models.Model):
         return self.name_id
     
     def save(self, *args, **kwargs):
-        """Auto-generate slug if not provided."""
+        """Auto-generate slug from name_en if not provided."""
         if not self.slug:
-            self.slug = slugify(self.name_id)
+            self.slug = slugify(self.name_en)
         super().save(*args, **kwargs)
 
 

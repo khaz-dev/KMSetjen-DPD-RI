@@ -51,7 +51,7 @@
 }
 
 .stat-card.total {
-  border-left: 4px solid #0d6efd;
+  border-left: 4px solid #14b8a6;
 }
 
 .stat-card .card-body {
@@ -114,9 +114,9 @@
 }
 
 .editor-tabs .nav-link.active {
-  color: #0d6efd;
+  color: #14b8a6;
   background: white;
-  border-bottom: 3px solid #0d6efd;
+  border-bottom: 3px solid #14b8a6;
 }
 
 .tab-content {
@@ -175,7 +175,7 @@
 }
 
 .article-title:hover {
-  color: #0d6efd;
+  color: #14b8a6;
 }
 
 .article-meta {
@@ -335,8 +335,8 @@
 }
 
 .modal-body .form-control:focus {
-  border-color: #0d6efd;
-  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 0.2rem rgba(20, 184, 166, 0.25);
 }
 
 .modal-footer {

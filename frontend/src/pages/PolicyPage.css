@@ -18,14 +18,14 @@
 
 /* Header Section */
 .policy-header {
-  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
   color: white;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .policy-page.dark-mode .policy-header,
 [data-theme="dark"] .policy-page .policy-header {
-  background: linear-gradient(135deg, #003d99 0%, #001f4d 100%);
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
@@ -60,8 +60,8 @@
 
 .policy-section h2 {
   font-weight: 600;
-  color: #0056b3;
-  border-bottom: 3px solid #007bff;
+  color: #0d9488;
+  border-bottom: 3px solid #14b8a6;
   padding-bottom: 0.75rem;
   margin-bottom: 1.5rem;
   font-size: 1.75rem;
@@ -69,8 +69,8 @@
 
 .policy-page.dark-mode .policy-section h2,
 [data-theme="dark"] .policy-page .policy-section h2 {
-  color: #5dade2;
-  border-bottom-color: #0b7dda;
+  color: #5eead4;
+  border-bottom-color: #0d9488;
 }
 
 .policy-section h5 {
@@ -116,7 +116,7 @@
 .contact-section {
   background-color: #f8f9fa;
   padding: 2rem;
-  border-left: 5px solid #007bff;
+  border-left: 5px solid #14b8a6;
   border-radius: 0.25rem;
   margin-top: 2rem;
 }
@@ -124,19 +124,19 @@
 .policy-page.dark-mode .contact-section,
 [data-theme="dark"] .policy-page .contact-section {
   background-color: #252525;
-  border-left-color: #0b7dda;
+  border-left-color: #0d9488;
 }
 
 .contact-section h2 {
   margin-top: 0;
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid #007bff;
+  border-bottom: 2px solid #14b8a6;
 }
 
 .policy-page.dark-mode .contact-section h2,
 [data-theme="dark"] .policy-page .contact-section h2 {
-  border-bottom-color: #0b7dda;
+  border-bottom-color: #0d9488;
 }
 
 .contact-section ul li {
@@ -145,35 +145,35 @@
 }
 
 .contact-section ul li strong {
-  color: #0056b3;
+  color: #0d9488;
   font-weight: 600;
 }
 
 .policy-page.dark-mode .contact-section ul li strong,
 [data-theme="dark"] .policy-page .contact-section ul li strong {
-  color: #5dade2;
+  color: #5eead4;
 }
 
 .contact-section ul li a {
-  color: #007bff;
+  color: #14b8a6;
   text-decoration: none;
   font-weight: 500;
   transition: color 0.3s ease;
 }
 
 .contact-section ul li a:hover {
-  color: #0056b3;
+  color: #0d9488;
   text-decoration: underline;
 }
 
 .policy-page.dark-mode .contact-section ul li a,
 [data-theme="dark"] .policy-page .contact-section ul li a {
-  color: #0b7dda;
+  color: #5eead4;
 }
 
 .policy-page.dark-mode .contact-section ul li a:hover,
 [data-theme="dark"] .policy-page .contact-section ul li a:hover {
-  color: #5dade2;
+  color: #2dd4bf;
 }
 
 /* Horizontal Rule */
@@ -217,24 +217,24 @@
 
 /* Links */
 a {
-  color: #007bff;
+  color: #14b8a6;
   text-decoration: none;
   transition: color 0.3s ease;
 }
 
 a:hover {
-  color: #0056b3;
+  color: #0d9488;
   text-decoration: underline;
 }
 
 .policy-page.dark-mode a,
 [data-theme="dark"] .policy-page a {
-  color: #0b7dda;
+  color: #5eead4;
 }
 
 .policy-page.dark-mode a:hover,
 [data-theme="dark"] .policy-page a:hover {
-  color: #5dade2;
+  color: #2dd4bf;
 }
 
 /* Emphasis Text */
@@ -252,7 +252,7 @@ strong {
 .toc {
   background-color: #f8f9fa;
   padding: 1.5rem;
-  border-left: 4px solid #007bff;
+  border-left: 4px solid #14b8a6;
   border-radius: 0.25rem;
   margin-bottom: 2rem;
 }
@@ -260,7 +260,7 @@ strong {
 .policy-page.dark-mode .toc,
 [data-theme="dark"] .policy-page .toc {
   background-color: #252525;
-  border-left-color: #0b7dda;
+  border-left-color: #0d9488;
 }
 
 .toc ul {
@@ -273,7 +273,7 @@ strong {
 }
 
 .toc ul li a {
-  color: #007bff;
+  color: #14b8a6;
   text-decoration: none;
 }
 

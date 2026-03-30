@@ -17,14 +17,14 @@
 
 /* Header Section */
 .contact-header {
-  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
   color: white;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .contact-page.dark-mode .contact-header,
 [data-theme="dark"] .contact-page .contact-header {
-  background: linear-gradient(135deg, #003d99 0%, #001f4d 100%);
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
@@ -49,8 +49,8 @@
 
 .contact-content h2 {
   font-weight: 600;
-  color: #0056b3;
-  border-bottom: 3px solid #007bff;
+  color: #0d9488;
+  border-bottom: 3px solid #14b8a6;
   padding-bottom: 0.75rem;
   margin-bottom: 1.5rem;
   font-size: 1.8rem;
@@ -58,21 +58,21 @@
 
 .contact-page.dark-mode .contact-content h2,
 [data-theme="dark"] .contact-page .contact-content h2 {
-  color: #5dade2;
-  border-bottom-color: #0b7dda;
+  color: #5eead4;
+  border-bottom-color: #14b8a6;
 }
 
 /* Contact Info Items */
 .contact-info-item {
   padding: 1.5rem;
   background-color: #f5f7fa;
-  border-left: 5px solid #007bff;
+  border-left: 5px solid #14b8a6;
   border-radius: 0.5rem;
   transition: all 0.3s ease;
 }
 
 .contact-info-item:hover {
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.15);
   transform: translateX(4px);
   background-color: #e7f0f9;
 }
@@ -80,18 +80,18 @@
 .contact-page.dark-mode .contact-info-item,
 [data-theme="dark"] .contact-page .contact-info-item {
   background-color: #262626;
-  border-left-color: #0b7dda;
+  border-left-color: #14b8a6;
   color: #e8e8e8;
 }
 
 .contact-page.dark-mode .contact-info-item:hover,
 [data-theme="dark"] .contact-page .contact-info-item:hover {
   background-color: #2e2e2e;
-  box-shadow: 0 4px 12px rgba(11, 125, 218, 0.3);
+  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
 }
 
 .contact-info-item h5 {
-  color: #0056b3;
+  color: #0d9488;
   font-weight: 700;
   margin-bottom: 0.75rem;
   font-size: 1.1rem;
@@ -99,7 +99,7 @@
 
 .contact-page.dark-mode .contact-info-item h5,
 [data-theme="dark"] .contact-page .contact-info-item h5 {
-  color: #5dade2;
+  color: #5eead4;
 }
 
 .contact-info-item p {
@@ -114,25 +114,25 @@
 }
 
 .contact-info-item a {
-  color: #0056b3;
+  color: #0d9488;
   text-decoration: none;
   font-weight: 500;
   transition: all 0.3s ease;
 }
 
 .contact-info-item a:hover {
-  color: #003d7a;
+  color: #0f766e;
   text-decoration: underline;
 }
 
 .contact-page.dark-mode .contact-info-item a,
 [data-theme="dark"] .contact-page .contact-info-item a {
-  color: #0b7dda;
+  color: #5eead4;
 }
 
 .contact-page.dark-mode .contact-info-item a:hover,
 [data-theme="dark"] .contact-page .contact-info-item a:hover {
-  color: #5dade2;
+  color: #2dd4bf;
 }
 
 .contact-info-item .text-muted {
@@ -175,7 +175,7 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  background-color: #007bff;
+  background-color: #14b8a6;
   color: white !important;
   border-radius: 50%;
   text-decoration: none !important;
@@ -189,7 +189,7 @@
 }
 
 .social-link:hover {
-  background-color: #0056b3;
+  background-color: #0d9488;
   color: white !important;
   text-decoration: none !important;
   line-height: 1;
@@ -199,15 +199,15 @@
 
 .contact-page.dark-mode .social-link,
 [data-theme="dark"] .contact-page .social-link {
-  background-color: #0b7dda;
+  background-color: #14b8a6;
   color: white !important;
   text-decoration: none !important;
 }
 
 .contact-page.dark-mode .social-link:hover,
 [data-theme="dark"] .contact-page .social-link:hover {
-  background-color: #5dade2;
-  color: white !important;
+  background-color: #5eead4;
+  color: #1a1a1a !important;
   text-decoration: none !important;
 }
 
@@ -227,13 +227,13 @@
 
 .contact-form .form-label {
   font-weight: 600;
-  color: #0056b3;
+  color: #0d9488;
   margin-bottom: 0.5rem;
 }
 
 .contact-page.dark-mode .contact-form .form-label,
 [data-theme="dark"] .contact-page .contact-form .form-label {
-  color: #5dade2;
+  color: #5eead4;
 }
 
 .contact-form .form-control {
@@ -252,8 +252,8 @@
 }
 
 .contact-form .form-control:focus {
-  border-color: #007bff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 0.2rem rgba(20, 184, 166, 0.25);
 }
 
 .contact-page.dark-mode .contact-form .form-control,
@@ -271,9 +271,9 @@
 
 .contact-page.dark-mode .contact-form .form-control:focus,
 [data-theme="dark"] .contact-page .contact-form .form-control:focus {
-  border-color: #5dade2 !important;
+  border-color: #5eead4 !important;
   color: #e0e0e0 !important;
-  box-shadow: 0 0 0 0.2rem rgba(93, 173, 226, 0.25) !important;
+  box-shadow: 0 0 0 0.2rem rgba(94, 234, 212, 0.25) !important;
 }
 
 .contact-form textarea {
@@ -283,22 +283,22 @@
 
 /* Submit Button */
 .contact-submit-btn {
-  background-color: #007bff;
-  border-color: #007bff;
+  background-color: #14b8a6;
+  border-color: #14b8a6;
   font-weight: 600;
   padding: 0.75rem 2rem;
   transition: all 0.3s ease;
 }
 
 .contact-submit-btn:hover {
-  background-color: #0056b3;
-  border-color: #0056b3;
+  background-color: #0d9488;
+  border-color: #0d9488;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .contact-submit-btn:focus {
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.5);
+  box-shadow: 0 0 0 0.2rem rgba(20, 184, 166, 0.5);
 }
 
 /* Office Hours Section */
@@ -316,15 +316,15 @@
 
 .office-hours-card {
   background-color: #ffffff;
-  border: 2px solid #007bff;
+  border: 2px solid #14b8a6;
   border-radius: 0.5rem;
   padding: 1.5rem;
 }
 
 .office-hours-card h3 {
-  color: #0056b3;
+  color: #0d9488;
   font-weight: 700;
-  border-bottom: 2px solid #007bff;
+  border-bottom: 2px solid #14b8a6;
   padding-bottom: 1rem;
   margin-bottom: 1rem;
 }
@@ -336,20 +336,20 @@
 }
 
 .office-hours-card ul li strong {
-  color: #0056b3;
+  color: #0d9488;
   font-weight: 700;
 }
 
 .contact-page.dark-mode .office-hours-card,
 [data-theme="dark"] .contact-page .office-hours-card {
   background-color: #2a2a2a !important;
-  border-color: #0b7dda !important;
+  border-color: #0d9488 !important;
 }
 
 .contact-page.dark-mode .office-hours-card h3,
 [data-theme="dark"] .contact-page .office-hours-card h3 {
-  color: #5dade2;
-  border-bottom-color: #0b7dda;
+  color: #5eead4;
+  border-bottom-color: #0d9488;
 }
 
 .contact-page.dark-mode .office-hours-card ul li,
@@ -359,7 +359,7 @@
 
 .contact-page.dark-mode .office-hours-card ul li strong,
 [data-theme="dark"] .contact-page .office-hours-card ul li strong {
-  color: #5dade2;
+  color: #5eead4;
 }
 
 /* Text Muted */
@@ -394,11 +394,11 @@
 }
 
 [data-theme="dark"] .contact-page a {
-  color: #0b7dda;
+  color: #14b8a6;
 }
 
 [data-theme="dark"] .contact-page a:hover {
-  color: #5dade2;
+  color: #2dd4bf;
 }
 
 /* Responsive */

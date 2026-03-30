@@ -68,8 +68,8 @@
 .settings-card .form-control:focus {
   background-color: var(--form-bg);
   color: var(--form-text);
-  border-color: #0d6efd;
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 0.25rem rgba(20, 184, 166, 0.25);
 }
 
 .settings-card .form-text {
@@ -126,13 +126,13 @@
 }
 
 .settings-card .btn-primary {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
+  background-color: #14b8a6;
+  border-color: #14b8a6;
 }
 
 .settings-card .btn-primary:hover {
-  background-color: #0b5ed7;
-  border-color: #0a58ca;
+  background-color: #0d9488;
+  border-color: #0a96a3;
 }
 
 /* Dark Mode */

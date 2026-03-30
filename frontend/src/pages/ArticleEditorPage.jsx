@@ -952,7 +952,14 @@ const ArticleEditor = () => {
           {formData.featured_image && (
             <div className="featured-image-preview-container mt-3">
               <div className="featured-image-preview">
-                <img src={formData.featured_image} alt="Featured Preview" />
+                <img 
+                  src={formData.featured_image} 
+                  alt="Featured Preview"
+                  onError={(e) => {
+                    console.error('Featured image preview failed to load');
+                    e.target.src = '/default-article-image.svg';
+                  }}
+                />
                 <div className="image-source-badge">
                   {formData.featured_image_file ? (
                     <>

@@ -14,7 +14,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from apps.core.models import Role
 from apps.audit.models import AuditLog
-from apps.content.models import Tag
+from apps.content.models import Tag, Category
 
 User = get_user_model()
 
@@ -315,3 +315,45 @@ class TagCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = ['name_id', 'name_en', 'description_id', 'description_en', 'color', 'is_active']
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    """Category serializer for list and detail views."""
+    
+    children = serializers.SerializerMethodField()
+    article_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Category
+        fields = ['id', 'name_id', 'name_en', 'description_id', 'description_en', 'slug', 'icon', 'color', 'image', 'parent', 'order_index', 'is_active', 'article_count', 'children', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_article_count(self, obj):
+        """Count published articles in this category."""
+        return obj.articles.filter(is_published=True, status='published').count()
+    
+    def get_children(self, obj):
+        """Return serialized child categories."""
+        children = obj.children.filter(is_active=True).order_by('order_index')
+        return CategorySerializer(children, many=True).data
+
+
+class CategoryCreateUpdateSerializer(serializers.ModelSerializer):
+    """Category creation and update serializer with image upload support."""
+    
+    class Meta:
+        model = Category
+        fields = ['name_id', 'name_en', 'description_id', 'description_en', 'icon', 'color', 'image', 'parent', 'order_index', 'is_active']
+    
+    def validate_name_id(self, value):
+        """Validate name_id is provided."""
+        if not value or not value.strip():
+            raise serializers.ValidationError("Indonesian name (name_id) is required.")
+        return value
+    
+    def validate_name_en(self, value):
+        """Validate name_en is provided."""
+        if not value or not value.strip():
+            raise serializers.ValidationError("English name (name_en) is required.")
+        return value
+

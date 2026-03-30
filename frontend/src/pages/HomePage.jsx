@@ -8,6 +8,7 @@ import { id as idLocale, enUS } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../hooks/useLanguage';
 import { FiEye, FiHeart } from 'react-icons/fi';
+import ImageWithFallback from '../components/ImageWithFallback';
 import './HomePage.css';
 
 /**
@@ -144,16 +145,15 @@ const HomePage = () => {
                 {featuredArticles.map((article) => (
                   <div key={article.id} className="article-scroll-item">
                     <Card className="article-card h-100 shadow-sm">
-                    {article.image && (
-                      <div className="article-image-container">
-                        <img 
-                          src={article.image} 
-                          alt={isIndonesian ? article.title_id : article.title_en}
-                          className="article-image"
-                        />
-                        <div className="article-image-overlay"></div>
-                      </div>
-                    )}
+                    <div className="article-image-container">
+                      <ImageWithFallback 
+                        src={article.image} 
+                        alt={isIndonesian ? article.title_id : article.title_en}
+                        className="article-image"
+                        type="article"
+                      />
+                      <div className="article-image-overlay"></div>
+                    </div>
                     <Card.Body className="d-flex flex-column">
                       <h5 className="card-title">{isIndonesian ? article.title_id : article.title_en}</h5>
                       <p className="text-muted small mb-2">
@@ -224,17 +224,34 @@ const HomePage = () => {
                     to={`/knowledges?category=${category.id}`}
                     className="category-link"
                   >
-                    <Card className="category-card h-100">
-                      {category.image && (
-                        <div className="category-image-container">
-                          <img 
-                            src={category.image} 
-                            alt={isIndonesian ? category.name_id : category.name_en}
-                            className="category-image"
-                          />
-                          <div className="category-image-overlay"></div>
-                        </div>
-                      )}
+                    <Card className="category-card h-100" style={{
+                      borderLeft: category.color ? `4px solid ${category.color}` : '4px solid #007bff',
+                      transition: 'transform 0.2s, box-shadow 0.2s'
+                    }}>
+                      <div className="category-image-container" style={{ position: 'relative' }}>
+                        {category.icon && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px',
+                            fontSize: '28px',
+                            zIndex: 10,
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            borderRadius: '6px',
+                            padding: '4px 8px',
+                            backdropFilter: 'blur(5px)'
+                          }}>
+                            {category.icon}
+                          </div>
+                        )}
+                        <ImageWithFallback 
+                          src={category.image} 
+                          alt={isIndonesian ? category.name_id : category.name_en}
+                          className="category-image"
+                          type="category"
+                        />
+                        <div className="category-image-overlay"></div>
+                      </div>
                       <Card.Body>
                         <h5>{isIndonesian ? category.name_id : category.name_en}</h5>
                         <p className="text-muted mb-0">

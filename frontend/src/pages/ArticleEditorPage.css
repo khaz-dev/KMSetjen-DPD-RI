@@ -59,10 +59,10 @@
 
 .article-editor-page .form-control:focus,
 .article-editor-page .form-select:focus {
-  border-color: #0d6efd;
+  border-color: #14b8a6;
   background-color: var(--form-bg);
   color: var(--form-text);
-  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+  box-shadow: 0 0 0 0.2rem rgba(20, 184, 166, 0.25);
 }
 
 /* Placeholder styling for light mode */
@@ -126,8 +126,8 @@
 }
 
 .featured-image-upload-area:hover {
-  border-color: #0d6efd;
-  background: rgba(13, 110, 253, 0.05);
+  border-color: #14b8a6;
+  background: rgba(20, 184, 166, 0.05);
 }
 
 .featured-image-upload-area.has-file {
@@ -150,7 +150,7 @@
 
 .upload-content i {
   font-size: 32px;
-  color: #0d6efd;
+  color: #14b8a6;
 }
 
 .upload-content p {
@@ -258,8 +258,8 @@
 }
 
 [data-theme="dark"] .featured-image-upload-area:hover {
-  border-color: #0d6efd;
-  background: rgba(13, 110, 253, 0.1);
+  border-color: #14b8a6;
+  background: rgba(20, 184, 166, 0.1);
 }
 
 [data-theme="dark"] .featured-image-upload-area.has-file {
@@ -302,14 +302,14 @@
 }
 
 .file-upload-label:hover {
-  border-color: #0d6efd;
-  background: rgba(13, 110, 253, 0.05);
+  border-color: #14b8a6;
+  background: rgba(20, 184, 166, 0.05);
 }
 
 .file-upload-label.uploading {
   opacity: 0.6;
   cursor: not-allowed;
-  border-color: #0d6efd;
+  border-color: #14b8a6;
 }
 
 .file-upload-label i {
@@ -422,17 +422,17 @@
 
 /* File Preview Button */
 .btn-file-preview {
-  color: #0d6efd;
+  color: #14b8a6;
 }
 
 .btn-file-preview:hover {
-  background: #0d6efd;
+  background: #14b8a6;
   color: white;
 }
 
 .btn-file-preview:focus,
 .btn-file-preview:active {
-  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.25);
 }
 
 /* Button Icon and Text */
@@ -585,8 +585,8 @@
 }
 
 [data-theme="dark"] .file-upload-label:hover {
-  border-color: #0d6efd;
-  background: rgba(13, 110, 253, 0.1);
+  border-color: #14b8a6;
+  background: rgba(20, 184, 166, 0.1);
 }
 
 [data-theme="dark"] .file-list {
@@ -614,17 +614,17 @@
 }
 
 [data-theme="dark"] .btn-file-preview {
-  color: #74c0fc;
+  color: #5eead4;
 }
 
 [data-theme="dark"] .btn-file-preview:hover {
-  background: #74c0fc;
+  background: #5eead4;
   color: #1a1b1e;
 }
 
 [data-theme="dark"] .btn-file-preview:focus,
 [data-theme="dark"] .btn-file-preview:active {
-  box-shadow: 0 0 0 3px rgba(116, 192, 252, 0.25);
+  box-shadow: 0 0 0 3px rgba(94, 234, 212, 0.25);
 }
 
 [data-theme="dark"] .file-item-wrapper {
@@ -699,12 +699,12 @@
 }
 
 .tag-checkbox .form-check-input:checked ~ .form-check-label {
-  color: #0d6efd;
+  color: #14b8a6;
   font-weight: 600;
 }
 
 .tag-checkbox input:checked + label {
-  color: #0d6efd;
+  color: #14b8a6;
   font-weight: 600;
 }
 
@@ -735,13 +735,13 @@
 }
 
 .editor-actions .btn-primary {
-  background: #0d6efd;
-  border-color: #0d6efd;
+  background: #14b8a6;
+  border-color: #14b8a6;
 }
 
 .editor-actions .btn-primary:hover {
-  background: #0b5ed7;
-  border-color: #0a58ca;
+  background: #0d9488;
+  border-color: #0d9488;
 }
 
 .editor-actions .btn-success {
@@ -1001,7 +1001,7 @@
 
 .slug-checking-badge {
   font-size: 12px;
-  background: #0d6efd;
+  background: #14b8a6;
   color: #fff;
   padding: 2px 8px;
   border-radius: 12px;
@@ -1128,15 +1128,15 @@
 
 /* Markdown Guide Styling */
 .markdown-guide {
-  border-left: 4px solid #0d6efd;
-  background-color: #e7f1ff;
+  border-left: 4px solid #14b8a6;
+  background-color: #f0fdfa;
   padding: 15px;
   border-radius: 4px;
   margin-top: 10px;
 }
 
 .markdown-guide strong {
-  color: #0d6efd;
+  color: #14b8a6;
 }
 
 .markdown-guide pre {

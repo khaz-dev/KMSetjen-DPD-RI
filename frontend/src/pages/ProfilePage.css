@@ -59,8 +59,8 @@
 .profile-form .form-control:focus {
   background-color: var(--form-bg);
   color: var(--form-text);
-  border-color: #0d6efd;
-  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 0.2rem rgba(20, 184, 166, 0.25);
 }
 
 .profile-form .form-control::placeholder {
@@ -118,14 +118,14 @@
 }
 
 .nav-tabs .nav-link:hover {
-  color: #0d6efd;
-  border-bottom-color: #0d6efd;
+  color: #14b8a6;
+  border-bottom-color: #14b8a6;
 }
 
 .nav-tabs .nav-link.active {
-  color: #0d6efd;
+  color: #14b8a6;
   background-color: transparent;
-  border-bottom-color: #0d6efd;
+  border-bottom-color: #14b8a6;
 }
 
 /* Form validation feedback in dark mode */
@@ -178,7 +178,7 @@
 :root[data-theme="dark"] .profile-form .form-control:focus {
   background-color: var(--form-bg);
   color: var(--form-text);
-  border-color: #0d6efd;
+  border-color: #14b8a6;
 }
 
 :root[data-theme="dark"] .profile-form .form-control::placeholder {
@@ -199,11 +199,11 @@
 }
 
 :root[data-theme="dark"] .nav-tabs .nav-link:hover {
-  color: #0d6efd;
+  color: #14b8a6;
 }
 
 :root[data-theme="dark"] .nav-tabs .nav-link.active {
-  color: #0d6efd;
+  color: #14b8a6;
 }
 
 :root[data-theme="dark"] .profile-actions {
