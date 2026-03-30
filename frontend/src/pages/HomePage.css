@@ -82,6 +82,25 @@
   opacity: 0.8;
 }
 
+.hero-logo {
+  position: absolute;
+  height: 240px;
+  width: auto;
+  object-fit: contain;
+  z-index: 10;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
 .search-form {
   max-width: 600px;
 }

@@ -69,6 +69,11 @@ const LoginPage = () => {
       <Container className="auth-container">
         <div className="auth-card">
           <div className="auth-header">
+            <img
+              src="/logo.png"
+              alt="KMS Logo"
+              className="auth-logo"
+            />
             <h1>{t("login.title")}</h1>
             <p>{t("header.welcome")}</p>
           </div>

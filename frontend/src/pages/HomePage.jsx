@@ -175,10 +175,15 @@ const HomePage = () => {
             </Col>
             <Col md={6}>
               <div className="hero-image">
+                <img
+                  src="/logo.png"
+                  alt="KMS Logo"
+                  className="hero-logo"
+                />
                 <svg viewBox="0 0 500 500" className="hero-svg">
-                  <circle cx="250" cy="250" r="200" fill="rgba(255,255,255,0.1)" />
+                  <circle cx="250" cy="250" r="250" fill="rgba(255,255,255,0.1)" />
+                  <circle cx="250" cy="250" r="200" fill="rgba(255,255,255,0.2)" />
                   <circle cx="250" cy="250" r="150" fill="rgba(255,255,255,0.2)" />
-                  <circle cx="250" cy="250" r="100" fill="rgba(255,255,255,0.3)" />
                 </svg>
               </div>
             </Col>
