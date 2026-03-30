@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
+import { useNotification } from '../contexts/NotificationContext';
 import { Container, Table, Button, Modal, Form, Spinner, Alert, Card, Badge, Pagination } from 'react-bootstrap';
-import { FiEdit2, FiTrash2, FiPlus } from 'react-icons/fi';
+import { 
+  FiEdit2, FiTrash2, FiPlus, FiFileText, FiBell, FiBook, 
+  FiBarChart2, FiRss, FiFolder, FiTag, FiHome, FiUsers,
+  FiLayers, FiActivity, FiTrendingUp
+} from 'react-icons/fi';
 import AdminSidebar from '../components/AdminSidebar';
 import axios from 'axios';
 import './ManagementPage.css';
@@ -10,6 +15,7 @@ import './ManagementPage.css';
 function CategoryManagementPage({ onLogout }) {
   const { t } = useTranslation();
   const { isDarkMode } = useTheme();
+  const { success, error: showError } = useNotification();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -34,6 +40,56 @@ function CategoryManagementPage({ onLogout }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteCategoryId, setDeleteCategoryId] = useState(null);
   const [deleteCategoryName, setDeleteCategoryName] = useState('');
+
+  // Map icon names to React icon components
+  const getIconComponent = (iconName) => {
+    if (!iconName) return null;
+    
+    // If it's an emoji, return it as is
+    if (/\p{Emoji}/u.test(iconName)) {
+      return iconName;
+    }
+    
+    // Map icon names to Feather Icon components
+    const iconMap = {
+      'file-text': FiFileText,
+      'bell': FiBell,
+      'book': FiBook,
+      'bar-chart': FiBarChart2,
+      'newspaper': FiRss,
+      'folder': FiFolder,
+      'tag': FiTag,
+      'home': FiHome,
+      'users': FiUsers,
+      'layers': FiLayers,
+      'activity': FiActivity,
+      'trending-up': FiTrendingUp,
+    };
+    
+    const IconComponent = iconMap[iconName.toLowerCase()];
+    return IconComponent || null;
+  };
+
+  // Render icon in table
+  const renderCategoryIcon = (iconName) => {
+    if (!iconName) {
+      return <span style={{ color: '#ccc', fontSize: '16px' }}>-</span>;
+    }
+    
+    // Check if it's an emoji
+    if (/\p{Emoji}/u.test(iconName)) {
+      return <span title={iconName} style={{ fontSize: '20px' }}>{iconName}</span>;
+    }
+    
+    // Try to get the icon component
+    const IconComponent = getIconComponent(iconName);
+    if (IconComponent) {
+      return <IconComponent title={iconName} style={{ fontSize: '20px' }} />;
+    }
+    
+    // Fallback to text display
+    return <span title={iconName} style={{ fontSize: '14px', color: '#666' }}>{iconName}</span>;
+  };
 
   const loadItems = useCallback(async () => {
     try {
@@ -133,10 +189,19 @@ function CategoryManagementPage({ onLogout }) {
       }
       
       await axios({ method, url: endpoint, data: dataToSend, headers });
+      
+      // Show success notification
+      if (modalMode === 'create') {
+        success(t('categories.category_created_successfully'));
+      } else {
+        success(t('categories.category_updated_successfully'));
+      }
+      
       loadItems();
       setShowModal(false);
       setError(null);
     } catch (err) {
+      showError(err.response?.data?.detail || err.response?.data?.name_en?.[0] || t('categories.category_error'));
       setError(err.response?.data?.detail || err.response?.data?.name_en?.[0] || t('categories.category_error'));
     } finally {
       setSubmitting(false);
@@ -215,8 +280,8 @@ function CategoryManagementPage({ onLogout }) {
 
       console.log('[CategoryManagement DELETE] Success! Response:', response.status, response.data);
       
-      // Show success alert
-      alert(`Success: ${response.data.detail || 'Category deleted successfully'}`);
+      // Show success notification
+      success(response.data.detail || t('categories.category_deleted_successfully'));
       
       setError(null);
       loadItems();
@@ -247,8 +312,8 @@ function CategoryManagementPage({ onLogout }) {
         errorDetail = 'Server error occurred while deleting the category.';
       }
       
-      // Show error alert
-      alert(`Error: ${errorDetail}`);
+      // Show error notification
+      showError(errorDetail);
       
       setError(errorDetail);
       setShowDeleteModal(false);
@@ -293,7 +358,7 @@ function CategoryManagementPage({ onLogout }) {
                   <Table hover className="mb-0">
                     <thead className="table-header">
                       <tr>
-                        <th style={{ width: '8%' }}></th>
+                        <th style={{ width: '8%' }}>{t('categories.icon') || 'Icon'}</th>
                         <th>{t('categories.name_en')}</th>
                         <th>{t('categories.name_id')}</th>
                         <th>{t('categories.description')}</th>
@@ -305,11 +370,7 @@ function CategoryManagementPage({ onLogout }) {
                       {items.map((item) => (
                         <tr key={item.id}>
                           <td style={{ textAlign: 'center', fontSize: '20px', paddingTop: '14px' }}>
-                            {item.icon ? (
-                              <span title={item.icon}>{item.icon}</span>
-                            ) : (
-                              <span style={{ color: '#ccc', fontSize: '16px' }}>-</span>
-                            )}
+                            {renderCategoryIcon(item.icon)}
                           </td>
                           <td>
                             <strong>{item.name_en}</strong>

@@ -7,7 +7,11 @@ import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale, enUS } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../hooks/useLanguage';
-import { FiEye, FiHeart } from 'react-icons/fi';
+import { 
+  FiEye, FiHeart, FiFileText, FiBell, FiBook, 
+  FiBarChart2, FiRss, FiFolder, FiTag, FiHome, FiUsers,
+  FiLayers, FiActivity, FiTrendingUp
+} from 'react-icons/fi';
 import ImageWithFallback from '../components/ImageWithFallback';
 import './HomePage.css';
 
@@ -27,6 +31,60 @@ const formatSafeDate = (dateValue, isIndonesian) => {
   } catch (error) {
     return 'N/A';
   }
+};
+
+/**
+ * Map icon names to React icon components
+ */
+const getIconComponent = (iconName) => {
+  if (!iconName) return null;
+  
+  // If it's an emoji, return it as is
+  if (/\p{Emoji}/u.test(iconName)) {
+    return iconName;
+  }
+  
+  // Map icon names to Feather Icon components
+  const iconMap = {
+    'file-text': FiFileText,
+    'bell': FiBell,
+    'book': FiBook,
+    'bar-chart': FiBarChart2,
+    'newspaper': FiRss,
+    'folder': FiFolder,
+    'tag': FiTag,
+    'home': FiHome,
+    'users': FiUsers,
+    'layers': FiLayers,
+    'activity': FiActivity,
+    'trending-up': FiTrendingUp,
+  };
+  
+  const IconComponent = iconMap[iconName.toLowerCase()];
+  return IconComponent || null;
+};
+
+/**
+ * Render category icon with proper styling
+ */
+const renderCategoryIcon = (iconName) => {
+  if (!iconName) {
+    return null;
+  }
+  
+  // Check if it's an emoji
+  if (/\p{Emoji}/u.test(iconName)) {
+    return <span title={iconName} style={{ fontSize: '28px', display: 'flex', alignItems: 'center' }}>{iconName}</span>;
+  }
+  
+  // Try to get the icon component
+  const IconComponent = getIconComponent(iconName);
+  if (IconComponent) {
+    return <IconComponent title={iconName} size={28} style={{ minWidth: '28px', minHeight: '28px' }} />;
+  }
+  
+  // Fallback: don't render anything if icon not found
+  return null;
 };
 
 /**
@@ -230,18 +288,8 @@ const HomePage = () => {
                     }}>
                       <div className="category-image-container" style={{ position: 'relative' }}>
                         {category.icon && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '8px',
-                            right: '8px',
-                            fontSize: '28px',
-                            zIndex: 10,
-                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                            borderRadius: '6px',
-                            padding: '4px 8px',
-                            backdropFilter: 'blur(5px)'
-                          }}>
-                            {category.icon}
+                          <div className="category-icon-container">
+                            {renderCategoryIcon(category.icon)}
                           </div>
                         )}
                         <ImageWithFallback 

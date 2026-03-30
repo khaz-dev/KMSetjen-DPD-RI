@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Form, Button, Container, Row, Col, Alert, Modal, Toast, ToastContainer } from 'react-bootstrap';
 import { FiSave, FiSend, FiX, FiClock } from 'react-icons/fi';
+import { useNotification } from '../contexts/NotificationContext';
 import RichTextEditor from '../components/RichTextEditor';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
@@ -30,6 +31,7 @@ const ArticleEditor = () => {
   const { t } = useTranslation();
   const { isIndonesian } = useLanguage();
   const { theme } = useTheme();
+  const { success, error: showError } = useNotification();
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(!!id);
@@ -248,7 +250,7 @@ const ArticleEditor = () => {
 
       const data = await response.json();
       setLastSaved(new Date());
-      setShowSaveToast(true); // Show success notification
+      success(t('editor.draft_saved_success'));
       
       // Update URL if creating new article
       if (!id) {
@@ -258,11 +260,10 @@ const ArticleEditor = () => {
       return data;
     } catch (err) {
       console.error('Save draft error:', err);
-      // Store the translation key, not the translated string
-      // This way ErrorAlert will translate it in the current language
+      showError(t('errors.failed_save_draft'));
       setError('t:errors.failed_save_draft');
     }
-  }, [id, formData, selectedTags, slugValidation, t]);
+  }, [id, formData, selectedTags, slugValidation, t, success, showError]);
 
   // Load categories and tags on mount
   useEffect(() => {

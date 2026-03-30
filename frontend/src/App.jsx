@@ -2,8 +2,10 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import ToastContainer from './components/ToastContainer';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import ArticleDetailPage from './pages/ArticleDetailPage';
@@ -198,16 +200,19 @@ function AppContent() {
 function App() {
   return (
     <ThemeProvider>
-      <Router
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}
-      >
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </Router>
+      <NotificationProvider>
+        <Router
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
+          <AuthProvider>
+            <AppContent />
+            <ToastContainer />
+          </AuthProvider>
+        </Router>
+      </NotificationProvider>
     </ThemeProvider>
   );
 }

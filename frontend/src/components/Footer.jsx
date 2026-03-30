@@ -84,7 +84,7 @@ const Footer = () => {
         <Row>
           <Col md={6}>
             <p className="mb-0 text-muted">
-              &copy; {currentYear} DPD RI. {t("footer.copyright")}
+              &copy; {currentYear} BPSDM | OKK. {t("footer.copyright")}
             </p>
           </Col>
           <Col md={6} className="text-md-end">

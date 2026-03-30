@@ -349,6 +349,27 @@
   color: #e0e0e0 !important;
 }
 
+/* Category Icon Container */
+.category-icon-container {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 6px;
+  padding: 4px 8px;
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1a1a1a;
+}
+
+[data-theme="dark"] .category-icon-container {
+  background-color: rgba(45, 45, 45, 0.95);
+  color: #ffffff;
+}
+
 /* Article Meta Styles */
 .article-meta {
   border-top: 1px solid #e9ecef;
