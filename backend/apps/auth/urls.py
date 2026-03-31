@@ -3,7 +3,7 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     CustomTokenObtainPairView, register, me, update_profile,
-    change_password, logout, google_callback, sso_callback, sso_token_verify
+    change_password, logout, user_activity, google_callback, sso_callback, sso_token_verify
 )
 
 urlpatterns = [
@@ -14,6 +14,7 @@ urlpatterns = [
     # User endpoints
     path('register/', register, name='register'),
     path('me/', me, name='current_user'),
+    path('me/activity/', user_activity, name='user_activity'),
     path('update-profile/', update_profile, name='update_profile'),
     path('change-password/', change_password, name='change_password'),
     path('logout/', logout, name='logout'),

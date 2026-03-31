@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Card, Button } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Modal } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { internalAPI, getArticleUrl } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,7 +9,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
 import ImageWithFallback from '../components/ImageWithFallback';
 import './DashboardPage.css';
-import { FiFileText, FiCheckCircle, FiAlertCircle, FiClock, FiX } from 'react-icons/fi';
+import { FiFileText, FiCheckCircle, FiAlertCircle, FiClock, FiX, FiEye, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale, enUS } from 'date-fns/locale';
 
@@ -37,13 +37,17 @@ const formatSafeDate = (dateValue, isIndonesian) => {
  */
 const DashboardPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { t } = useTranslation();
   const { isIndonesian } = useLanguage();
   const [dashboard, setDashboard] = useState(null);
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteArticleId, setDeleteArticleId] = useState(null);
+  const [deleteArticleTitle, setDeleteArticleTitle] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchDashboard = async () => {
@@ -68,11 +72,47 @@ const DashboardPage = () => {
     }
   };
 
+  const handleDeleteArticle = (article) => {
+    setDeleteArticleId(article.id);
+    setDeleteArticleTitle(isIndonesian ? (article.title_id || article.title_en) : (article.title_en || article.title_id));
+    setShowDeleteModal(true);
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setDeleteArticleId(null);
+    setDeleteArticleTitle(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteArticleId) return;
+
+    setDeleting(true);
+    try {
+      await internalAPI.deleteArticle(deleteArticleId);
+      // Remove article from list
+      setArticles(prev => prev.filter(a => a.id !== deleteArticleId));
+      setShowDeleteModal(false);
+      setDeleteArticleId(null);
+      setDeleteArticleTitle(null);
+    } catch (err) {
+      console.error('Delete article error:', err);
+      setError(t('errors.delete_article_failed') || 'Failed to delete article');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   useEffect(() => {
+    // Wait for auth context to finish loading before fetching data
+    if (authLoading) {
+      return;
+    }
+
     fetchDashboard();
     fetchArticles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authLoading]);
 
   if (loading) return <LoadingSpinner message={t('messages.loading')} />;
 
@@ -283,20 +323,30 @@ const DashboardPage = () => {
                               </div>
                             </div>
                           </div>
-                          <div className="article-actions">
+                          <div className="dashboard-article-actions">
                             <Button
-                              variant="outline-primary"
+                              variant="primary"
                               size="sm"
                               onClick={() => window.open(getArticleUrl(article), '_blank')}
+                              title={t('buttons.view')}
                             >
-                              {t('buttons.view')}
+                              <FiEye />
                             </Button>
                             <Button
-                              variant="outline-secondary"
+                              variant="warning"
                               size="sm"
                               onClick={() => navigate(`/editor/${article.id}`)}
+                              title={t('buttons.edit')}
                             >
-                              {t('buttons.edit')}
+                              <FiEdit2 />
+                            </Button>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDeleteArticle(article)}
+                              title={t('buttons.delete')}
+                            >
+                              <FiTrash2 />
                             </Button>
                           </div>
                         </div>
@@ -309,6 +359,71 @@ const DashboardPage = () => {
           </Col>
         </Row>
       </Container>
+
+      {/* Delete Article Confirmation Modal */}
+      <Modal show={showDeleteModal} onHide={handleCancelDelete} size="sm" centered backdrop="static">
+        <Modal.Header closeButton={!deleting}>
+          <Modal.Title>
+            <span style={{ color: '#ef4444' }}>⚠️ {t('dashboard.delete_confirmation')}</span>
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ marginBottom: '1rem', fontSize: '1.05rem', wordWrap: 'break-word', overflowWrap: 'break-word' }}>
+              {t('dashboard.delete_article_confirm')}
+            </p>
+            <div style={{
+              backgroundColor: '#f8f9fa',
+              padding: '1rem',
+              borderRadius: '6px',
+              marginBottom: '1rem',
+              border: '2px solid #ef4444',
+              wordWrap: 'break-word',
+              overflowWrap: 'break-word',
+              wordBreak: 'break-word'
+            }}>
+              <p style={{ 
+                margin: 0, 
+                fontWeight: 'bold', 
+                fontSize: '1.1rem', 
+                color: '#ef4444',
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word'
+              }}>
+                {deleteArticleTitle}
+              </p>
+            </div>
+            <p style={{ fontSize: '0.95rem', color: '#7f8c8d', marginBottom: 0, wordWrap: 'break-word', overflowWrap: 'break-word' }}>
+              {t('dashboard.delete_warning')}
+            </p>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="secondary"
+            onClick={handleCancelDelete}
+            disabled={deleting}
+          >
+            {t('buttons.cancel')}
+          </Button>
+          <Button
+            variant="danger"
+            onClick={handleConfirmDelete}
+            disabled={deleting}
+            style={{ backgroundColor: '#ef4444', borderColor: '#dc2626' }}
+          >
+            {deleting ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                {t('common.deleting') || 'Deleting...'}
+              </>
+            ) : (
+              t('buttons.delete') || 'Delete'
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };

@@ -330,6 +330,77 @@ def logout(request):
     })
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_activity(request):
+    """
+    Get current user's activity logs and profile information.
+    GET /api/auth/me/activity/
+    
+    Returns user's roles, permissions, and recent activity.
+    """
+    from apps.audit.models import AuditLog
+    from apps.core.models import Role
+    
+    user = request.user
+    
+    # Get user's roles with their permissions
+    user_roles = user.roles.all().values(
+        'id', 'code', 'name_id', 'name_en', 'description_id', 'description_en',
+        'permissions'  # JSONField containing permission IDs
+    )
+    
+    # Get user's recent activity (last 20 actions)
+    user_activity_logs = AuditLog.objects.filter(
+        user=user
+    ).order_by('-timestamp')[:20].values(
+        'id', 'action', 'content_type', 'content_id', 'content_display',
+        'changes', 'timestamp', 'ip_address'
+    )
+    
+    # Get all available permissions for reference (from Django's auth model)
+    from django.contrib.auth.models import Permission
+    all_permissions = Permission.objects.all().values('id', 'name', 'codename')
+    
+    # Build permissions map
+    permissions_map = {perm['id']: perm for perm in all_permissions}
+    
+    # Resolve permission IDs in user roles and normalize field names
+    roles_with_permissions = []
+    for role in user_roles:
+        role_data = dict(role)
+        permission_ids = role_data.get('permissions', [])
+        role_data['permissions'] = [
+            permissions_map.get(perm_id, {'id': perm_id, 'name': 'Unknown'})
+            for perm_id in permission_ids
+        ]
+        # Normalize role names and descriptions for frontend
+        # Use English versions as defaults
+        role_data['name'] = role_data.get('name_en') or role_data.get('name_id') or 'Unknown'
+        role_data['description'] = role_data.get('description_en') or role_data.get('description_id') or ''
+        roles_with_permissions.append(role_data)
+    
+    return Response({
+        'user': {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'department': user.department,
+            'is_staff': user.is_staff,
+            'is_active': user.is_active,
+            'is_admin': user.is_admin(),
+            'is_editor': user.is_editor(),
+            'is_contributor': user.is_contributor(),
+            'is_reader': user.is_reader(),
+            'created_at': user.date_joined,
+        },
+        'roles': list(roles_with_permissions),
+        'activity': list(user_activity_logs)
+    })
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def google_callback(request):

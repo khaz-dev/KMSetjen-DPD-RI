@@ -19,8 +19,18 @@ const RoleRequiredRoute = ({ element, requiredRoles = [] }) => {
   }
 
   // If user role is not in required roles, redirect to 403
-  if (requiredRoles.length > 0 && !requiredRoles.includes(user.role)) {
-    return <Navigate to="/forbidden" replace />;
+  if (requiredRoles.length > 0) {
+    // Check if user has any of the required roles (case-insensitive)
+    const hasRequiredRole = user.roles && Array.isArray(user.roles) && 
+      user.roles.some(userRole =>
+        requiredRoles.some(requiredRole => 
+          userRole.toUpperCase() === requiredRole.toUpperCase()
+        )
+      );
+    
+    if (!hasRequiredRole) {
+      return <Navigate to="/forbidden" replace />;
+    }
   }
 
   // User has required role, render element

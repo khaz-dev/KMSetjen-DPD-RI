@@ -124,6 +124,7 @@
 
   --badge-bg: #5eead4;
   --badge-text: #ffffff;
+  --badge-hover-bg: #2dd4bf;
 }
 
 /* Dark Mode */
@@ -166,6 +167,7 @@
 
   --badge-bg: #0d9488;
   --badge-text: #ffffff;
+  --badge-hover-bg: #14b8a6;
 }
 
 /* Apply theme colors to all elements */
@@ -456,4 +458,35 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-tertiary);
+}
+
+/* ===== BOOTSTRAP UTILITY CLASSES - DARK MODE COMPLIANT ===== */
+
+/* Text Utilities - Dark Mode Compatible */
+.text-muted {
+  color: var(--text-secondary) !important;
+}
+
+.text-secondary {
+  color: var(--text-secondary) !important;
+}
+
+.text-primary {
+  color: var(--text-primary) !important;
+}
+
+/* Table Striped - Alternate Row Colors */
+.table-striped > tbody > tr:nth-child(odd) {
+  background-color: var(--table-bg);
+  color: var(--text-primary);
+}
+
+.table-striped > tbody > tr:nth-child(even) {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.table-striped > tbody > tr:hover {
+  background-color: var(--table-hover-bg) !important;
+  color: var(--text-primary);
 }

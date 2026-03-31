@@ -8,6 +8,9 @@ import './SearchFilter.css';
 /**
  * SearchFilter Component
  * Displays search input with filters (category, sort, access level, etc.)
+ * 
+ * Note: Access level filter is hidden for PUBLIC role users since they
+ * can only see 'public' access level articles anyway
  */
 const SearchFilter = ({
   searchQuery = '',
@@ -20,10 +23,14 @@ const SearchFilter = ({
   sortBy = 'published_at',
   onSortChange,
   onReset,
+  user = null,
 }) => {
   const { t } = useTranslation();
   const { isIndonesian } = useLanguage();
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
+
+  // Check if user is PUBLIC role
+  const isPublicUser = user && user.primary_role === 'public';
 
   // Debounce search input - only update parent after 500ms of no typing
   useEffect(() => {
@@ -75,16 +82,18 @@ const SearchFilter = ({
           ))}
         </Form.Select>
 
-        <Form.Select
-          value={selectedAccessLevel}
-          onChange={(e) => onAccessLevelChange(e.target.value)}
-          className="filter-select"
-        >
-          <option value="">{t('search.all_access_levels')}</option>
-          <option value="public">{t('search.access_public')}</option>
-          <option value="internal">{t('search.access_internal')}</option>
-          <option value="role_based">{t('search.access_role_based')}</option>
-        </Form.Select>
+        {!isPublicUser && (
+          <Form.Select
+            value={selectedAccessLevel}
+            onChange={(e) => onAccessLevelChange(e.target.value)}
+            className="filter-select"
+          >
+            <option value="">{t('search.all_access_levels')}</option>
+            <option value="public">{t('search.access_public')}</option>
+            <option value="internal">{t('search.access_internal')}</option>
+            <option value="role_based">{t('search.access_role_based')}</option>
+          </Form.Select>
+        )}
 
         <Form.Select
           value={sortBy}

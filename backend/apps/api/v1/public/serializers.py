@@ -195,19 +195,40 @@ class CategoryListSerializer(serializers.ModelSerializer):
                   'order_index', 'article_count']
     
     def get_article_count(self, obj):
-        """Count published articles based on user access level."""
-        # Get request and user from context
+        """Count published articles based on user role and access level.
+        
+        Account for role-based filtering:
+        - Anonymous users: only 'public' articles
+        - PUBLIC role users: only 'public' articles
+        - Other auth users (READER/CONTRIBUTOR/EDITOR/ADMIN): 'public' + 'internal' + 'role_based'
+        """
+        from apps.core.models import Role
+        
         request = self.context.get('request')
         user = request.user if request else None
 
         # Check if user is authenticated
         if user and user.is_authenticated:
-            # Authenticated users can see public + internal + role-based articles
-            return obj.articles.filter(
-                is_published=True,
-                status='published',
-                access_level__in=['public', 'internal', 'role_based']
-            ).count()
+            # Get user's primary role to distinguish PUBLIC role from other roles
+            primary_role = user.get_primary_role()
+            
+            if primary_role and primary_role.code == Role.PUBLIC:
+                # PUBLIC role users only see 'public' articles (like anonymous)
+                return obj.articles.filter(
+                    is_published=True,
+                    status='published',
+                    access_level='public'
+                ).count()
+            else:
+                # Other authenticated users (READER/CONTRIBUTOR/EDITOR/ADMIN) can see:
+                # - public articles (always)
+                # - internal articles (for all authenticated staff)
+                # - role-based articles (if they have the specific role)
+                return obj.articles.filter(
+                    is_published=True,
+                    status='published',
+                    access_level__in=['public', 'internal', 'role_based']
+                ).count()
         else:
             # Anonymous users only see public articles
             return obj.articles.filter(

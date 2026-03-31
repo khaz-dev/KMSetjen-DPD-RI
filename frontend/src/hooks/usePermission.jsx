@@ -16,7 +16,7 @@ import { useAuth } from '../contexts/AuthContext';
  * }
  */
 export const usePermission = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   /**
    * Check if user has a specific role
@@ -24,8 +24,11 @@ export const usePermission = () => {
    * @returns {boolean}
    */
   const hasRole = (role) => {
-    if (!user) return false;
-    return user.role === role;
+    // Return false while auth is loading
+    if (authLoading || !user) return false;
+    if (!user.roles || !Array.isArray(user.roles)) return false;
+    // Case-insensitive comparison with role.toUpperCase()
+    return user.roles.some(r => r.toUpperCase() === role.toUpperCase());
   };
 
   /**
@@ -34,8 +37,18 @@ export const usePermission = () => {
    * @returns {boolean}
    */
   const can = (roles) => {
-    if (!user) return false;
-    return Array.isArray(roles) ? roles.includes(user.role) : user.role === roles;
+    // Return false while auth is loading
+    if (authLoading || !user) return false;
+    if (!user.roles || !Array.isArray(user.roles)) return false;
+    
+    if (!Array.isArray(roles)) {
+      return user.roles.some(r => r.toUpperCase() === roles.toUpperCase());
+    }
+    
+    // Case-insensitive comparison with roles.toUpperCase()
+    return user.roles.some(userRole =>
+      roles.some(requiredRole => userRole.toUpperCase() === requiredRole.toUpperCase())
+    );
   };
 
   /**

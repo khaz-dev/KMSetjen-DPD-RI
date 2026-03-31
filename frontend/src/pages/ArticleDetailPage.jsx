@@ -21,7 +21,7 @@ const ArticleDetailPage = () => {
   const { isIndonesian } = useLanguage();
   const { idOrSlug } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingRelated, setLoadingRelated] = useState(false);
@@ -35,6 +35,7 @@ const ArticleDetailPage = () => {
   const [liked, setLiked] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
   const [fullscreenFile, setFullscreenFile] = useState(null);
+  const articleRef = React.useRef(null);
 
   // Helper function to get file preview type based on MIME type
   const getPreviewType = (mimeType) => {
@@ -111,22 +112,24 @@ const ArticleDetailPage = () => {
         setError(null);
         let response;
         
-        // Check if user is staff/editor (has permission to access internal API)
-        const isStaffOrEditor = user?.is_staff || user?.is_superuser || user?.groups?.some(g => 
-          g.name === 'Editors' || g.name === 'Admin' || g.name === 'Administrator'
-        );
-        
-        // If user is staff/editor, try internal API first (allows viewing draft articles)
-        // For non-staff users, only use public API to avoid unnecessary 404 errors
-        if (isStaffOrEditor) {
+        // Route articles based on user role:
+        // - PUBLIC users → use public API (can see published articles only)
+        // - CONTRIBUTOR/READER → use internal API (can see articles based on author/editor status)
+        // - EDITOR/ADMIN → use internal API (can see all articles)
+        // - Anonymous → use public API
+        //
+        // PUBLIC users must use publicAPI because internalAPI only shows articles
+        // authored by the user, and most articles are authored by others.
+        if (user && user.primary_role !== 'public') {
+          // User is authenticated and NOT PUBLIC - use internal API
           try {
             response = await internalAPI.getArticle(idOrSlug);
           } catch (internalErr) {
-            // If internal API fails for editors, that's a real error
+            // If internal API fails, that's a real error (permission denied or not found)
             throw internalErr;
           }
         } else {
-          // Non-staff users always use public API (they can only see published articles)
+          // User is public (public role) or not authenticated - use public API (published articles only)
           response = await publicAPI.getArticle(idOrSlug);
         }
         
@@ -168,8 +171,13 @@ const ArticleDetailPage = () => {
       }
     };
 
+    // Skip loading article until auth is loaded
+    if (authLoading) {
+      return;
+    }
+
     loadArticle();
-  }, [idOrSlug, user]);
+  }, [idOrSlug, user, authLoading]);
 
   const loadRelatedArticles = async (currentArticle) => {
     try {
@@ -331,7 +339,20 @@ const ArticleDetailPage = () => {
   };
 
   const handlePrint = () => {
-    window.print();
+    if (!articleRef.current) return;
+    
+    // Add class to hide non-article content during print
+    const body = document.body;
+    body.classList.add('article-print-mode');
+    
+    // Use setTimeout to ensure the class is applied before printing
+    setTimeout(() => {
+      window.print();
+      // Remove the class after print dialog closes
+      setTimeout(() => {
+        body.classList.remove('article-print-mode');
+      }, 100);
+    }, 100);
   };
 
   const ArticleListItem = ({ article: art }) => {
@@ -383,7 +404,7 @@ const ArticleDetailPage = () => {
       <Container className="py-5">
         <Row>
           <Col lg={8}>
-            <article>
+            <article ref={articleRef}>
               <header className="article-header mb-5">
                 <h1 className="display-5 fw-bold mb-3">{title}</h1>
                 

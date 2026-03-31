@@ -221,7 +221,10 @@
     "status_draft": "Draf",
     "status_rejected": "Ditolak",
     "status_scheduled": "Terjadwal",
-    "status_archived": "Diarsipkan"
+    "status_archived": "Diarsipkan",
+    "delete_confirmation": "Hapus Pengetahuan",
+    "delete_article_confirm": "Apakah Anda yakin ingin menghapus pengetahuan ini?",
+    "delete_warning": "Tindakan ini tidak dapat dibatalkan."
   },
   "profile": {
     "title": "Profil Pengguna",
@@ -229,11 +232,20 @@
     "first_name": "Nama Depan",
     "last_name": "Nama Belakang",
     "role": "Peran",
+    "roles": "Peran Pengguna",
     "joined": "Bergabung Sejak",
     "edit": "Edit Profil",
+    "edit_profile": "Edit Profil Anda",
     "change_password": "Ubah Sandi",
     "logout": "Keluar",
-    "password_changed": "Sandi berhasil diubah"
+    "password_changed": "Sandi berhasil diubah",
+    "permissions": "Izin",
+    "activity": "Log Aktivitas",
+    "action": "Tindakan",
+    "content": "Konten",
+    "timestamp": "Tanggal & Waktu",
+    "no_roles": "Tidak ada peran yang ditugaskan",
+    "no_activity": "Belum ada aktivitas"
   },
   "settings": {
     "title": "Pengaturan",

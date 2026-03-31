@@ -6,11 +6,34 @@
   transition: background-color var(--transition-normal), color var(--transition-normal);
 }
 
+/* Delete Modal Styles */
+.dashboard-page .modal-body {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.dashboard-page .modal-body p {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.dashboard-page .modal-title {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
+}
+
 .dashboard-header {
   margin-bottom: var(--spacing-8);
-  background-color: var(--bg-primary);
-  padding: 0;
-  transition: background-color var(--transition-normal);
+  background-color: var(--card-bg);
+  padding: var(--spacing-6);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -344,19 +367,76 @@ h6 {
   color: var(--border-color);
 }
 
-.article-actions {
+.dashboard-article-actions {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.35rem;
   flex-shrink: 0;
-  white-space: nowrap;
   margin-left: auto;
 }
 
-.article-actions button {
-  font-size: 0.8rem;
-  padding: 0.35rem 0.75rem;
+.dashboard-article-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0.4rem;
   flex-shrink: 0;
+  border-radius: 0.25rem;
+}
+
+.dashboard-article-actions button span,
+.dashboard-article-actions button > *:not(svg) {
+  display: none;
+}
+
+.dashboard-article-actions button svg {
+  width: 18px !important;
+  height: 18px !important;
+  color: currentColor !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
+/* Explicit color for primary button */
+.dashboard-article-actions button.btn-primary,
+.dashboard-article-actions button[class*="btn-primary"] {
+  background-color: #14b8a6 !important;
+  border-color: #14b8a6 !important;
+  color: white !important;
+}
+
+.dashboard-article-actions button.btn-primary svg,
+.dashboard-article-actions button[class*="btn-primary"] svg {
+  color: white !important;
+}
+
+/* Explicit color for warning button */
+.dashboard-article-actions button.btn-warning,
+.dashboard-article-actions button[class*="btn-warning"] {
+  background-color: #f59e0b !important;
+  border-color: #f59e0b !important;
+  color: white !important;
+}
+
+.dashboard-article-actions button.btn-warning svg,
+.dashboard-article-actions button[class*="btn-warning"] svg {
+  color: white !important;
+}
+
+/* Explicit color for danger button */
+.dashboard-article-actions button.btn-danger,
+.dashboard-article-actions button[class*="btn-danger"] {
+  background-color: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: white !important;
+}
+
+.dashboard-article-actions button.btn-danger svg,
+.dashboard-article-actions button[class*="btn-danger"] svg {
+  color: white !important;
 }
 
 /* Dark Mode Support */
@@ -380,7 +460,9 @@ h6 {
 
 /* Dark Mode Dashboard Header Specific */
 [data-theme="dark"] .dashboard-header {
-  background-color: var(--bg-primary) !important;
+  background-color: var(--card-bg) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: var(--shadow-sm) !important;
 }
 
 [data-theme="dark"] .dashboard-header h1 {
@@ -394,6 +476,13 @@ h6 {
 /* Dark Mode Stat Card Styling */
 [data-theme="dark"] .stat-card {
   background-color: var(--card-bg) !important;
+  border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .stat-card:hover {
+  border-color: #14b8a6 !important;
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
 }
 
 [data-theme="dark"] .stat-value {

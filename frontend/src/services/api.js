@@ -72,6 +72,41 @@ publicClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Handle 401 errors for publicClient (token refresh retry logic)
+publicClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Handle 401: attempt token refresh and retry
+    if (error.response?.status === 401 && !originalRequest?._retry) {
+      console.warn(`[API] 401 Unauthorized on publicClient for: ${originalRequest.method.toUpperCase()} ${originalRequest.url}`);
+      originalRequest._retry = true;
+
+      try {
+        const refreshToken = localStorage.getItem('refresh_token');
+        if (refreshToken) {
+          console.debug('[API] Attempting token refresh from publicClient 401...');
+          const response = await axios.post(`${API_BASE_URL}/auth/token/refresh/`, {
+            refresh: refreshToken,
+          });
+          const { access } = response.data;
+          localStorage.setItem('access_token', access);
+          originalRequest.headers.Authorization = `Bearer ${access}`;
+          console.debug('[API] Token refreshed, retrying publicClient request...');
+          return publicClient(originalRequest);
+        }
+      } catch (refreshError) {
+        console.error('[API] Token refresh failed from publicClient:', refreshError.response?.status);
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
 // Handle response and convert 404s on internal articles to rejections (without logging)
 apiClient.interceptors.response.use(
   (response) => {
@@ -158,6 +193,10 @@ export const authService = {
   
   logout: () =>
     apiClient.post('/auth/logout/'),
+
+  // User Activity
+  getUserActivity: () =>
+    apiClient.get('/auth/me/activity/'),
 
   // SSO endpoints
   ssoCallback: (code, state, redirectUri) =>

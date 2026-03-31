@@ -221,7 +221,10 @@
     "status_draft": "Draft",
     "status_rejected": "Rejected",
     "status_scheduled": "Scheduled",
-    "status_archived": "Archived"
+    "status_archived": "Archived",
+    "delete_confirmation": "Delete Knowledge",
+    "delete_article_confirm": "Are you sure you want to delete this knowledge?",
+    "delete_warning": "This action cannot be undone."
   },
   "profile": {
     "title": "User Profile",
@@ -229,11 +232,20 @@
     "first_name": "First Name",
     "last_name": "Last Name",
     "role": "Role",
+    "roles": "User Roles",
     "joined": "Member Since",
     "edit": "Edit Profile",
+    "edit_profile": "Edit Your Profile",
     "change_password": "Change Password",
     "logout": "Logout",
-    "password_changed": "Password changed successfully"
+    "password_changed": "Password changed successfully",
+    "permissions": "Permissions",
+    "activity": "Activity Log",
+    "action": "Action",
+    "content": "Content",
+    "timestamp": "Date & Time",
+    "no_roles": "No roles assigned",
+    "no_activity": "No activity yet"
   },
   "settings": {
     "title": "Settings",

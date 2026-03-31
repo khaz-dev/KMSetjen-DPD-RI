@@ -8,6 +8,7 @@ import SearchFilter from '../components/SearchFilter';
 import Pagination from '../components/Pagination';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { useLanguage } from '../hooks/useLanguage';
+import { useAuth } from '../contexts/AuthContext';
 import './ArticlesPage.css';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale, enUS } from 'date-fns/locale';
@@ -47,6 +48,7 @@ const ArticlesPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { isIndonesian } = useLanguage();
+  const { user, loading: authLoading } = useAuth();
   const [articles, setArticles] = useState([]);
   const [categories, setCategories] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -108,9 +110,15 @@ const ArticlesPage = () => {
   }, []);
 
   useEffect(() => {
+    // Wait for auth context to finish loading before fetching data
+    // This prevents race condition where articles are fetched with unverified token
+    if (authLoading) {
+      console.debug('[ArticlesPage] Waiting for auth context to load before fetching data...');
+      return;
+    }
     fetchArticles();
     fetchCategories();
-  }, [fetchArticles, fetchCategories]);
+  }, [fetchArticles, fetchCategories, authLoading]);
 
   const handleSearch = (query) => {
     const params = new URLSearchParams();
@@ -233,6 +241,7 @@ const ArticlesPage = () => {
           sortBy={sortBy}
           onSortChange={handleSortChange}
           onReset={handleReset}
+          user={user}
         />
 
         {articles.length === 0 ? (

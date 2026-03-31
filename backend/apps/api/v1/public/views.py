@@ -48,7 +48,12 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
     
     def get_queryset(self):
         """
-        Return only published public articles or those accessible to the user.
+        Return only published articles based on user role and access level.
+        
+        Access level filtering:
+        - Anonymous users: only 'public' articles
+        - PUBLIC role users: only 'public' articles
+        - Other auth users (READER/CONTRIBUTOR/EDITOR/ADMIN): 'public' + 'internal' + 'role_based' (if assigned)
         """
         user = self.request.user
         
@@ -58,21 +63,25 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
             status='published'
         ).select_related('author', 'category').prefetch_related('tags', 'allowed_roles', 'files')
         
-        # Filter by access level based on user authentication
+        # Filter by access level based on user role
+        from apps.core.models import Role
+        
         if user and user.is_authenticated:
-            # Authenticated users can see: public + internal + role-based (if they have the role)
-            # Use Q objects to maintain a single QuerySet that DjangoFilterBackend can properly filter
-            if user.roles.exists():
+            # Get user's primary role to distinguish PUBLIC role from other roles
+            primary_role = user.get_primary_role()
+            
+            if primary_role and primary_role.code == Role.PUBLIC:
+                # PUBLIC role users can only see 'public' articles (like anonymous)
+                queryset = queryset.filter(access_level='public')
+            else:
+                # Other authenticated users (READER/CONTRIBUTOR/EDITOR/ADMIN) can see:
+                # - public articles (always)
+                # - internal articles (for all authenticated staff)
+                # - role-based articles (if they have the specific role)
                 queryset = queryset.filter(
                     Q(access_level='public') | 
                     Q(access_level='internal') | 
                     Q(access_level='role_based', allowed_roles__in=user.roles.all())
-                )
-            else:
-                # User has no roles, only see public and internal
-                queryset = queryset.filter(
-                    Q(access_level='public') | 
-                    Q(access_level='internal')
                 )
         else:
             # Anonymous users only see public articles

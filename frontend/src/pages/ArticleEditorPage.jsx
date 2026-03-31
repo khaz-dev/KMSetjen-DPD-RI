@@ -4,12 +4,19 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Form, Button, Container, Row, Col, Alert, Modal, Toast, ToastContainer } from 'react-bootstrap';
 import { FiSave, FiSend, FiX, FiClock } from 'react-icons/fi';
 import { useNotification } from '../contexts/NotificationContext';
+import { useAuth } from '../contexts/AuthContext';
 import RichTextEditor from '../components/RichTextEditor';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
 import { publicAPI, internalAPI } from '../services/api';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTheme } from '../hooks/useTheme';
+import { 
+  ACCESS_LEVELS, 
+  ACCESS_LEVEL_DEFAULTS,
+  getAvailableAccessLevels,
+  canAccessArticleEditor 
+} from '../constants/accessLevels';
 import './ArticleEditorPage.css';
 
 /**
@@ -32,10 +39,12 @@ const ArticleEditor = () => {
   const { isIndonesian } = useLanguage();
   const { theme } = useTheme();
   const { success, error: showError } = useNotification();
+  const { user, loading: authLoading } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(!!id);
   const [error, setError] = useState('');
+  const [availableAccessLevels, setAvailableAccessLevels] = useState([]);
   const [categories, setCategories] = useState([]);
   const [tags, setTags] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
@@ -252,9 +261,18 @@ const ArticleEditor = () => {
       setLastSaved(new Date());
       success(t('editor.draft_saved_success'));
       
+      // Update form data with returned ID and slug
+      setFormData(prev => ({
+        ...prev,
+        id: data.id,
+        slug: data.slug
+      }));
+      
       // Update URL if creating new article
+      // Use navigate() to keep React Router in sync with URL
+      // This ensures useParams() updates and file section renders immediately
       if (!id) {
-        window.history.replaceState(null, '', `/editor/${data.id}`);
+        navigate(`/editor/${data.id}`, { replace: true });
       }
 
       return data;
@@ -353,6 +371,22 @@ const ArticleEditor = () => {
     }
   }, [id, loadArticle]);
 
+  // Calculate available access levels based on user's primary role
+  useEffect(() => {
+    if (user && user.primary_role) {
+      const levels = getAvailableAccessLevels(user.primary_role);
+      setAvailableAccessLevels(levels);
+      
+      // If current access level is not available, reset to the first available level
+      if (!levels.includes(formData.access_level) && levels.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          access_level: levels[0]
+        }));
+      }
+    }
+  }, [user?.primary_role]);
+
   const loadCategories = async () => {
     try {
       const response = await publicAPI.getCategories();
@@ -445,9 +479,30 @@ const ArticleEditor = () => {
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
-    if (!file || !id) {
-      setError('t:errors.save_article_first');
+    if (!file) {
       return;
+    }
+
+    // If article doesn't exist yet, save it first
+    let articleId = id || formData.id;
+    if (!articleId) {
+      // Auto-save the article first
+      try {
+        console.log('[FileUpload] No article ID, auto-saving first...');
+        const savedData = await saveDraft();
+        articleId = savedData?.id;
+        if (!articleId) {
+          setError('t:errors.failed_create_article_for_upload');
+          e.target.value = '';
+          return;
+        }
+        console.log('[FileUpload] Article auto-saved with ID:', articleId);
+      } catch (err) {
+        console.error('[FileUpload] Auto-save failed:', err);
+        // saveDraft already sets error, so just return
+        e.target.value = '';
+        return;
+      }
     }
 
     // Validate file size (max 50MB)
@@ -459,7 +514,7 @@ const ArticleEditor = () => {
 
     try {
       setFileUploading(true);
-      const response = await internalAPI.uploadFile(id, file);
+      const response = await internalAPI.uploadFile(articleId, file);
       const uploadedFile = response.data || response;
       setFiles(prev => [...prev, uploadedFile]);
       setError(''); // Clear any previous errors
@@ -479,11 +534,12 @@ const ArticleEditor = () => {
   };
 
   const confirmFileDelete = async () => {
-    if (!id || !deleteFileId) return;
+    const articleId = id || formData.id;
+    if (!articleId || !deleteFileId) return;
 
     try {
       setDeletingFile(true);
-      await internalAPI.deleteFile(id, deleteFileId);
+      await internalAPI.deleteFile(articleId, deleteFileId);
       setFiles(prev => prev.filter(f => f.id !== deleteFileId));
       setShowDeleteFileModal(false);
       setDeleteFileId(null);
@@ -796,22 +852,30 @@ const ArticleEditor = () => {
           </Form.Select>
         </Form.Group>
 
-        {/* Access Level (Tingkat Akses) */}
-        <Form.Group className="mb-4">
-          <Form.Label>{t('editor.access_level') || 'Tingkat Akses'}</Form.Label>
-          <Form.Select
-            name="access_level"
-            value={formData.access_level}
-            onChange={handleChange}
-          >
-            <option value="public">{t('editor.access_public') || 'Public (Umum)'}</option>
-            <option value="internal">{t('editor.access_internal') || 'Internal (Semua ASN)'}</option>
-            <option value="role_based">{t('editor.access_role_based') || 'Role-Based (Peran Tertentu)'}</option>
-          </Form.Select>
-          <Form.Text className="text-muted">
-            {t('editor.access_level_help') || 'Pilih siapa yang dapat melihat artikel ini'}
-          </Form.Text>
-        </Form.Group>
+        {/* Access Level (Tingkat Akses) - Only show if user has permission to create articles */}
+        {availableAccessLevels.length > 0 && (
+          <Form.Group className="mb-4">
+            <Form.Label>{t('editor.access_level') || 'Tingkat Akses'}</Form.Label>
+            <Form.Select
+              name="access_level"
+              value={formData.access_level}
+              onChange={handleChange}
+            >
+              {availableAccessLevels.includes(ACCESS_LEVELS.PUBLIC) && (
+                <option value={ACCESS_LEVELS.PUBLIC}>{t('editor.access_public') || ACCESS_LEVEL_DEFAULTS[ACCESS_LEVELS.PUBLIC]}</option>
+              )}
+              {availableAccessLevels.includes(ACCESS_LEVELS.INTERNAL) && (
+                <option value={ACCESS_LEVELS.INTERNAL}>{t('editor.access_internal') || ACCESS_LEVEL_DEFAULTS[ACCESS_LEVELS.INTERNAL]}</option>
+              )}
+              {availableAccessLevels.includes(ACCESS_LEVELS.ROLE_BASED) && (
+                <option value={ACCESS_LEVELS.ROLE_BASED}>{t('editor.access_role_based') || ACCESS_LEVEL_DEFAULTS[ACCESS_LEVELS.ROLE_BASED]}</option>
+              )}
+            </Form.Select>
+            <Form.Text className="text-muted">
+              {t('editor.access_level_help') || 'Pilih siapa yang dapat melihat artikel ini'}
+            </Form.Text>
+          </Form.Group>
+        )}
 
         {/* Slug */}
         <Form.Group className="mb-4">
@@ -1011,7 +1075,7 @@ const ArticleEditor = () => {
         </Form.Group>
 
         {/* File Manager */}
-        {id && (
+        {(
           <Form.Group className="mb-4">
             <Form.Label>{t('editor.file_attachments')}</Form.Label>
             

@@ -95,7 +95,7 @@ const HomePage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { isIndonesian } = useLanguage();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [featuredArticles, setFeaturedArticles] = useState([]);
   const [categories, setCategories] = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -104,6 +104,12 @@ const HomePage = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
+    // Wait for auth context to finish loading before fetching data
+    // This ensures any token refresh/validation completes first
+    if (authLoading) {
+      return;
+    }
+
     const loadContent = async () => {
       try {
         setArticlesLoading(true);
@@ -128,7 +134,7 @@ const HomePage = () => {
     };
 
     loadContent();
-  }, [user]);
+  }, [user, authLoading]);
 
   const handleSearch = (e) => {
     e.preventDefault();
