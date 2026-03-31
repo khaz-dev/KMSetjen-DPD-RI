@@ -173,11 +173,13 @@ REST_FRAMEWORK = {
 # ============================================================================
 # STATIC & MEDIA FILES
 # ============================================================================
-STATIC_URL = '/static/'
+# Support both root (/) and subpath (/kmsetjendpdri/) deployment
+app_subpath = env('APP_SUBPATH', default='')
+STATIC_URL = f'{app_subpath}/static/' if app_subpath else '/static/'
+MEDIA_URL = f'{app_subpath}/media/' if app_subpath else '/media/'
+
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # ============================================================================
@@ -318,8 +320,18 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # CSRF Protection
 CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = True
-CSRF_COOKIE_SAMESITE = 'Strict'
-CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=['http://localhost', 'http://127.0.0.1', 'https://localhost', 'https://127.0.0.1'])
+CSRF_COOKIE_SAMESITE = 'Lax'  # Changed to Lax for better SPA compatibility
+CSRF_TRUSTED_ORIGINS = env.list(
+    'CSRF_TRUSTED_ORIGINS',
+    default=[
+        'http://localhost',
+        'http://127.0.0.1',
+        'https://localhost',
+        'https://127.0.0.1',
+        'https://khaz.app',
+        'https://www.khaz.app',
+    ]
+)
 CSRF_COOKIE_AGE = 31449600  # 1 year
 
 # Session Security
@@ -406,7 +418,14 @@ FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
 # CORS Configuration (Origin-based Access Control)
 CORS_ALLOWED_ORIGINS = env.list(
     'CORS_ALLOWED_ORIGINS',
-    default=['http://localhost:5175', 'http://127.0.0.1:5175', 'https://kms.dpd.go.id', 'https://kms-be.dpd.go.id']
+    default=[
+        'http://localhost:5175',
+        'http://127.0.0.1:5175',
+        'https://kms.dpd.go.id',
+        'https://kms-be.dpd.go.id',
+        'https://khaz.app',
+        'https://www.khaz.app',
+    ]
 )
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [

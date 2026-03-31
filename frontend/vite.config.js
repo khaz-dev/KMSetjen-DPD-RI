@@ -14,6 +14,13 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   
+  // ========================================================================
+  // Base path configuration for subpath deployment
+  // Development: '/' (root)
+  // Production: '/kmsetjendpdri/' (subpath on khaz.app)
+  // ========================================================================
+  base: process.env.VITE_APP_SUBPATH || '/',
+  
   server: {
     port: 5175,
     host: true,  // Listen on all interfaces
@@ -24,6 +31,12 @@ export default defineConfig({
         target: 'http://localhost:8002',
         changeOrigin: true,
         rewrite: (path) => path,  // Keep path as-is
+      },
+      // Also proxy /kmsetjendpdri/api for production-like development
+      '/kmsetjendpdri/api': {
+        target: 'http://localhost:8002',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/kmsetjendpdri/, ''),  // Strip subpath
       },
     },
   },
