@@ -7,6 +7,7 @@ import ErrorAlert from '../components/ErrorAlert';
 import SearchFilter from '../components/SearchFilter';
 import Pagination from '../components/Pagination';
 import Breadcrumbs from '../components/Breadcrumbs';
+import ImageWithFallback from '../components/ImageWithFallback';
 import { useLanguage } from '../hooks/useLanguage';
 import { useAuth } from '../contexts/AuthContext';
 import './ArticlesPage.css';
@@ -262,7 +263,13 @@ const ArticlesPage = () => {
               )}
               {articles.map((article) => (
                 <div key={article.id} className="article-card">
-                  <div className="card-image-placeholder" style={(article.image || article.image_url) ? { backgroundImage: `url(${article.image || article.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}>
+                  <div className="card-image-placeholder">
+                    <ImageWithFallback
+                      src={article.image || article.image_url}
+                      alt={isIndonesian ? article.title_id : article.title_en}
+                      type="article"
+                      className="article-card-image"
+                    />
                     {article.category && (
                       <span className="article-category-badge">
                         <FiFolder size={16} />

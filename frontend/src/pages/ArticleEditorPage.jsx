@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Form, Button, Container, Row, Col, Alert, Modal, Toast, ToastContainer } from 'react-bootstrap';
-import { FiSave, FiSend, FiX, FiClock } from 'react-icons/fi';
+import { FiSave, FiSend, FiX, FiClock, FiEye } from 'react-icons/fi';
 import { useNotification } from '../contexts/NotificationContext';
 import { useAuth } from '../contexts/AuthContext';
 import RichTextEditor from '../components/RichTextEditor';
@@ -61,10 +62,13 @@ const ArticleEditor = () => {
   });
 
   const [files, setFiles] = useState([]);
+  const [initialFiles, setInitialFiles] = useState([]); // Track initial files for change detection
   const [fileUploading, setFileUploading] = useState(false);
   const [showSaveToast, setShowSaveToast] = useState(false);
   const [expandedFilePreview, setExpandedFilePreview] = useState({});
   const [activeLanguageTab, setActiveLanguageTab] = useState('id'); // 'id' or 'en'
+  const [initialFormData, setInitialFormData] = useState(null); // Track initial state for change detection
+  const [initialSelectedTags, setInitialSelectedTags] = useState([]); // Track initial tags for change detection
 
   const [formData, setFormData] = useState({
     id: null,
@@ -114,12 +118,35 @@ const ArticleEditor = () => {
         // Common fields
         category_id: data.category?.id || data.category_id || '',
         featured_image: data.image || data.image_url || '',
+        featured_image_file: null,
         featured_image_url: data.image_url || '',
         slug: data.slug || '',
         status: data.status || 'draft',
         access_level: data.access_level || 'public'  // Load access level from API
       });
-      setSelectedTags(data.tags?.map(t => t.id) || []);
+      const tagsArray = data.tags?.map(t => t.id) || [];
+      setSelectedTags(tagsArray);
+      
+      // Store initial state for change detection
+      const initialState = {
+        id: data.id || null,
+        title_id: data.title_id || '',
+        description_id: data.summary_id || '',
+        content_id: data.content_id || '',
+        title_en: data.title_en || '',
+        description_en: data.summary_en || '',
+        content_en: data.content_en || '',
+        category_id: data.category?.id || data.category_id || '',
+        featured_image: data.image || data.image_url || '',
+        featured_image_file: null,
+        featured_image_url: data.image_url || '',
+        slug: data.slug || '',
+        status: data.status || 'draft',
+        access_level: data.access_level || 'public'
+      };
+      setInitialFormData(initialState);
+      setInitialSelectedTags(tagsArray);
+      
       // Load associated files
       try {
         const filesResponse = await internalAPI.getArticleFiles(id);
@@ -135,9 +162,11 @@ const ArticleEditor = () => {
           });
         });
         setFiles(filesArray);
+        setInitialFiles(filesArray.map(f => ({ id: f.id })));
       } catch (filesErr) {
         console.error('Failed to load files:', filesErr);
         setFiles([]);
+        setInitialFiles([]);
       }
     } catch (err) {
       console.error('Load article error:', err);
@@ -149,19 +178,30 @@ const ArticleEditor = () => {
 
   const saveDraft = useCallback(async () => {
     try {
+      console.log('[SAVE_DRAFT] Starting save process...');
+      console.log('[SAVE_DRAFT] Current form state:', {
+        id: formData.id,
+        slug: formData.slug,
+        title_id: formData.title_id,
+        slugValidation: slugValidation
+      });
+      
       // Validate required fields (Indonesian is required, English is optional)
       if (!formData.title_id || !formData.title_id.trim()) {
+        console.log('[SAVE_DRAFT] Validation failed: No Indonesian title');
         setError('t:errors.title_required');
         throw new Error('title_required');
       }
 
       if (!formData.category_id) {
+        console.log('[SAVE_DRAFT] Validation failed: No category');
         setError('t:errors.category_required');
         throw new Error('category_required');
       }
 
       // Validate slug if present
       if (formData.slug && slugValidation.isAvailable === false) {
+        console.log('[SAVE_DRAFT] Validation failed: Slug marked as unavailable');
         setError(t('errors.slug_duplicate'));
         throw new Error('slug_validation_failed');
       }
@@ -211,9 +251,28 @@ const ArticleEditor = () => {
           slug: formData.slug
         };
         
-        // Add image_url if provided (URL string)
-        if (formData.featured_image_url) {
-          payload.image_url = formData.featured_image_url;
+        // DEBUG: Log the exact values being sent
+        console.log('[SAVE_DRAFT_DEBUG] Payload being sent:');
+        console.log(`  - status: ${JSON.stringify(payload.status)} (type: ${typeof payload.status})`);
+        console.log(`  - access_level: ${JSON.stringify(payload.access_level)} (type: ${typeof payload.access_level})`);
+        console.log(`  - formData.status: ${JSON.stringify(formData.status)} (type: ${typeof formData.status})`);
+        console.log(`  - formData.access_level: ${JSON.stringify(payload.access_level)} (type: ${typeof payload.access_level})`);
+        console.log('[SAVE_DRAFT_DEBUG] Full payload:', payload);
+        
+        // ALWAYS send image_url (even if empty) to allow clearing the featured image
+        // This is critical: when user deletes image, featured_image_url becomes '' (empty string)
+        // If we don't send it, backend won't know to clear the field
+        payload.image_url = formData.featured_image_url || null;
+        
+        // CRITICAL FIX: Send image: null when featured_image is cleared
+        // This explicitly tells backend to clear the image field, which triggers:
+        // 1. Model update (instance.image = None/null)
+        // 2. pre_save signal detects change (old_image != new_image)
+        // 3. old_image file is deleted from disk via cleanup_old_image_on_update()
+        // Without this, backend never receives 'image' field, so never modifies it, signals never fire
+        if (formData.featured_image === null || formData.featured_image === '') {
+          payload.image = null;
+          console.log('[SAVE_DRAFT_DEBUG] Image being cleared - sending image: null to backend');
         }
         
         requestBody = JSON.stringify(payload);
@@ -241,6 +300,15 @@ const ArticleEditor = () => {
         console.error('=== BACKEND VALIDATION ERROR ===');
         console.error('Status Code:', response.status);
         console.error('Error Response:', JSON.stringify(errorData, null, 2));
+        
+        // Special logging for slug errors
+        if (errorData.detail && typeof errorData.detail === 'object' && errorData.detail.slug) {
+          console.error('[SLUG_ERROR_DETECTED]', errorData.detail.slug);
+        }
+        if (errorData.slug) {
+          console.error('[SLUG_ERROR_DETECTED]', errorData.slug);
+        }
+        
         console.error('Payload Sent:', {
           title_id: formData.title_id,
           title_en: formData.title_en,
@@ -254,19 +322,98 @@ const ArticleEditor = () => {
           slug: formData.slug
         });
         console.error('=== END ERROR ===');
+        
+        // Extract user-friendly error message (with bilingual support)
+        let errorMessage = t('errors.failed_save_draft');
+        
+        // Try bilingual detail_id (Indonesian) first
+        if (errorData.detail_id) {
+          errorMessage = errorData.detail_id;
+        } 
+        // Fall back to detail (if it's a string, not object)
+        else if (errorData.detail && typeof errorData.detail === 'string') {
+          errorMessage = errorData.detail;
+        } 
+        // For field-specific errors (validation errors)
+        else if (errorData.detail && typeof errorData.detail === 'object') {
+          const fieldErrors = Object.entries(errorData.detail)
+            .map(([field, msgs]) => {
+              const fieldLabel = field;
+              const errorMsg = Array.isArray(msgs) ? msgs[0] : msgs;
+              return `${fieldLabel}: ${errorMsg}`;
+            })
+            .join('\n');
+          errorMessage = fieldErrors || t('errors.failed_save_draft');
+        } 
+        // Fall back to generic error message
+        else if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+        
+        setError(errorMessage);
+        showError(errorMessage);
         throw new Error('save_draft_failed');
       }
 
       const data = await response.json();
+      console.log('[SAVE_DRAFT] Save successful! Response data:', {
+        id: data.id,
+        slug: data.slug,
+        status: data.status
+      });
+      
       setLastSaved(new Date());
       success(t('editor.draft_saved_success'));
       
       // Update form data with returned ID and slug
+      console.log('[SAVE_DRAFT] Updating form data with response...');
+      console.log('[SAVE_DRAFT] Before setFormData - formData.id:', formData.id, ', formData.slug:', formData.slug);
+      console.log('[SAVE_DRAFT] After response - data.id:', data.id, ', data.slug:', data.slug);
+      
       setFormData(prev => ({
         ...prev,
         id: data.id,
-        slug: data.slug
+        slug: data.slug,
+        status: data.status,
+        featured_image: data.image || prev.featured_image,  // Update with actual saved image URL
+        featured_image_file: null,  // CRITICAL: Clear the file reference after successful upload
+        featured_image_url: data.image_url || prev.featured_image_url  // Update with saved URL field
       }));
+      
+      // CRITICAL: Update initialFormData to the newly saved state
+      // This ensures hasFormChanged() uses the new saved state as baseline
+      // Otherwise buttons would stay disabled even after saving changes
+      const newInitialState = {
+        id: data.id,
+        title_id: formData.title_id,
+        description_id: formData.description_id,
+        content_id: formData.content_id,
+        title_en: formData.title_en,
+        description_en: formData.description_en,
+        content_en: formData.content_en,
+        category_id: formData.category_id,
+        featured_image: data.image || formData.featured_image,  // Use actual saved image URL
+        featured_image_file: null,  // File is null after save (no File object to track)
+        featured_image_url: data.image_url || formData.featured_image_url,  // Use actual saved URL field
+        slug: data.slug,
+        status: data.status,
+        access_level: formData.access_level
+      };
+      setInitialFormData(newInitialState);
+      console.log('[SAVE_DRAFT] Updated initialFormData to newly saved state');
+      console.log('[SAVE_DRAFT] New featured_image:', newInitialState.featured_image);
+      console.log('[SAVE_DRAFT] New featured_image_file:', newInitialState.featured_image_file);
+      
+      // Update initialSelectedTags to the currently selected tags
+      // This ensures the change detection compares against the saved tags
+      setInitialSelectedTags([...selectedTags]);
+      console.log('[SAVE_DRAFT] Updated initialSelectedTags to:', selectedTags);
+      
+      // Update initialFiles to the currently uploaded files
+      // This ensures the change detection compares against the saved files
+      setInitialFiles(files.map(f => ({ id: f.id })));
+      console.log('[SAVE_DRAFT] Updated initialFiles to:', files.length, 'files');
+
       
       // Update URL if creating new article
       // Use navigate() to keep React Router in sync with URL
@@ -291,8 +438,11 @@ const ArticleEditor = () => {
 
   // Check slug availability when slug changes (debounced)
   useEffect(() => {
+    console.log(`[SLUG_VALIDATION_EFFECT] Triggered - slug: "${formData.slug}", id: ${formData.id}`);
+    
     // Don't check if slug is empty
     if (!formData.slug) {
+      console.log(`[SLUG_VALIDATION_EFFECT] Slug is empty, clearing validation`);
       setSlugValidation({
         isChecking: false,
         isAvailable: null,
@@ -304,6 +454,7 @@ const ArticleEditor = () => {
     // Check format first
     const formatValidation = validateSlugFormat(formData.slug);
     if (!formatValidation.valid) {
+      console.log(`[SLUG_VALIDATION_EFFECT] Format validation failed: ${formatValidation.messageKey}`);
       const messageKey = formatValidation.messageKey;
       setSlugValidation({
         isChecking: false,
@@ -314,16 +465,26 @@ const ArticleEditor = () => {
       return;
     }
 
+    console.log(`[SLUG_VALIDATION_EFFECT] Format valid, debouncing checkSlug call (500ms)`);
+    
     // Debounce the slug check (500ms)
     const timeoutId = setTimeout(async () => {
+      console.log(`[SLUG_VALIDATION_EFFECT] Calling checkSlug with: slug="${formData.slug}", excludeId=${formData.id}, version='draft'`);
       try {
         setSlugValidation(prev => ({
           ...prev,
           isChecking: true
         }));
 
-        const response = await internalAPI.checkSlug(formData.slug, formData.id);
+        const response = await internalAPI.checkSlug(formData.slug, formData.id, 'draft');
         const data = response.data || response;
+        
+        console.log(`[SLUG_VALIDATION_EFFECT] checkSlug response:`, {
+          available: data.available,
+          slug: data.slug,
+          version_type: data.version_type,
+          message: data.message
+        });
         
         setSlugValidation({
           isChecking: false,
@@ -332,7 +493,7 @@ const ArticleEditor = () => {
           message: data.available ? 'valid' : 'duplicate'
         });
       } catch (err) {
-        console.error('Slug check error:', err);
+        console.error('[SLUG_VALIDATION_EFFECT] Slug check error:', err);
         setSlugValidation({
           isChecking: false,
           isAvailable: null,
@@ -342,16 +503,56 @@ const ArticleEditor = () => {
       }
     }, 500);
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      console.log(`[SLUG_VALIDATION_EFFECT] Cleanup: clearing timeout`);
+      clearTimeout(timeoutId);
+    };
   }, [formData.slug, formData.id]);
 
-  // Auto-save draft every 2 minutes
+  // Helper function to detect if form has changed from initial state
+  // MUST be defined before useEffect that uses it
+  const hasFormChanged = useCallback(() => {
+    if (!initialFormData) {
+      // During initial load:
+      // - If we have an ID, we're loading an EXISTING article → keep buttons disabled
+      // - If we DON'T have an ID, we're CREATING a new article → buttons should be enabled
+      return !id;
+    }
+    
+    // Compare all form fields
+    const fieldsChanged = (
+      formData.title_id !== initialFormData.title_id ||
+      formData.description_id !== initialFormData.description_id ||
+      formData.content_id !== initialFormData.content_id ||
+      formData.title_en !== initialFormData.title_en ||
+      formData.description_en !== initialFormData.description_en ||
+      formData.content_en !== initialFormData.content_en ||
+      formData.category_id !== initialFormData.category_id ||
+      formData.featured_image !== initialFormData.featured_image ||
+      formData.featured_image_file !== initialFormData.featured_image_file ||
+      formData.featured_image_url !== initialFormData.featured_image_url ||
+      formData.slug !== initialFormData.slug ||
+      formData.access_level !== initialFormData.access_level
+    );
+    
+    // Compare tags
+    const tagsChanged = selectedTags.length !== initialSelectedTags.length ||
+                       selectedTags.some((tag, idx) => tag !== initialSelectedTags[idx]);
+    
+    // Compare files - check if file count changed or file IDs differ
+    const filesChanged = files.length !== initialFiles.length ||
+                         files.some((file, idx) => !initialFiles[idx] || file.id !== initialFiles[idx].id);
+    
+    return fieldsChanged || tagsChanged || filesChanged;
+  }, [formData, initialFormData, selectedTags, initialSelectedTags, files, initialFiles, id]);
+
+  // Auto-save draft every 2 minutes (only if there are changes)
   useEffect(() => {
     if (!id) return; // Don't auto-save for new articles
 
     const interval = setInterval(() => {
-      // Only auto-save if form has meaningful content AND required fields are filled
-      if ((formData.title_id && formData.title_id.trim()) || (formData.content_id && formData.content_id.trim())) {
+      // Only auto-save if there are changes AND form has meaningful content AND required fields are filled
+      if (hasFormChanged() && ((formData.title_id && formData.title_id.trim()) || (formData.content_id && formData.content_id.trim()))) {
         // Validate that category is selected before saving
         if (formData.category_id) {
           saveDraft();
@@ -360,7 +561,7 @@ const ArticleEditor = () => {
     }, 120000); // 2 minutes
 
     return () => clearInterval(interval);
-  }, [formData, id, saveDraft]);
+  }, [formData, id, saveDraft, hasFormChanged]);
 
   // Load article if editing existing article
   useEffect(() => {
@@ -473,7 +674,8 @@ const ArticleEditor = () => {
     setFormData(prev => ({
       ...prev,
       featured_image: '',
-      featured_image_file: null
+      featured_image_file: null,
+      featured_image_url: ''
     }));
   };
 
@@ -743,6 +945,27 @@ const ArticleEditor = () => {
       );
 
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        let errorMessage = t('errors.submit_article_failed');
+        
+        if (errorData.detail) {
+          if (typeof errorData.detail === 'string') {
+            errorMessage = errorData.detail;
+          } else if (typeof errorData.detail === 'object') {
+            const fieldErrors = Object.entries(errorData.detail)
+              .map(([field, msgs]) => {
+                const errorMsg = Array.isArray(msgs) ? msgs[0] : msgs;
+                return `${field}: ${errorMsg}`;
+              })
+              .join('\n');
+            errorMessage = fieldErrors || errorMessage;
+          }
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+        
+        setError(errorMessage);
+        showError(errorMessage);
         throw new Error('submit_article_failed');
       }
 
@@ -778,24 +1001,40 @@ const ArticleEditor = () => {
         />
       )}
 
-      {/* Success Toast */}
-      <ToastContainer position="top-end" className="p-3" style={{ position: 'fixed', top: 20, right: 20, zIndex: 9999 }}>
-        <Toast
-          onClose={() => setShowSaveToast(false)}
-          show={showSaveToast}
-          delay={5175}
-          autohide
-          className="article-editor-toast"
+      {/* Success Toast - Uses Portal to render outside form hierarchy */}
+      {ReactDOM.createPortal(
+        <ToastContainer 
+          position="top-end" 
+          className="p-3" 
+          style={{ 
+            position: 'fixed', 
+            top: '20px', 
+            right: '20px',
+            left: 'auto',
+            zIndex: 9999,
+            margin: 0,
+            padding: '20px',
+            pointerEvents: 'auto'
+          }}
         >
-          <Toast.Header closeButton className="article-editor-toast-header">
-            <i className="bi bi-check-circle-fill me-2 article-editor-toast-icon"></i>
-            <strong className="me-auto">{t('editor.draft_saved_success')}</strong>
-          </Toast.Header>
-          <Toast.Body className="article-editor-toast-body">
-            {t('editor.draft_saved')}
-          </Toast.Body>
-        </Toast>
-      </ToastContainer>
+          <Toast
+            onClose={() => setShowSaveToast(false)}
+            show={showSaveToast}
+            delay={5175}
+            autohide
+            className="article-editor-toast"
+          >
+            <Toast.Header closeButton className="article-editor-toast-header">
+              <i className="bi bi-check-circle-fill me-2 article-editor-toast-icon"></i>
+              <strong className="me-auto">{t('editor.draft_saved_success')}</strong>
+            </Toast.Header>
+            <Toast.Body className="article-editor-toast-body">
+              {t('editor.draft_saved')}
+            </Toast.Body>
+          </Toast>
+        </ToastContainer>,
+        document.body
+      )}
 
       <Form onSubmit={handleSaveDraft}>
         {/* Language Tabs */}
@@ -1260,32 +1499,73 @@ const ArticleEditor = () => {
 
         {/* Action Buttons */}
         <div className="editor-actions">
-          <Row className="g-3">
-            <Col xs={12} sm="auto">
+          <div className="editor-actions-container">
+            {/* Left Group - Preview Buttons */}
+            <div className="editor-actions-left">
+              <Button
+                variant="outline-primary"
+                onClick={() => {
+                  if (id && formData.slug) {
+                    window.open(`/knowledges/${formData.slug}?version=draft&from=editor`, '_blank');
+                  }
+                }}
+                disabled={!id || !formData.slug}
+                title={!id ? t('editor.save_first') || 'Save article first' : t('editor.preview_draft') || 'Preview draft version'}
+                className="preview-btn"
+              >
+                <FiEye /> {t('editor.preview_draft')}
+              </Button>
+              
+              {formData.status === 'published' && (
+                <Button
+                  variant="outline-info"
+                  onClick={() => {
+                    if (id && formData.slug) {
+                      window.open(`/knowledges/${formData.slug}?from=editor`, '_blank');
+                    }
+                  }}
+                  className="preview-btn"
+                  title={t('editor.preview_published') || 'Preview published version'}
+                >
+                  <FiEye /> {t('editor.preview_published')}
+                </Button>
+              )}
+            </div>
+
+            {/* Right Group - Action Buttons */}
+            <div className="editor-actions-right">
               <Button
                 variant="outline-secondary"
                 onClick={() => navigate('/dashboard')}
               >
                 <FiX /> {t('editor.cancel')}
               </Button>
-            </Col>
-            <Col xs={12} sm="auto">
               <Button
                 variant="primary"
                 type="submit"
+                disabled={!hasFormChanged()}
+                title={!hasFormChanged() ? t('editor.no_changes') || 'No changes to save' : ''}
               >
                 <FiSave /> {t('editor.save_draft')}
               </Button>
-            </Col>
-            <Col xs={12} sm="auto">
               <Button
                 variant="success"
                 onClick={() => setShowSubmitModal(true)}
+                disabled={!id || (formData.status === 'review' || formData.status === 'approved')}
+                title={
+                  !id 
+                    ? t('editor.save_first') || 'Save article first'
+                    : formData.status === 'review'
+                      ? 'Article is already submitted for review'
+                      : formData.status === 'approved'
+                        ? 'This article has been approved'
+                        : ''
+                }
               >
                 <FiSend /> {t('editor.submit_review')}
               </Button>
-            </Col>
-          </Row>
+            </div>
+          </div>
         </div>
       </Form>
 

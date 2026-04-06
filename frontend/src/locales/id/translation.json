@@ -80,6 +80,8 @@
     "welcome": "Selamat datang",
     "profile_updated": "Profil berhasil diperbarui",
     "settings_saved": "Pengaturan berhasil disimpan",
+    "avatar_updated": "Avatar berhasil diperbarui",
+    "avatar_removed": "Avatar berhasil dihapus",
     "confirm_delete_file": "Apakah Anda yakin ingin menghapus file ini?",
     "this_action_cannot_be_undone": "Tindakan ini tidak dapat dibatalkan."
   },
@@ -224,13 +226,20 @@
     "status_archived": "Diarsipkan",
     "delete_confirmation": "Hapus Pengetahuan",
     "delete_article_confirm": "Apakah Anda yakin ingin menghapus pengetahuan ini?",
-    "delete_warning": "Tindakan ini tidak dapat dibatalkan."
+    "delete_warning": "Tindakan ini tidak dapat dibatalkan.",
+    "view_draft": "Lihat Draf",
+    "view_published": "Lihat Dipublikasikan"
   },
   "profile": {
     "title": "Profil Pengguna",
     "email": "Email",
     "first_name": "Nama Depan",
     "last_name": "Nama Belakang",
+    "nip": "NIP",
+    "unit_organisasi": "Unit Organisasi",
+    "jenis_jabatan": "Jenis Jabatan",
+    "jabatan": "Jabatan",
+    "avatar": "Avatar",
     "role": "Peran",
     "roles": "Peran Pengguna",
     "joined": "Bergabung Sejak",
@@ -245,7 +254,14 @@
     "content": "Konten",
     "timestamp": "Tanggal & Waktu",
     "no_roles": "Tidak ada peran yang ditugaskan",
-    "no_activity": "Belum ada aktivitas"
+    "no_activity": "Belum ada aktivitas",
+    "read_only": "Hanya baca",
+    "no_changes": "Tidak ada perubahan untuk disimpan",
+    "upload_avatar": "Klik untuk mengunggah avatar",
+    "change_avatar": "Klik untuk mengubah avatar",
+    "image_requirements": "Maks 5MB, PNG/JPG/GIF",
+    "invalid_image_type": "Harap pilih file gambar yang valid",
+    "image_too_large": "File gambar terlalu besar (maks 5MB)"
   },
   "settings": {
     "title": "Pengaturan",
@@ -460,8 +476,13 @@
     "delete_confirmation": "Konfirmasi Penghapusan",
     "delete_warning": "Tindakan ini tidak dapat dibatalkan.",
     "category_saved": "Kategori berhasil disimpan",
+    "category_created_successfully": "Kategori berhasil dibuat",
+    "category_updated_successfully": "Kategori berhasil diperbarui",
+    "category_deleted_successfully": "Kategori berhasil dihapus",
     "category_deleted": "Kategori berhasil dihapus",
-    "category_error": "Gagal menyimpan kategori"
+    "category_error": "Gagal menyimpan kategori",
+    "invalid_image_type": "Harap pilih file gambar yang valid",
+    "image_too_large": "File gambar terlalu besar (maks 5MB)"
   },
   "tags": {
     "title": "Manajemen Tag",
@@ -570,6 +591,10 @@
     "pending_review": "Menunggu Review",
     "save_draft": "Simpan sebagai Draft",
     "submit_review": "Kirim untuk Review",
+    "save_first": "Simpan artikel terlebih dahulu",
+    "no_changes": "Tidak ada perubahan untuk disimpan",
+    "preview_draft": "Pratinjau Draf",
+    "preview_published": "Pratinjau Dipublikasikan",
     "publish": "Publikasikan",
     "auto_saved": "Tersimpan otomatis",
     "saving": "Menyimpan...",

@@ -202,6 +202,9 @@ def me(request):
         'last_name': user.last_name,
         'nip': user.nip,
         'department': user.department,
+        'unit_organisasi': user.unit_organisasi,
+        'jenis_jabatan': user.jenis_jabatan,
+        'jabatan': user.jabatan,
         'phone': user.phone,
         'avatar': user.avatar.url if user.avatar else None,
         'is_staff': user.is_staff,
@@ -222,35 +225,64 @@ def me(request):
 @permission_classes([IsAuthenticated])
 def update_profile(request):
     """
-    Update user profile.
+    Update user avatar profile.
     POST /api/auth/update-profile/
     
-    Request body:
+    Request body (multipart/form-data):
     {
-        "first_name": "First",
-        "last_name": "Last",
-        "phone": "08123456789",
-        "preferred_language": "en",
-        "theme_mode": "dark"
+        "avatar": <image_file>  (optional - to upload new avatar)
     }
+    
+    Note: Only avatar can be updated via this endpoint.
+    Other fields (first_name, last_name, email, nip, etc.) are read-only.
     """
     user = request.user
     
-    # Update allowed fields
-    if 'first_name' in request.data:
-        user.first_name = request.data['first_name']
+    # Handle avatar upload
+    if 'avatar' in request.FILES:
+        avatar_file = request.FILES['avatar']
+        
+        # Validate file type
+        allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+        if avatar_file.content_type not in allowed_types:
+            return Response({
+                'success': False,
+                'error': 'Invalid image type. Allowed: JPEG, PNG, GIF, WebP'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate file size (max 5MB)
+        max_size = 5 * 1024 * 1024
+        if avatar_file.size > max_size:
+            return Response({
+                'success': False,
+                'error': 'Image file is too large (max 5MB)'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Delete old avatar if exists
+        if user.avatar:
+            try:
+                from django.core.files.storage import default_storage
+                old_path = user.avatar.name
+                if old_path:
+                    default_storage.delete(old_path)
+            except Exception:
+                pass  # Log but don't fail if deletion fails
+        
+        # Set new avatar
+        user.avatar = avatar_file
     
-    if 'last_name' in request.data:
-        user.last_name = request.data['last_name']
-    
-    if 'phone' in request.data:
-        user.phone = request.data['phone']
-    
-    if 'preferred_language' in request.data:
-        user.preferred_language = request.data['preferred_language']
-    
-    if 'theme_mode' in request.data:
-        user.theme_mode = request.data['theme_mode']
+    # Handle avatar removal (if avatar field is sent as null/empty)
+    elif 'avatar' in request.data and (request.data['avatar'] is None or request.data['avatar'] == ''):
+        if user.avatar:
+            try:
+                from django.core.files.storage import default_storage
+                storage_path = user.avatar.name
+                if storage_path:
+                    default_storage.delete(storage_path)
+            except Exception:
+                pass  # Log but don't fail if deletion fails
+        
+        user.avatar = None
     
     user.save()
     
@@ -263,6 +295,11 @@ def update_profile(request):
             'email': user.email,
             'first_name': user.first_name,
             'last_name': user.last_name,
+            'avatar': user.avatar.url if user.avatar else None,
+            'nip': user.nip,
+            'unit_organisasi': user.unit_organisasi,
+            'jenis_jabatan': user.jenis_jabatan,
+            'jabatan': user.jabatan,
             'phone': user.phone,
             'preferred_language': user.preferred_language,
             'theme_mode': user.theme_mode,

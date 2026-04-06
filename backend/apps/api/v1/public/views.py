@@ -50,6 +50,10 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
         """
         Return only published articles based on user role and access level.
         
+        With versioning:
+        - Only show published version of articles (version_type='published')
+        - Draft versions are never shown to public API
+        
         Access level filtering:
         - Anonymous users: only 'public' articles
         - PUBLIC role users: only 'public' articles
@@ -57,8 +61,9 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
         """
         user = self.request.user
         
-        # Start with published articles
+        # Start with published version articles that are publicly available
         queryset = Article.objects.filter(
+            version_type='published',  # Only published versions
             is_published=True,
             status='published'
         ).select_related('author', 'category').prefetch_related('tags', 'allowed_roles', 'files')

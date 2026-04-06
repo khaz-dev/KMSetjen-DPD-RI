@@ -54,21 +54,32 @@ class ArticleViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """
         Return articles for the authenticated user.
-        - Authors see their own articles (all statuses)
-        - Editors see all articles
+        
+        For admin/editors: Show ONLY draft versions
+        - Draft articles are the editable, working versions
+        - Published versions are read-only snapshots managed by the publish endpoint
+        - Admin/dashboard should show what's being worked on, not archived published versions
+        - This prevents duplicate articles appearing in admin/dashboard lists
+        
+        For authors: Show ONLY their DRAFT articles
+        - Authors can only edit their own drafts
+        - Published versions are not shown (they're read-only snapshots)
         """
         user = self.request.user
         
         if user.is_editor() or user.is_admin():
-            # Editors see all articles
-            return Article.objects.all().select_related(
-                'author', 'category'
-            ).prefetch_related('tags', 'allowed_roles')
-        else:
-            # Authors see only their articles
+            # Editors see ONLY draft articles (the editable versions)
+            # Published versions (version_type='published') are read-only snapshots
+            # and should not clutter the admin/dashboard lists
             return Article.objects.filter(
-                author=user
-            ).select_related('author', 'category').prefetch_related('tags', 'allowed_roles')
+                version_type=Article.VERSION_DRAFT
+            ).select_related('author', 'category').prefetch_related('tags', 'allowed_roles', 'files')
+        else:
+            # Authors see only their DRAFT articles
+            return Article.objects.filter(
+                author=user,
+                version_type=Article.VERSION_DRAFT
+            ).select_related('author', 'category').prefetch_related('tags', 'allowed_roles', 'files')
     
     def get_serializer_class(self):
         """Return appropriate serializer based on action."""
@@ -108,40 +119,72 @@ class ArticleViewSet(viewsets.ModelViewSet):
     
     def get_object(self):
         """
-        Override to support lookup by SLUG or ID.
+        Override to support lookup by SLUG or ID + version parameter.
+        
+        Version Parameter Handling:
+        - ?version=draft → Returns draft version (for editing/preview)
+        - No parameter → Returns published if exists, else draft (for viewing)
+        - This ensures correct version display regardless of how article is accessed
+        
+        Lookup Modes:
         - First tries numeric ID lookup
         - Falls back to slug lookup
-        - Maintains proper permission filtering
+        - Applies version preference to both lookups
         """
-        queryset = self.filter_queryset(self.get_queryset())
-        
-        # Get the lookup value from URL parameter (pk)
         lookup_value = self.kwargs.get(self.lookup_field)
         
         if not lookup_value:
             raise ValueError("No lookup value provided")
         
+        # Check for version parameter
+        version_param = self.request.query_params.get('version', '').lower()
+        prefer_published = version_param != 'draft'  # Default to published unless version=draft
+        
+        # Use select_related and prefetch_related for performance
+        queryset = Article.objects.select_related('author', 'category').prefetch_related('tags', 'allowed_roles', 'files')
+        
         # Try to parse as integer (ID lookup)
         try:
             lookup_id = int(lookup_value)
-            # First try to find by ID
-            try:
-                return queryset.get(id=lookup_id)
-            except Article.DoesNotExist:
-                pass
+            # Look for article by ID with version preference
+            if prefer_published:
+                # Try published first, then draft
+                try:
+                    return queryset.get(id=lookup_id, version_type=Article.VERSION_PUBLISHED)
+                except Article.DoesNotExist:
+                    try:
+                        return queryset.get(id=lookup_id, version_type=Article.VERSION_DRAFT)
+                    except Article.DoesNotExist:
+                        pass
+            else:
+                # Looking for draft specifically
+                try:
+                    return queryset.get(id=lookup_id, version_type=Article.VERSION_DRAFT)
+                except Article.DoesNotExist:
+                    pass
         except (ValueError, TypeError):
             pass
         
-        # Try to find by slug
-        try:
-            return queryset.get(slug=lookup_value)
-        except Article.DoesNotExist:
-            # Not found by slug or ID
-            pass
+        # Try to find by slug with version preference
+        if prefer_published:
+            # Try published first, then draft
+            try:
+                return queryset.get(slug=lookup_value, version_type=Article.VERSION_PUBLISHED)
+            except Article.DoesNotExist:
+                try:
+                    return queryset.get(slug=lookup_value, version_type=Article.VERSION_DRAFT)
+                except Article.DoesNotExist:
+                    pass
+        else:
+            # Looking for draft specifically
+            try:
+                return queryset.get(slug=lookup_value, version_type=Article.VERSION_DRAFT)
+            except Article.DoesNotExist:
+                pass
         
-        # If we get here, article not found with this slug or ID
+        # If we get here, article not found
         # Let the default behavior handle the 404
-        return get_object_or_404(queryset, pk=lookup_value)
+        return get_object_or_404(Article, pk=lookup_value)
     
     def create(self, request, *args, **kwargs):
         """Create new article."""
@@ -371,19 +414,102 @@ class ArticleViewSet(viewsets.ModelViewSet):
         """
         Publish article (editor only).
         POST /api/v1/internal/articles/{id}/publish/
+        
+        With versioning:
+        - Creates a published version from draft (version_type='published', status='published')
+        - Updates draft status to 'published' to reflect publication state
+        - Draft remains editable for future updates
+        - Public API shows published version (version_type='published', status='published')
+        - Published article is accessible by slug and shows live content
         """
         article = self.get_object()
         
-        if article.status not in ['approved', 'draft', 'review']:
+        # Can only publish from draft version
+        if article.version_type != Article.VERSION_DRAFT:
             return Response(
-                {'error': f'Cannot publish article with status {article.status}'},
+                {'error': 'Can only publish from draft version'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+        # Check if published version already exists
+        existing_published = Article.objects.filter(
+            draft_article=article,
+            version_type=Article.VERSION_PUBLISHED
+        ).first()
+        
+        if existing_published:
+            # Update existing published version with latest draft content
+            existing_published.title_id = article.title_id
+            existing_published.title_en = article.title_en
+            existing_published.content_id = article.content_id
+            existing_published.content_en = article.content_en
+            existing_published.summary_id = article.summary_id
+            existing_published.summary_en = article.summary_en
+            existing_published.category = article.category
+            existing_published.tags.set(article.tags.all())
+            existing_published.access_level = article.access_level
+            existing_published.allowed_roles.set(article.allowed_roles.all())
+            existing_published.image_url = article.image_url
+            existing_published.is_bilingual = article.is_bilingual
+            existing_published.language = article.language
+            existing_published.reviewer = article.reviewer
+            existing_published.status = 'published'
+            existing_published.is_published = True
+            existing_published.published_at = timezone.now()
+            existing_published.publisher = request.user
+            existing_published.save()
+            
+            # Copy featured image file from draft to published
+            if article.image:
+                self._copy_featured_image(article, existing_published)
+            
+            # Copy file attachments from draft to published (creates independent copies)
+            self._copy_article_files(article, existing_published)
+            
+            published_article = existing_published
+        else:
+            # Create new published version from draft
+            published_article = Article.objects.create(
+                title_id=article.title_id,
+                title_en=article.title_en,
+                content_id=article.content_id,
+                content_en=article.content_en,
+                summary_id=article.summary_id,
+                summary_en=article.summary_en,
+                category=article.category,
+                access_level=article.access_level,
+                image_url=article.image_url,
+                is_bilingual=article.is_bilingual,
+                language=article.language,
+                slug=article.slug,
+                author=article.author,
+                reviewer=article.reviewer,
+                publisher=request.user,
+                status='published',
+                is_published=True,
+                published_at=timezone.now(),
+                version_type=Article.VERSION_PUBLISHED,
+                draft_article=article,  # Link to draft
+            )
+            published_article.tags.set(article.tags.all())
+            published_article.allowed_roles.set(article.allowed_roles.all())
+            
+            # Copy featured image file from draft to published
+            if article.image:
+                self._copy_featured_image(article, published_article)
+            
+            # Copy file attachments from draft to published (creates independent copies)
+            self._copy_article_files(article, published_article)
+        
+        # CRITICAL: Update draft status to 'published' to reflect that it has been published
+        # This ensures:
+        # 1. Draft article reflects publication state
+        # 2. Admin moderation page shows it in "Dipublikasikan" tab (filters by status='published')
+        # 3. Users can see publication history
         article.status = 'published'
-        article.is_published = True
-        article.published_at = timezone.now()
+        article.is_published = True  # Mark draft as published (for reference)
         article.publisher = request.user
+        article.published_at = timezone.now()
         article.save()
         
         # Log publication
@@ -394,7 +520,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
                 content_type='Article',
                 content_id=article.id,
                 content_display=article.title_en,
-                changes={'status': 'PUBLISHED', 'is_published': True},
+                changes={'status': 'published', 'is_published': True, 'version_created': published_article.id},
                 ip_address=self._get_client_ip(request),
                 user_agent=request.META.get('HTTP_USER_AGENT', '')
             )
@@ -402,7 +528,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
             pass
         
         serializer = InternalArticleDetailSerializer(
-            article,
+            article,  # Return the draft (which now has status='published')
             context=self.get_serializer_context()
         )
         return Response(serializer.data)
@@ -531,19 +657,25 @@ class ArticleViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def check_slug(self, request):
         """
-        Check if a slug is available (not used by any article).
-        GET /api/v1/internal/articles/check-slug/?slug=my-article&exclude_id=123
+        Check if a slug is available (not used by any article in the same version).
+        GET /api/v1/internal/articles/check-slug/?slug=my-article&exclude_id=123&version_type=draft
         
         Parameters:
         - slug: The slug to check (required)
         - exclude_id: Article ID to exclude from check (optional, used when editing)
+        - version_type: 'draft' or 'published' (optional, defaults to 'draft')
         
         Returns:
         - available: boolean (true if slug is available, false if already in use)
         - message: string (explains the result)
+        
+        Note: With versioning system:
+        - Draft articles can use same slug as published articles
+        - Each version_type has its own slug namespace
         """
         slug = request.query_params.get('slug', '').strip()
         exclude_id = request.query_params.get('exclude_id')
+        version_type = request.query_params.get('version_type', Article.VERSION_DRAFT)
         
         if not slug:
             return Response(
@@ -554,18 +686,31 @@ class ArticleViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Check if slug exists
-        query = Article.objects.filter(slug=slug)
+        # Check if slug exists in the same version_type
+        query = Article.objects.filter(slug=slug, version_type=version_type)
         
-        # If editing, exclude the current article
+        # If editing, exclude the current article (convert exclude_id to int for proper comparison)
+        exclude_id_int = None
         if exclude_id:
-            query = query.exclude(id=exclude_id)
+            try:
+                exclude_id_int = int(exclude_id)
+                query = query.exclude(id=exclude_id_int)
+            except (ValueError, TypeError):
+                # Invalid exclude_id, treat as no exclusion but log it
+                pass
         
         slug_exists = query.exists()
+        
+        # Debug logging for slug issues
+        if slug_exists:
+            conflicting = query.first()
+            pass  # Could add logging here
         
         return Response({
             'available': not slug_exists,
             'slug': slug,
+            'version_type': version_type,
+            'exclude_id': exclude_id_int,
             'message': 'Slug is already in use' if slug_exists else 'Slug is available'
         })
 
@@ -574,11 +719,19 @@ class ArticleViewSet(viewsets.ModelViewSet):
         """
         Get user's dashboard data (statistics and recent articles).
         GET /api/v1/internal/articles/dashboard/
+        
+        With versioning:
+        - Only shows DRAFT articles (version_type='draft')
+        - Published versions are not shown in dashboard
+        - Authors see only their draft articles
         """
         user = request.user
         
-        # Get user's articles
-        articles = Article.objects.filter(author=user)
+        # Get user's DRAFT articles only
+        articles = Article.objects.filter(
+            author=user,
+            version_type=Article.VERSION_DRAFT
+        )
         
         # Calculate statistics
         return Response({
@@ -602,23 +755,94 @@ class ArticleViewSet(viewsets.ModelViewSet):
             ).data,
         })
     
-    def _get_client_ip(self, request):
-        """Get client IP address from request."""
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            return x_forwarded_for.split(',')[0]
-        return request.META.get('REMOTE_ADDR')
+    def _copy_featured_image(self, draft_article, published_article):
+        """
+        Copy featured image file from draft to published version.
+        Creates a separate copy of the file for the published version
+        so they are independent (deleting draft image won't affect published).
+        
+        Uses the article_image_upload_to callable to generate proper paths.
+        """
+        if not draft_article.image:
+            return
+        
+        try:
+            from django.core.files.base import ContentFile
+            import os
+            
+            # Read image content from draft
+            draft_image = draft_article.image
+            image_content = draft_image.read()
+            
+            # Get filename and extension
+            original_filename = os.path.basename(draft_image.name)
+            name, ext = os.path.splitext(original_filename)
+            
+            # Save as new file to published article
+            # The article_image_upload_to function will generate: articles/article_{published_id}_image.ext
+            published_article.image.save(
+                original_filename,
+                ContentFile(image_content),
+                save=True
+            )
+        except Exception as e:
+            # Log but don't fail if image copy fails - article content is more important
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f'Failed to copy featured image for article {draft_article.id}: {str(e)}')
+    
+    def _copy_article_files(self, draft_article, published_article):
+        """
+        Copy file attachments from draft to published version.
+        Creates independent copies so each version has its own files.
+        Deleting draft attachments won't affect published version attachments.
+        """
+        from django.core.files.base import ContentFile
+        from apps.content.models import File
+        
+        # Delete all existing files in published version first
+        published_article.files.all().delete()
+        
+        # Copy files from draft to published version
+        draft_files = File.objects.filter(article=draft_article)
+        for file_obj in draft_files:
+            try:
+                # Read file content from draft
+                file_content = file_obj.file.read()
+                
+                # Get filename to preserve extension
+                import os
+                original_filename = os.path.basename(file_obj.file.name)
+                
+                # Create new file for published version
+                new_file = File.objects.create(
+                    article=published_article,
+                    original_filename=file_obj.original_filename,
+                    file_size=file_obj.file_size,
+                    mime_type=file_obj.mime_type,
+                    description_id=file_obj.description_id,
+                    description_en=file_obj.description_en,
+                    uploaded_by=file_obj.uploaded_by,
+                    order_index=file_obj.order_index,
+                )
+                
+                # Save file content
+                new_file.file.save(
+                    original_filename,
+                    ContentFile(file_content),
+                    save=True
+                )
+            except Exception as e:
+                # Log but continue with other files
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f'Failed to copy file {file_obj.original_filename} for article {draft_article.id}: {str(e)}')
 
-
-# ============================================================================
-# FILE VIEWSET
-# ============================================================================
 
 class FileViewSet(viewsets.ModelViewSet):
     """
-    API endpoints for article file management.
+    Internal API for file attachments (authenticated users).
     
-    Endpoints:
     - GET /api/v1/internal/articles/{article_id}/files/ - List files
     - POST /api/v1/internal/articles/{article_id}/files/ - Upload file
     - GET /api/v1/internal/articles/{article_id}/files/{id}/ - File detail
@@ -626,16 +850,15 @@ class FileViewSet(viewsets.ModelViewSet):
     - DELETE /api/v1/internal/articles/{article_id}/files/{id}/ - Delete file
     - POST /api/v1/internal/articles/{article_id}/files/reorder/ - Reorder files
     """
-    serializer_class = None  # Will be set in get_serializer_class
     permission_classes = [IsAuthenticated]
-    
+    queryset = File.objects.all()
+    serializer_class = FileSerializer
+
     def get_queryset(self):
-        """Filter files by article_id from URL."""
+        """Return files for the article from URL."""
         article_id = self.kwargs.get('article_id')
         if article_id:
-            return File.objects.filter(
-                article_id=article_id
-            ).select_related('article', 'uploaded_by').order_by('order_index')
+            return File.objects.filter(article_id=article_id).order_by('order_index')
         return File.objects.none()
     
     def get_serializer_class(self):

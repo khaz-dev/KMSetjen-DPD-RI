@@ -13,11 +13,13 @@ import logging.config
 # ============================================================================
 # ENVIRONMENT SETUP
 # ============================================================================
-BASE_DIR = Path(__file__).resolve().parent.parent
-# Read .env from project root (not backend directory)
-PROJECT_ROOT = BASE_DIR.parent
+# settings.py is at: backend/config/settings.py
+# So: __file__.parent.parent.parent = backend, and .parent = project_root
+BASE_DIR = Path(__file__).resolve().parent.parent.parent  # Points to: d:\Project\KMSetjen DPD RI\
 env = environ.Env()
-environ.Env.read_env(os.path.join(PROJECT_ROOT, '.env'))
+# Load .env from project root (same level as backend/ folder)
+env_file = os.path.join(BASE_DIR, '.env')
+environ.Env.read_env(env_file)
 
 # ============================================================================
 # SECURITY
@@ -64,7 +66,9 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS + DJANGO_APPS_AFTER
 # MIDDLEWARE
 # ============================================================================
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
+    # SecurityMiddleware causes unwanted HTTPS redirect even with SECURE_SSL_REDIRECT=False  
+    # Only enable in production
+    'shared.middleware.debug_middleware.DebugSettingsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -78,6 +82,10 @@ MIDDLEWARE = [
     'shared.middleware.security_middleware.SecurityAuditMiddleware',
     'shared.middleware.security_middleware.FilePreviewMiddleware',  # MUST be last to override headers on responses
 ]
+
+# Add SecurityMiddleware only in production (DEBUG=False causes HTTPS redirects)
+if not DEBUG:
+    MIDDLEWARE.insert(0, 'django.middleware.security.SecurityMiddleware')
 
 # ============================================================================
 # ROOT CONFIGURATION
@@ -174,7 +182,14 @@ REST_FRAMEWORK = {
 # STATIC & MEDIA FILES
 # ============================================================================
 # Support both root (/) and subpath (/kmsetjendpdri/) deployment
-app_subpath = env('APP_SUBPATH', default='')
+# For development (localhost): Don't use subpath
+# For production/staging: Use subpath /kmsetjendpdri
+ENVIRONMENT = env('ENVIRONMENT', default='development')
+if ENVIRONMENT == 'development':
+    app_subpath = ''  # No subpath for local development
+else:
+    app_subpath = env('APP_SUBPATH', default='')  # Use APP_SUBPATH for production
+
 STATIC_URL = f'{app_subpath}/static/' if app_subpath else '/static/'
 MEDIA_URL = f'{app_subpath}/media/' if app_subpath else '/media/'
 
@@ -364,7 +379,7 @@ SIMPLE_JWT = {
 SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
-SECURE_SSL_REDIRECT = not DEBUG
+SECURE_SSL_REDIRECT = not DEBUG  # Disabled in development (DEBUG=True), enabled in production (DEBUG=False)
 SECURE_CONTENT_SECURITY_POLICY = {
     'default-src': ("'self'",),
     'script-src': ("'self'", "'unsafe-inline'"),
@@ -464,8 +479,8 @@ RATE_LIMIT_CONFIG = {
     'CACHE_BACKEND': 'default',
 }
 
+# Production-only security hardening
 if not DEBUG:
-    # Production-only hardening
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True

@@ -4,6 +4,35 @@ from django.utils import timezone
 from apps.content.models import Article, Category, Tag, File
 from apps.audit.services import AuditService
 from apps.core.models import Role
+import json
+
+
+def serialize_change_value(value):
+    """
+    Convert non-JSON-serializable objects to JSON-serializable format.
+    This is needed for storing changes in AuditLog.changes JSONField.
+    
+    Handles:
+    - ImageFieldFile objects → string representation
+    - File objects → string representation
+    - Other objects → str() representation
+    """
+    if value is None:
+        return None
+    
+    # Handle file-like objects (ImageFieldFile, FieldFile, etc.)
+    if hasattr(value, 'name'):
+        # For file objects, return the file name/path
+        return str(value.name) if value.name else None
+    
+    # Handle objects that might not be JSON serializable
+    try:
+        # Test if it's JSON serializable
+        json.dumps(value)
+        return value
+    except (TypeError, ValueError):
+        # If not, convert to string
+        return str(value)
 
 
 class InternalArticleCreateSerializer(serializers.ModelSerializer):
@@ -24,11 +53,13 @@ class InternalArticleCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Article
         fields = [
+            'id', 'uuid',  # Include ID in response so frontend can update form
             'title_id', 'title_en', 'content_id', 'content_en',
             'summary_id', 'summary_en', 'category', 'tags',
             'status', 'access_level', 'allowed_roles',
             'is_bilingual', 'language', 'slug', 'image', 'image_url'
         ]
+        read_only_fields = ['id', 'uuid']  # ID and UUID are read-only (auto-generated)
         extra_kwargs = {
             'title_id': {'required': True},
             'title_en': {'required': False, 'allow_blank': True},
@@ -43,71 +74,43 @@ class InternalArticleCreateSerializer(serializers.ModelSerializer):
             'language': {'default': 'id'},
             'slug': {'required': False},
             'image': {'required': False},
-            'image_url': {'required': False},
+            'image_url': {'required': False, 'allow_blank': True},
         }
     
     def validate_slug(self, value):
-        """Validate slug is unique (if provided)."""
+        """Validate slug is unique within the draft version (for new articles)."""
         if value:
-            # Check if slug already exists
-            if Article.objects.filter(slug=value).exists():
+            # Check if slug already exists in draft version (new articles are always draft)
+            query = Article.objects.filter(slug=value, version_type=Article.VERSION_DRAFT)
+            
+            # For updates (which shouldn't use this serializer), exclude the current article
+            if self.instance and self.instance.pk:
+                query = query.exclude(id=self.instance.id)
+            
+            if query.exists():
                 raise serializers.ValidationError(
-                    "An article with this slug already exists. Please choose a different slug."
+                    "An article with this slug already exists in drafts. Please choose a different slug."
                 )
         return value
     
     def validate(self, data):
         """
-        Validate bilingual requirements based on is_bilingual flag and status.
-        - Draft articles can be single-language
-        - Published articles must be bilingual
-        Also checks for auto-generated slug uniqueness.
+        Validate for creation.
+        Ensure all drafts are marked as draft version type.
         """
-        status = data.get('status', 'draft')
-        is_bilingual = data.get('is_bilingual', False)
-        
-        # For published articles, enforce bilingual
-        if status != 'draft':
-            if not data.get('title_id') or not data.get('title_en'):
-                raise serializers.ValidationError(
-                    "Both Indonesian and English titles are required for published articles"
-                )
-            if not data.get('content_id') or not data.get('content_en'):
-                raise serializers.ValidationError(
-                    "Both Indonesian and English content are required for published articles"
-                )
-        # For draft articles with is_bilingual=True, enforce both languages
-        elif is_bilingual:
-            if not data.get('title_id') or not data.get('title_en'):
-                raise serializers.ValidationError(
-                    "Both Indonesian and English titles are required for bilingual articles"
-                )
-            if not data.get('content_id') or not data.get('content_en'):
-                raise serializers.ValidationError(
-                    "Both Indonesian and English content are required for bilingual articles"
-                )
-        # Draft articles can be single-language (is_bilingual=False)
-        
-        # Check for slug uniqueness when auto-generating
-        if not data.get('slug') and data.get('title_id'):
-            # Auto-generate slug from title_id
-            from django.utils.text import slugify
-            generated_slug = slugify(data['title_id'])
-            if Article.objects.filter(slug=generated_slug).exists():
-                raise serializers.ValidationError({
-                    'title_id': "An article with a similar title already exists. "
-                                "Please provide a unique title or specify a custom slug."
-                })
-        
+        # New articles are always created as draft version
+        data['version_type'] = Article.VERSION_DRAFT
         return data
     
     def create(self, validated_data):
-        """Create article with current user as author."""
+        """Create article as draft version with current user as author."""
         tags = validated_data.pop('tags', [])
         allowed_roles = validated_data.pop('allowed_roles', [])
         
         # Set author to current user
         validated_data['author'] = self.context['request'].user
+        # Ensure it's a draft version
+        validated_data['version_type'] = Article.VERSION_DRAFT
         
         article = Article.objects.create(**validated_data)
         
@@ -121,22 +124,26 @@ class InternalArticleCreateSerializer(serializers.ModelSerializer):
         
         # Log creation
         try:
+            # Serialize initial values for audit log
+            changes = {
+                'title_en': serialize_change_value(article.title_en),
+                'status': serialize_change_value(article.status),
+                'access_level': serialize_change_value(article.access_level),
+            }
             AuditService.log_action(
                 user=self.context['request'].user,
                 action='create',
                 content_type='Article',
                 content_id=article.id,
                 content_display=article.title_en,
-                changes={
-                    'title_en': article.title_en,
-                    'status': article.status,
-                    'access_level': article.access_level,
-                },
+                changes=changes,
                 ip_address=self._get_client_ip(),
                 user_agent=self.context['request'].META.get('HTTP_USER_AGENT', '')
             )
-        except Exception:
-            pass
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to log audit for article creation {article.id}: {str(e)}", exc_info=True)
         
         return article
     
@@ -167,11 +174,13 @@ class InternalArticleUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Article
         fields = [
+            'id', 'uuid',  # Include ID in response for frontend to track updates
             'title_id', 'title_en', 'content_id', 'content_en',
             'summary_id', 'summary_en', 'category', 'tags',
             'status', 'access_level', 'allowed_roles',
             'is_bilingual', 'language', 'slug', 'image', 'image_url'
         ]
+        read_only_fields = ['id', 'uuid']  # ID and UUID are read-only
         extra_kwargs = {
             'title_id': {'required': False},
             'title_en': {'required': False, 'allow_blank': True},
@@ -180,24 +189,47 @@ class InternalArticleUpdateSerializer(serializers.ModelSerializer):
             'summary_id': {'required': False, 'allow_blank': True},
             'summary_en': {'required': False, 'allow_blank': True},
             'slug': {'required': False},
-            'image': {'required': False},
-            'image_url': {'required': False},
+            'image': {'required': False, 'allow_null': True},
+            'image_url': {'required': False, 'allow_blank': True, 'allow_null': True},
         }
     
     def validate_slug(self, value):
-        """Validate slug can only be changed for draft articles."""
+        """
+        Validate slug for update.
+        
+        Rules:
+        - Only allow slug changes for draft articles
+        - Slug must be unique within the same version_type
+        - Can use same slug as published version if it's a draft
+        """
         if self.instance and self.instance.pk:
             # This is an update operation (article already exists)
             current_slug = self.instance.slug
+            current_id = self.instance.id
             
-            # If slug is being changed
-            if value != current_slug:
+            # If slug is being changed (not None and different from current)
+            if value and value != current_slug:
                 # Only allow slug changes for draft articles
                 if self.instance.status != 'draft':
                     raise serializers.ValidationError(
                         "Slug cannot be modified after publication. "
                         "Slug is locked for all articles except drafts to preserve URL stability."
                     )
+                # Check if the new slug is already used by another draft article
+                # Important: Exclude by both ID and ensuring it's a DIFFERENT article
+                if Article.objects.exclude(id=current_id).filter(
+                    slug=value,
+                    version_type=Article.VERSION_DRAFT
+                ).exists():
+                    raise serializers.ValidationError(
+                        "An article with this slug already exists in drafts. Please choose a different slug."
+                    )
+        elif value:
+            # This is a CREATE operation - check if slug is unique in draft version
+            if Article.objects.filter(slug=value, version_type=Article.VERSION_DRAFT).exists():
+                raise serializers.ValidationError(
+                    "An article with this slug already exists in drafts. Please choose a different slug."
+                )
         
         return value
     
@@ -259,33 +291,57 @@ class InternalArticleUpdateSerializer(serializers.ModelSerializer):
     
     def update(self, instance, validated_data):
         """Update article and track changes."""
+        from django.db import transaction
+        
         tags = validated_data.pop('tags', None)
         allowed_roles = validated_data.pop('allowed_roles', None)
         
         # Track changes for audit log
+        # IMPORTANT: Serialize values to JSON-compatible format to avoid "not JSON serializable" errors
         changes = {}
         for field, value in validated_data.items():
-            if getattr(instance, field) != value:
-                changes[field] = [getattr(instance, field), value]
+            old_value = getattr(instance, field)
+            if old_value != value:
+                # Serialize both old and new values to handle non-JSON-serializable objects like ImageFieldFile
+                changes[field] = [
+                    serialize_change_value(old_value),
+                    serialize_change_value(value)
+                ]
         
         # Update fields
         for field, value in validated_data.items():
             setattr(instance, field, value)
         
         instance.updated_at = timezone.now()
-        instance.save()
         
-        # Update tags
-        if tags is not None:
-            instance.tags.set(tags)
-            changes['tags'] = 'updated'
+        # Use atomic transaction with savepoint to handle nested transactions safely
+        # This allows proper handling whether DRF has already started a transaction or not
+        try:
+            with transaction.atomic():
+                # Save instance to database
+                instance.save()
+                
+                # Update tags (M2M relationship)
+                if tags is not None:
+                    instance.tags.set(tags)
+                    changes['tags'] = 'updated'
+                
+                # Update allowed roles (M2M relationship)  
+                if allowed_roles is not None:
+                    instance.allowed_roles.set(allowed_roles)
+                    changes['allowed_roles'] = 'updated'
+        except transaction.TransactionManagementError:
+            # If there's already an active transaction, just perform operations without explicit transaction
+            instance.save()
+            if tags is not None:
+                instance.tags.set(tags)
+                changes['tags'] = 'updated'
+            if allowed_roles is not None:
+                instance.allowed_roles.set(allowed_roles)
+                changes['allowed_roles'] = 'updated'
         
-        # Update allowed roles
-        if allowed_roles is not None:
-            instance.allowed_roles.set(allowed_roles)
-            changes['allowed_roles'] = 'updated'
-        
-        # Log update
+        # Log update (outside transaction to avoid nesting issues)
+        # Wrap in try-except to ensure audit logging errors don't break the update
         try:
             AuditService.log_action(
                 user=self.context['request'].user,
@@ -297,8 +353,11 @@ class InternalArticleUpdateSerializer(serializers.ModelSerializer):
                 ip_address=self._get_client_ip(),
                 user_agent=self.context['request'].META.get('HTTP_USER_AGENT', '')
             )
-        except Exception:
-            pass
+        except Exception as e:
+            # Log but don't fail - audit logging should not break the main operation
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to log audit for article {instance.id}: {str(e)}", exc_info=True)
         
         return instance
     
@@ -325,6 +384,8 @@ class InternalArticleDetailSerializer(serializers.ModelSerializer):
     can_delete = serializers.SerializerMethodField()
     can_publish = serializers.SerializerMethodField()
     liked_by_user = serializers.SerializerMethodField()
+    draft_article_id = serializers.SerializerMethodField()
+    published_version_id = serializers.SerializerMethodField()
     
     class Meta:
         model = Article
@@ -334,11 +395,12 @@ class InternalArticleDetailSerializer(serializers.ModelSerializer):
             'tags', 'files', 'image', 'image_url', 'status', 'is_published', 'access_level', 'is_bilingual', 'language',
             'author_name', 'author_email', 'view_count', 'like_count', 'liked_by_user',
             'published_at', 'scheduled_at', 'created_at', 'updated_at', 'rejection_reason', 'approval_comment',
-            'can_edit', 'can_delete', 'can_publish'
+            'can_edit', 'can_delete', 'can_publish', 'version_type', 'draft_article_id', 'published_version_id'
         ]
         read_only_fields = [
             'id', 'uuid', 'slug', 'view_count', 'like_count', 'created_at', 'updated_at',
-            'category', 'tags', 'files', 'image_url', 'author_name', 'author_email'
+            'category', 'tags', 'files', 'image_url', 'author_name', 'author_email',
+            'version_type', 'draft_article_id', 'published_version_id'
         ]
     
     def get_category(self, obj):
@@ -403,6 +465,18 @@ class InternalArticleDetailSerializer(serializers.ModelSerializer):
         # Check if user has liked this article
         from apps.content.models import UserLike
         return UserLike.objects.filter(article=obj, user=user).exists()
+    
+    def get_draft_article_id(self, obj):
+        """Get ID of draft article (for published versions)."""
+        if obj.draft_article:
+            return obj.draft_article.id
+        return None
+    
+    def get_published_version_id(self, obj):
+        """Get ID of published version (for draft articles)."""
+        if hasattr(obj, 'published_version') and obj.published_version:
+            return obj.published_version.id
+        return None
 
 
 class SubmitReviewSerializer(serializers.Serializer):
@@ -507,6 +581,12 @@ class DashboardArticleSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     files = FileSerializer(many=True, read_only=True)
     liked_by_user = serializers.SerializerMethodField()
+    version_type = serializers.CharField(read_only=True)
+    draft_article_id = serializers.IntegerField(source='draft_article.id', read_only=True, allow_null=True)
+    published_version_id = serializers.IntegerField(source='published_version.id', read_only=True, allow_null=True)
+    slug = serializers.CharField(read_only=True)
+    view_count = serializers.SerializerMethodField()
+    like_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Article
@@ -514,7 +594,8 @@ class DashboardArticleSerializer(serializers.ModelSerializer):
             'id', 'title_id', 'title_en', 'content_id', 'content_en',
             'summary_id', 'summary_en', 'image', 'image_url', 'files', 'tags', 'category', 'category_name', 'author',
             'status', 'status_display', 'view_count', 'like_count', 'liked_by_user', 'is_published',
-            'created_at', 'updated_at', 'rejection_reason', 'approval_comment'
+            'created_at', 'updated_at', 'rejection_reason', 'approval_comment', 'version_type', 
+            'draft_article_id', 'published_version_id', 'slug'
         ]
         read_only_fields = fields
     
@@ -555,3 +636,19 @@ class DashboardArticleSerializer(serializers.ModelSerializer):
         # Check if user has liked this article
         from apps.content.models import UserLike
         return UserLike.objects.filter(article=obj, user=user).exists()
+    
+    def get_view_count(self, obj):
+        """Get view count from published version if it exists, otherwise from draft."""
+        # Get stats from published version (where public views occur)
+        if hasattr(obj, 'published_version') and obj.published_version:
+            return obj.published_version.view_count
+        # Fallback to draft's view count
+        return obj.view_count
+    
+    def get_like_count(self, obj):
+        """Get like count from published version if it exists, otherwise from draft."""
+        # Get stats from published version (where public likes occur)
+        if hasattr(obj, 'published_version') and obj.published_version:
+            return obj.published_version.like_count
+        # Fallback to draft's like count
+        return obj.like_count

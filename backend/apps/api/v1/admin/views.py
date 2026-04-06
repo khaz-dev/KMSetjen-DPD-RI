@@ -1286,6 +1286,12 @@ class CategoryViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         """Save updated category."""
         serializer.save()
+    
+    def perform_destroy(self, instance):
+        """Delete category and clean up image file."""
+        # The image deletion is handled in the Category.delete() method
+        instance.delete()
+
 
 
 class TagViewSet(viewsets.ModelViewSet):

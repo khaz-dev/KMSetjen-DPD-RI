@@ -25,7 +25,7 @@ Complete step-by-step instructions for setting up KMSetjen DPD RI for developmen
 | Node.js | 16 | Frontend build tool |
 | npm | 8+ | Package manager |
 | Git | 2.30+ | Version control |
-| PostgreSQL | 12 (or SQLite) | Database |
+| PostgreSQL | 12+ | Database (required) |
 
 ### System Requirements
 
@@ -171,7 +171,7 @@ SECRET_KEY=your-secret-key-here-change-in-production
 ALLOWED_HOSTS=localhost,127.0.0.1
 
 # Database
-DATABASE_URL=sqlite:///db.sqlite3
+DATABASE_URL=postgresql://postgres:Okkdpdri@2026@localhost:5432/kmsdb
 # Or for PostgreSQL:
 # DATABASE_URL=postgresql://user:password@localhost:5432/kmsetjen
 
@@ -229,13 +229,20 @@ VITE_DEFAULT_LANGUAGE=en
 
 ## Database Setup
 
-### SQLite (Default for Development)
+### PostgreSQL Configuration
 
-SQLite is already configured and requires no additional setup. The database file will be created automatically:
+PostgreSQL must be running with the standard credentials:
 
 ```bash
+# Verify PostgreSQL is running
+psql --version
+
+# Connect to PostgreSQL
+psql -U postgres -h localhost
+
+# The database 'kmsdb' will be created automatically during migrations
 cd backend
-python manage.py migrate  # Creates db.sqlite3
+python manage.py migrate
 ```
 
 ### PostgreSQL (Recommended for Production)
@@ -527,7 +534,7 @@ python manage.py runserver 0.0.0.0:8002
 
 ```bash
 # Check database URL in .env
-# For SQLite: sqlite:///db.sqlite3
+# PostgreSQL connection (automatic via .env from DB_NAME, DB_USER, DB_PASSWORD)
 # For PostgreSQL: postgresql://user:password@host:5432/dbname
 
 # Verify PostgreSQL is running
@@ -536,7 +543,7 @@ brew services list  # macOS
 
 # Reset database (careful - deletes data!)
 cd backend
-rm db.sqlite3
+# Database is managed by PostgreSQL, migrations handle schema
 python manage.py migrate
 ```
 

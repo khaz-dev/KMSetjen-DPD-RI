@@ -16,7 +16,7 @@ We are committed to providing a welcoming and inspiring community for all. Pleas
 - Python 3.10+
 - Node.js 16+
 - Git
-- PostgreSQL (or SQLite for development)
+- PostgreSQL 12+ (required)
 - Docker (optional)
 
 ### Development Setup

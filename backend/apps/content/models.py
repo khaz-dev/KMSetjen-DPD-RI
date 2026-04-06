@@ -10,6 +10,55 @@ from django.core.validators import FileExtensionValidator
 
 
 # ============================================================================
+# FILE UPLOAD FUNCTIONS (Callable upload_to functions)
+# ============================================================================
+
+def article_image_upload_to(instance, filename):
+    """
+    Generate upload path for article images.
+    
+    Format: articles/article_{id}_image.{ext}
+    
+    Using a callable instead of format string (%s) avoids Django's
+    string formatting issues and provides better error handling.
+    """
+    if not instance.pk:
+        # For new instances without pk, use a temporary name
+        # The file will be moved to the final path after save()
+        import os
+        name, ext = os.path.splitext(filename)
+        return f'articles/article_new_image{ext}'
+    
+    import os
+    name, ext = os.path.splitext(filename)
+    return f'articles/article_{instance.pk}_image{ext}'
+
+
+def category_image_upload_to(instance, filename):
+    """
+    Generate upload path for category images.
+    
+    Format: categories/{category_slug}.{ext}
+    
+    Using the slug (category name) instead of ID ensures:
+    - Consistent, predictable filenames
+    - Server memory efficiency (replacing an image keeps same filename)
+    - Better cache behavior
+    - Easy file identification and management
+    """
+    if not instance.slug:
+        # For new instances without slug, generate one temporarily
+        from django.utils.text import slugify
+        slug = slugify(instance.name_en) if instance.name_en else 'category'
+    else:
+        slug = instance.slug
+    
+    import os
+    name, ext = os.path.splitext(filename)
+    return f'categories/{slug}{ext}'
+
+
+# ============================================================================
 # CATEGORY MODEL
 # ============================================================================
 
@@ -46,7 +95,7 @@ class Category(models.Model):
         help_text='Hex color code'
     )
     image = models.ImageField(
-        upload_to='categories/',
+        upload_to=category_image_upload_to,
         null=True,
         blank=True,
         help_text='Category image for visual representation'
@@ -89,6 +138,24 @@ class Category(models.Model):
         if not self.slug:
             self.slug = slugify(self.name_en)
         super().save(*args, **kwargs)
+    
+    def delete(self, *args, **kwargs):
+        """
+        Delete category and clean up its image file from storage.
+        """
+        # Delete image file from storage if exists
+        if self.image:
+            storage_path = self.image.name
+            if storage_path:
+                try:
+                    from django.core.files.storage import default_storage
+                    default_storage.delete(storage_path)
+                except Exception:
+                    pass  # Log but don't fail if deletion fails
+        
+        # Call parent delete which handles CASCADE to child categories and articles
+        super().delete(*args, **kwargs)
+
 
 
 # ============================================================================
@@ -180,6 +247,31 @@ class Article(models.Model):
         (STATUS_ARCHIVED, 'Diarsipkan'),
     ]
     
+    # Versioning
+    VERSION_DRAFT = 'draft'
+    VERSION_PUBLISHED = 'published'
+    VERSION_CHOICES = [
+        (VERSION_DRAFT, 'Draft Version'),
+        (VERSION_PUBLISHED, 'Published Version'),
+    ]
+    
+    version_type = models.CharField(
+        max_length=20,
+        default=VERSION_DRAFT,
+        choices=VERSION_CHOICES,
+        db_index=True,
+        help_text='Whether this is a draft or published version'
+    )
+    
+    draft_article = models.OneToOneField(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='published_version',
+        help_text='Link to draft version (only for published versions)'
+    )
+    
     # Identifiers
     uuid = models.UUIDField(
         unique=True,
@@ -188,7 +280,6 @@ class Article(models.Model):
         help_text='Unique external identifier'
     )
     slug = models.SlugField(
-        unique=True,
         max_length=255,
         db_index=True,
         help_text='URL-friendly slug'
@@ -214,7 +305,7 @@ class Article(models.Model):
     
     # Featured image
     image = models.ImageField(
-        upload_to='articles/',
+        upload_to=article_image_upload_to,
         null=True,
         blank=True,
         help_text='Article featured image for visual representation'
@@ -347,12 +438,19 @@ class Article(models.Model):
         verbose_name_plural = 'Articles'
         ordering = ['-published_at', '-created_at']
         indexes = [
-            models.Index(fields=['slug']),
+            models.Index(fields=['version_type', 'slug']),
             models.Index(fields=['category']),
             models.Index(fields=['is_published', 'status']),
             models.Index(fields=['author']),
             models.Index(fields=['-published_at']),
             models.Index(fields=['access_level']),
+        ]
+        constraints = [
+            # Slug must be unique per version_type (draft can have same slug as published)
+            models.UniqueConstraint(
+                fields=['version_type', 'slug'],
+                name='unique_slug_per_version_type'
+            ),
         ]
     
     def __str__(self):
@@ -363,6 +461,35 @@ class Article(models.Model):
         if not self.slug:
             self.slug = slugify(self.title_id)
         super().save(*args, **kwargs)
+    
+    def delete(self, *args, **kwargs):
+        """
+        Custom delete to handle versioning properly:
+        - When deleting a DRAFT: only delete its files, not published version
+        - When deleting a PUBLISHED: remove the draft_article reference from it
+        - Never cascade delete from draft to published version
+        """
+        # Delete featured image file from storage if exists
+        if self.image:
+            storage_path = self.image.name
+            if storage_path:
+                try:
+                    from django.core.files.storage import default_storage
+                    default_storage.delete(storage_path)
+                except Exception:
+                    pass  # Log error but don't fail
+        
+        # Delete all file attachments from storage
+        for file_obj in self.files.all():
+            if file_obj.file:
+                try:
+                    file_obj.file.delete(save=False)
+                except Exception:
+                    pass  # Log error but don't fail
+        
+        # Call parent delete which handles CASCADE for File.article
+        # Files will be deleted from DB, but we've already handled storage cleanup
+        super().delete(*args, **kwargs)
     
     def can_view(self, user=None):
         """

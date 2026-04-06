@@ -2,9 +2,34 @@
 Core models: User, Role, Language
 """
 import uuid
+import os
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
+
+
+# ============================================================================
+# FILE UPLOAD FUNCTIONS
+# ============================================================================
+
+def avatar_upload_to(instance, filename):
+    """
+    Generate upload path for user avatars.
+    
+    Format: avatars/user_{id}.(ext)
+    
+    Using consistent naming ensures:
+    - Predictable filenames
+    - Server memory efficiency (replacing avatar keeps same filename)
+    - Easy file identification
+    """
+    if not instance.pk:
+        # For new instances without pk, use a temporary name
+        name, ext = os.path.splitext(filename)
+        return f'avatars/user_new{ext}'
+    
+    name, ext = os.path.splitext(filename)
+    return f'avatars/user_{instance.pk}{ext}'
 
 
 # ============================================================================
@@ -128,7 +153,7 @@ class User(AbstractUser):
     )
     phone = models.CharField(max_length=20, blank=True, help_text='Nomor telepon')
     avatar = models.ImageField(
-        upload_to='avatars/',
+        upload_to=avatar_upload_to,
         blank=True,
         null=True,
         help_text='Photo profil'
@@ -273,3 +298,20 @@ class User(AbstractUser):
     def can_manage_users(self) -> bool:
         """Check if user can manage users (admin only)."""
         return self.is_admin()
+    
+    def delete(self, *args, **kwargs):
+        """
+        Delete user and clean up avatar file from storage.
+        """
+        # Delete avatar file from storage if exists
+        if self.avatar:
+            storage_path = self.avatar.name
+            if storage_path:
+                try:
+                    from django.core.files.storage import default_storage
+                    default_storage.delete(storage_path)
+                except Exception:
+                    pass  # Log but don't fail if deletion fails
+        
+        # Call parent delete which handles CASCADE relationships
+        super().delete(*args, **kwargs)

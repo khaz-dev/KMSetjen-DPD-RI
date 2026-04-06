@@ -54,9 +54,9 @@ jobs:
       postgres:
         image: postgres:15-alpine
         env:
-          POSTGRES_DB: test_kmsdb
+          POSTGRES_DB: kmsdb
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: Okkdpdri@2026
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -95,19 +95,19 @@ jobs:
     - name: Run model tests
       working-directory: backend
       env:
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_kmsdb
+        DATABASE_URL: postgresql://postgres:Okkdpdri@2026@localhost:5432/kmsdb
       run: pytest tests/models/ -v --cov=apps --cov-report=xml
     
     - name: Run security tests
       working-directory: backend
       env:
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_kmsdb
+        DATABASE_URL: postgresql://postgres:Okkdpdri@2026@localhost:5432/kmsdb
       run: pytest tests/security/ -v
     
     - name: Run API tests
       working-directory: backend
       env:
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_kmsdb
+        DATABASE_URL: postgresql://postgres:Okkdpdri@2026@localhost:5432/kmsdb
       run: pytest tests/api/ -v --cov=apps --cov-report=xml --cov-append
     
     - name: Upload coverage

@@ -94,17 +94,17 @@ if ! systemctl is-active --quiet postgresql; then
 fi
 
 # Create database and user (if not exists)
-if ! sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw kmsdb_prod; then
+if ! sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw kmsdb; then
     log_info "Creating PostgreSQL database and user..."
     sudo -u postgres psql << EOF
-CREATE DATABASE kmsdb_prod;
-CREATE USER kms_user WITH PASSWORD 'SecureDBPassword2026Change';
-ALTER ROLE kms_user SET client_encoding TO 'utf8';
-ALTER ROLE kms_user SET default_transaction_isolation TO 'read committed';
-ALTER ROLE kms_user SET default_transaction_deferrable TO on;
-ALTER ROLE kms_user SET default_transaction_read_committed TO on;
-ALTER ROLE kms_user SET timezone TO 'UTC';
-GRANT ALL PRIVILEGES ON DATABASE kmsdb_prod TO kms_user;
+CREATE DATABASE kmsdb;
+CREATE USER postgres WITH PASSWORD 'Okkdpdri@2026';
+ALTER ROLE postgres SET client_encoding TO 'utf8';
+ALTER ROLE postgres SET default_transaction_isolation TO 'read committed';
+ALTER ROLE postgres SET default_transaction_deferrable TO on;
+ALTER ROLE postgres SET default_transaction_read_committed TO on;
+ALTER ROLE postgres SET timezone TO 'UTC';
+GRANT ALL PRIVILEGES ON DATABASE kmsdb TO postgres;
 EOF
     log_success "PostgreSQL database and user created"
 else

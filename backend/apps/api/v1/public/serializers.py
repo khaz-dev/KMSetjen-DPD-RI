@@ -30,7 +30,13 @@ class CategoryDetailSerializer(serializers.ModelSerializer):
                   'slug', 'icon', 'color', 'image', 'order_index', 'article_count', 'children']
     
     def get_article_count(self, obj):
-        """Count published articles based on user access level."""
+        """Count published articles based on user access level.
+        
+        CRITICAL: Only count published version records (version_type='published')
+        to avoid duplicates from the draft article that gets marked as published.
+        """
+        from apps.content.models import Article
+        
         # Get request and user from context
         request = self.context.get('request')
         user = request.user if request else None
@@ -38,17 +44,21 @@ class CategoryDetailSerializer(serializers.ModelSerializer):
         # Check if user is authenticated
         if user and user.is_authenticated:
             # Authenticated users can see public + internal + role-based articles
+            # CRITICAL: Filter by version_type='published' to only count published versions
             return obj.articles.filter(
                 is_published=True,
                 status='published',
-                access_level__in=['public', 'internal', 'role_based']
+                access_level__in=['public', 'internal', 'role_based'],
+                version_type=Article.VERSION_PUBLISHED
             ).count()
         else:
             # Anonymous users only see public articles
+            # CRITICAL: Filter by version_type='published' to only count published versions
             return obj.articles.filter(
                 is_published=True,
                 status='published',
-                access_level='public'
+                access_level='public',
+                version_type=Article.VERSION_PUBLISHED
             ).count()
     
     def get_children(self, obj):
@@ -197,12 +207,16 @@ class CategoryListSerializer(serializers.ModelSerializer):
     def get_article_count(self, obj):
         """Count published articles based on user role and access level.
         
+        CRITICAL: Only count published version records (version_type='published')
+        to avoid duplicates from the draft article that gets marked as published.
+        
         Account for role-based filtering:
         - Anonymous users: only 'public' articles
         - PUBLIC role users: only 'public' articles
         - Other auth users (READER/CONTRIBUTOR/EDITOR/ADMIN): 'public' + 'internal' + 'role_based'
         """
         from apps.core.models import Role
+        from apps.content.models import Article
         
         request = self.context.get('request')
         user = request.user if request else None
@@ -214,27 +228,33 @@ class CategoryListSerializer(serializers.ModelSerializer):
             
             if primary_role and primary_role.code == Role.PUBLIC:
                 # PUBLIC role users only see 'public' articles (like anonymous)
+                # CRITICAL: Filter by version_type='published' to only count published versions
                 return obj.articles.filter(
                     is_published=True,
                     status='published',
-                    access_level='public'
+                    access_level='public',
+                    version_type=Article.VERSION_PUBLISHED
                 ).count()
             else:
                 # Other authenticated users (READER/CONTRIBUTOR/EDITOR/ADMIN) can see:
                 # - public articles (always)
                 # - internal articles (for all authenticated staff)
                 # - role-based articles (if they have the specific role)
+                # CRITICAL: Filter by version_type='published' to only count published versions
                 return obj.articles.filter(
                     is_published=True,
                     status='published',
-                    access_level__in=['public', 'internal', 'role_based']
+                    access_level__in=['public', 'internal', 'role_based'],
+                    version_type=Article.VERSION_PUBLISHED
                 ).count()
         else:
             # Anonymous users only see public articles
+            # CRITICAL: Filter by version_type='published' to only count published versions
             return obj.articles.filter(
                 is_published=True,
                 status='published',
-                access_level='public'
+                access_level='public',
+                version_type=Article.VERSION_PUBLISHED
             ).count()
 
 

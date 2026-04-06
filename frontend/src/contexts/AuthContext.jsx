@@ -67,8 +67,19 @@ export const AuthProvider = ({ children }) => {
     try {
       setError(null);
       const response = await authService.updateProfile(data);
-      setUser({ ...user, ...response.data });
-      return response.data;
+      // Backend returns { success, message, user: {...} }
+      const userData = response.data.user || response.data;
+      
+      // Properly merge the updated data with existing user data
+      const mergedUser = {
+        ...user,
+        ...userData,
+        // Ensure avatar is properly set
+        avatar: userData.avatar !== undefined ? userData.avatar : user.avatar,
+      };
+      
+      setUser(mergedUser);
+      return userData;
     } catch (err) {
       const message = err.response?.data?.detail || 'Update failed';
       setError(message);

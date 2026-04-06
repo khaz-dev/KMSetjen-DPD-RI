@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../hooks/useLanguage";
 import { useTheme } from "../hooks/useTheme";
+import { getAbsoluteMediaUrl } from "../services/api";
 import {
   FaUser,
   FaCog,
@@ -103,8 +104,16 @@ const Header = () => {
             ) : (
               <Dropdown className="ms-3" align="end">
                 <Dropdown.Toggle variant="none" className="user-menu-toggle">
-                  <FaUser className="me-2" />
-                  {user?.first_name || user?.username}
+                  {user?.avatar ? (
+                    <img
+                      src={getAbsoluteMediaUrl(user.avatar)}
+                      alt={user?.username || "User"}
+                      className="navbar-avatar"
+                      title={user?.username || "User"}
+                    />
+                  ) : (
+                    <FaUser className="navbar-avatar-icon" />
+                  )}
                 </Dropdown.Toggle>
 
                 <Dropdown.Menu>

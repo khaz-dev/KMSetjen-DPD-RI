@@ -2,6 +2,24 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002/api';
 
+// Extract backend base URL (e.g., http://localhost:8002)
+const BACKEND_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, '');
+
+/**
+ * Convert relative media URL to absolute URL
+ * @param {string} mediaUrl - Relative or absolute media URL
+ * @returns {string} Absolute media URL with backend domain
+ */
+export const getAbsoluteMediaUrl = (mediaUrl) => {
+  if (!mediaUrl) return null;
+  // If already absolute URL, return as-is
+  if (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://')) {
+    return mediaUrl;
+  }
+  // If relative URL, prepend backend base URL
+  return BACKEND_BASE_URL + mediaUrl;
+};
+
 // Suppress 404 console errors for internal article GET requests
 // This is expected behavior for non-staff users accessing articles they don't own
 const originalConsoleError = console.error;
@@ -45,6 +63,12 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
       console.debug(`[API] Added Authorization header for: ${config.method.toUpperCase()} ${config.url}`);
+    }
+    
+    // CRITICAL FIX: For FormData uploads, delete Content-Type header so browser sets multipart/form-data with boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+      console.debug(`[API] FormData detected - Content-Type header deleted to allow multipart/form-data for: ${config.url}`);
     }
     
     // For internal article GET requests, allow 404 responses so axios doesn't log them as errors
@@ -288,9 +312,18 @@ export const internalAPI = {
     apiClient.post(`/v1/internal/articles/${id}/archive/`),
   
   // Slug Validation
-  checkSlug: (slug, excludeId = null) => {
-    const params = { slug };
-    if (excludeId) params.exclude_id = excludeId;
+  checkSlug: (slug, excludeId = null, versionType = 'draft') => {
+    const params = { slug, version_type: versionType };
+    // IMPORTANT: Only add exclude_id if it's a valid positive integer
+    // This ensures we exclude the current article when editing
+    // Using typeof check to handle 0, which is falsy but still a valid ID
+    if (excludeId && typeof excludeId === 'number' && excludeId > 0) {
+      params.exclude_id = excludeId;
+    } else if (excludeId !== null && excludeId !== undefined && String(excludeId).match(/^\d+$/)) {
+      // Also handle string IDs that are numeric
+      params.exclude_id = String(excludeId);
+    }
+    console.log('[API_checkSlug] Calling with params:', params);
     return apiClient.get('/v1/internal/articles/check-slug/', { params });
   },
 

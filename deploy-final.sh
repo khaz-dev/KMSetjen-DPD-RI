@@ -129,8 +129,8 @@ log_success "PostgreSQL is running"
 
 log_step "Checking if database exists..."
 export PGPASSWORD=$(grep "^DB_PASSWORD=" "$PROJECT_DIR/.env" | cut -d= -f2)
-DB_USER=$(grep "^DB_USER=" "$PROJECT_DIR/.env" | cut -d= -f2 || echo "kms_user")
-DB_NAME=$(grep "^DB_NAME=" "$PROJECT_DIR/.env" | cut -d= -f2 || echo "kmsdb_prod")
+DB_USER=$(grep "^DB_USER=" "$PROJECT_DIR/.env" | cut -d= -f2 || echo "postgres")
+DB_NAME=$(grep "^DB_NAME=" "$PROJECT_DIR/.env" | cut -d= -f2 || echo "kmsdb")
 
 if sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw "$DB_NAME"; then
     log_warning "Database already exists, will perform migrations"

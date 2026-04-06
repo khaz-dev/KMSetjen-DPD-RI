@@ -36,7 +36,7 @@
 
 ### Prerequisites
 - Python 3.10+ & Node.js 16+
-- PostgreSQL (or SQLite for development)
+- PostgreSQL 12+ (required)
 - Git
 
 ### Installation (5 minutes)
@@ -98,7 +98,7 @@ npm run dev
 | **Styling** | CSS3 + Bootstrap 5 | Native + 5.2 |
 | **Backend** | Django + DRF | 4.2.8 + 3.14.0 |
 | **Auth** | JWT + OAuth 2.0 | djangorestframework-simplejwt + Google |
-| **Database** | PostgreSQL / SQLite | 12+ / 3.x |
+| **Database** | PostgreSQL | 12+ |
 | **Deployment** | Docker + Docker Compose | Latest |
 | **Web Server** | Nginx + Gunicorn | Latest |
 | **API Client** | Axios | 1.6.2+ |
@@ -324,7 +324,7 @@ We welcome contributions! Here's how to get involved:
 - See [OAuth Setup Guide](docs/GOOGLE_LOGIN_SETUP_COMPLETE.md)
 
 ### Database Connection Error?
-- Ensure PostgreSQL is running (or using SQLite for dev)
+- Ensure PostgreSQL is running
 - Check DATABASE_URL in `.env`
 - Run `python manage.py migrate`
 

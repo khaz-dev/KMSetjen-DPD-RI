@@ -37,6 +37,7 @@ function CategoryManagementPage({ onLogout }) {
     is_active: true
   });
   const [imagePreview, setImagePreview] = useState(null);
+  const [imageRemoved, setImageRemoved] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteCategoryId, setDeleteCategoryId] = useState(null);
   const [deleteCategoryName, setDeleteCategoryName] = useState('');
@@ -128,6 +129,7 @@ function CategoryManagementPage({ onLogout }) {
         is_active: item.is_active !== undefined ? item.is_active : true
       });
       setImagePreview(item.image || null);
+      setImageRemoved(false);
     } else {
       setModalMode('create');
       setSelectedItem(null);
@@ -143,6 +145,7 @@ function CategoryManagementPage({ onLogout }) {
         is_active: true
       });
       setImagePreview(null);
+      setImageRemoved(false);
     }
     setShowModal(true);
   };
@@ -178,6 +181,10 @@ function CategoryManagementPage({ onLogout }) {
           color: formData.color,
           is_active: formData.is_active
         };
+        // In edit mode, if image was explicitly removed, send null to trigger deletion
+        if (modalMode === 'edit' && imageRemoved) {
+          dataToSend.image = null;
+        }
       }
       
       const headers = {
@@ -199,6 +206,7 @@ function CategoryManagementPage({ onLogout }) {
       
       loadItems();
       setShowModal(false);
+      setImageRemoved(false);
       setError(null);
     } catch (err) {
       showError(err.response?.data?.detail || err.response?.data?.name_en?.[0] || t('categories.category_error'));
@@ -246,6 +254,7 @@ function CategoryManagementPage({ onLogout }) {
           image_file: file
         }));
         setImagePreview(reader.result);
+        setImageRemoved(false);
       };
       reader.readAsDataURL(file);
       setError(null);
@@ -259,6 +268,7 @@ function CategoryManagementPage({ onLogout }) {
       image_file: null
     }));
     setImagePreview(null);
+    setImageRemoved(true);
   };
 
   const handleConfirmDelete = async () => {
@@ -391,7 +401,12 @@ function CategoryManagementPage({ onLogout }) {
                             )}
                           </td>
                           <td>{item.name_id || '-'}</td>
-                          <td>{item.description ? item.description.substring(0, 50) + (item.description.length > 50 ? '...' : '') : '-'}</td>
+                          <td>
+                            {(() => {
+                              const description = item.description_id || item.description_en || '';
+                              return description ? description.substring(0, 50) + (description.length > 50 ? '...' : '') : '-';
+                            })()}
+                          </td>
                           <td style={{ textAlign: 'center' }}><Badge bg="info">{item.article_count || 0}</Badge></td>
                           <td>
                             <div className="action-buttons">
@@ -440,46 +455,58 @@ function CategoryManagementPage({ onLogout }) {
         <Modal.Body>
           {error && <Alert variant="danger" onClose={() => setError(null)} dismissible>{error}</Alert>}
           <Form onSubmit={handleSubmitForm}>
-            {/* Names Section */}
-            <Form.Group className="mb-3">
-              <Form.Label>{t('categories.name_en')} *</Form.Label>
-              <Form.Control 
-                type="text" 
-                value={formData.name_en} 
-                onChange={(e) => setFormData({ ...formData, name_en: e.target.value })} 
-                required 
-              />
-            </Form.Group>
-            
-            <Form.Group className="mb-3">
-              <Form.Label>{t('categories.name_id')}</Form.Label>
-              <Form.Control 
-                type="text" 
-                value={formData.name_id} 
-                onChange={(e) => setFormData({ ...formData, name_id: e.target.value })} 
-              />
-            </Form.Group>
+            {/* Row 1: Names Section - Nama Inggris and Nama Indonesia */}
+            <div className="row">
+              <div className="col-md-6">
+                <Form.Group className="mb-3">
+                  <Form.Label>{t('categories.name_en')} *</Form.Label>
+                  <Form.Control 
+                    type="text" 
+                    value={formData.name_en} 
+                    onChange={(e) => setFormData({ ...formData, name_en: e.target.value })} 
+                    required 
+                  />
+                </Form.Group>
+              </div>
+              
+              <div className="col-md-6">
+                <Form.Group className="mb-3">
+                  <Form.Label>{t('categories.name_id')}</Form.Label>
+                  <Form.Control 
+                    type="text" 
+                    value={formData.name_id} 
+                    onChange={(e) => setFormData({ ...formData, name_id: e.target.value })} 
+                  />
+                </Form.Group>
+              </div>
+            </div>
 
-            {/* Descriptions Section */}
-            <Form.Group className="mb-3">
-              <Form.Label>{t('categories.description_en')}</Form.Label>
-              <Form.Control 
-                as="textarea" 
-                rows={2} 
-                value={formData.description_en} 
-                onChange={(e) => setFormData({ ...formData, description_en: e.target.value })} 
-              />
-            </Form.Group>
+            {/* Row 2: Descriptions Section - Deskripsi Inggris and Deskripsi Indonesia */}
+            <div className="row">
+              <div className="col-md-6">
+                <Form.Group className="mb-3">
+                  <Form.Label>{t('categories.description_en')}</Form.Label>
+                  <Form.Control 
+                    as="textarea" 
+                    rows={2} 
+                    value={formData.description_en} 
+                    onChange={(e) => setFormData({ ...formData, description_en: e.target.value })} 
+                  />
+                </Form.Group>
+              </div>
 
-            <Form.Group className="mb-3">
-              <Form.Label>{t('categories.description_id')}</Form.Label>
-              <Form.Control 
-                as="textarea" 
-                rows={2} 
-                value={formData.description_id} 
-                onChange={(e) => setFormData({ ...formData, description_id: e.target.value })} 
-              />
-            </Form.Group>
+              <div className="col-md-6">
+                <Form.Group className="mb-3">
+                  <Form.Label>{t('categories.description_id')}</Form.Label>
+                  <Form.Control 
+                    as="textarea" 
+                    rows={2} 
+                    value={formData.description_id} 
+                    onChange={(e) => setFormData({ ...formData, description_id: e.target.value })} 
+                  />
+                </Form.Group>
+              </div>
+            </div>
 
             {/* Image Upload Section */}
             <Form.Group className="mb-3">
@@ -541,6 +568,41 @@ function CategoryManagementPage({ onLogout }) {
             <div className="row">
               <div className="col-md-6">
                 <Form.Group className="mb-3">
+                  <Form.Label>{t('categories.color')} <small className="text-muted">({t('common.optional')})</small></Form.Label>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <Form.Control 
+                      type="color" 
+                      value={formData.color} 
+                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                      style={{ width: '60px', height: '40px', padding: '4px', cursor: 'pointer' }}
+                    />
+                    <div
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        backgroundColor: formData.color,
+                        borderRadius: '6px',
+                        border: '1px solid #ddd',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        color: formData.icon ? 'transparent' : '#666'
+                      }}
+                    >
+                      {formData.icon}
+                    </div>
+                    <span style={{ fontSize: '12px', color: '#666' }}>{formData.color}</span>
+                  </div>
+                  <Form.Text className="text-muted small">
+                    {t('categories.color_help')}
+                  </Form.Text>
+                </Form.Group>
+              </div>
+
+              <div className="col-md-6">
+                <Form.Group className="mb-3">
                   <Form.Label>{t('categories.icon')} <small className="text-muted">({t('common.optional')})</small></Form.Label>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
                     {['📁', '📚', '🎓', '📊', '💼', '🔧', '📱', '🌐', '📝', '⭐', '💡', '📌'].map((emoji) => (
@@ -572,41 +634,6 @@ function CategoryManagementPage({ onLogout }) {
                   />
                   <Form.Text className="text-muted small">
                     {t('categories.icon_help')}
-                  </Form.Text>
-                </Form.Group>
-              </div>
-
-              <div className="col-md-6">
-                <Form.Group className="mb-3">
-                  <Form.Label>{t('categories.color')} <small className="text-muted">({t('common.optional')})</small></Form.Label>
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <Form.Control 
-                      type="color" 
-                      value={formData.color} 
-                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                      style={{ width: '60px', height: '40px', padding: '4px', cursor: 'pointer' }}
-                    />
-                    <div
-                      style={{
-                        width: '40px',
-                        height: '40px',
-                        backgroundColor: formData.color,
-                        borderRadius: '6px',
-                        border: '1px solid #ddd',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '12px',
-                        fontWeight: 'bold',
-                        color: formData.icon ? 'transparent' : '#666'
-                      }}
-                    >
-                      {formData.icon}
-                    </div>
-                    <span style={{ fontSize: '12px', color: '#666' }}>{formData.color}</span>
-                  </div>
-                  <Form.Text className="text-muted small">
-                    {t('categories.color_help')}
                   </Form.Text>
                 </Form.Group>
               </div>

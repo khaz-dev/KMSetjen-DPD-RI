@@ -324,14 +324,32 @@ const DashboardPage = () => {
                             </div>
                           </div>
                           <div className="dashboard-article-actions">
+                            {/* Lihat Draft Button - Show draft version */}
                             <Button
-                              variant="primary"
+                              variant="info"
                               size="sm"
-                              onClick={() => window.open(getArticleUrl(article), '_blank')}
-                              title={t('buttons.view')}
+                              onClick={() => window.open(`/knowledges/${article.slug || article.id}?version=draft`, '_blank')}
+                              title={t('dashboard.view_draft')}
+                              className="btn-view-draft d-flex align-items-center gap-1"
                             >
-                              <FiEye />
+                              <FiEye size={16} />
+                              <span>{t('dashboard.view_draft')}</span>
                             </Button>
+                            
+                            {/* Lihat Dipublikasikan Button - Show published version if it exists */}
+                            {article.published_version_id && (
+                              <Button
+                                variant="success"
+                                size="sm"
+                                onClick={() => window.open(`/knowledges/${article.slug || article.id}`, '_blank')}
+                                title={t('dashboard.view_published')}
+                                className="btn-view-published d-flex align-items-center gap-1"
+                              >
+                                <FiEye size={16} />
+                                <span>{t('dashboard.view_published')}</span>
+                              </Button>
+                            )}
+                            
                             <Button
                               variant="warning"
                               size="sm"

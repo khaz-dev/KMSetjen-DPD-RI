@@ -329,8 +329,18 @@ class CategorySerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
     
     def get_article_count(self, obj):
-        """Count published articles in this category."""
-        return obj.articles.filter(is_published=True, status='published').count()
+        """Count published articles in this category.
+        
+        CRITICAL: Only count published version records (version_type='published')
+        to avoid duplicates from the draft article that gets marked as published.
+        """
+        from apps.content.models import Article
+        
+        return obj.articles.filter(
+            is_published=True,
+            status='published',
+            version_type=Article.VERSION_PUBLISHED
+        ).count()
     
     def get_children(self, obj):
         """Return serialized child categories."""
@@ -356,4 +366,36 @@ class CategoryCreateUpdateSerializer(serializers.ModelSerializer):
         if not value or not value.strip():
             raise serializers.ValidationError("English name (name_en) is required.")
         return value
+    
+    def create(self, validated_data):
+        """Create category with proper slug generation."""
+        category = Category(**validated_data)
+        category.save()
+        return category
+    
+    def update(self, instance, validated_data):
+        """
+        Update category with proper image handling:
+        1. If new image provided: old image is replaced by upload_to function
+        2. If image cleared: delete old image file from storage
+        """
+        # Check if image is being cleared (set to null/empty)
+        image_cleared = 'image' in validated_data and validated_data['image'] is None
+        
+        if image_cleared and instance.image:
+            # Delete old image file from storage
+            try:
+                from django.core.files.storage import default_storage
+                storage_path = instance.image.name
+                if storage_path:
+                    default_storage.delete(storage_path)
+            except Exception:
+                pass  # Log but don't fail if deletion fails
+        
+        # Update instance with new data
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        instance.save()
+        return instance
 

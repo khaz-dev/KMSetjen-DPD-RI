@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Container, Row, Col, Badge, Spinner, Button, Alert, Modal } from 'react-bootstrap';
 import { marked } from 'marked';
 import { publicAPI, internalAPI, getArticleUrl } from '../services/api';
@@ -20,6 +20,7 @@ const ArticleDetailPage = () => {
   const { t } = useTranslation();
   const { isIndonesian } = useLanguage();
   const { idOrSlug } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [article, setArticle] = useState(null);
@@ -112,6 +113,10 @@ const ArticleDetailPage = () => {
         setError(null);
         let response;
         
+        // Check if we need to load draft version
+        const versionParam = searchParams.get('version');
+        const isDraftRequest = versionParam === 'draft';
+        
         // Route articles based on user role:
         // - PUBLIC users → use public API (can see published articles only)
         // - CONTRIBUTOR/READER → use internal API (can see articles based on author/editor status)
@@ -120,7 +125,20 @@ const ArticleDetailPage = () => {
         //
         // PUBLIC users must use publicAPI because internalAPI only shows articles
         // authored by the user, and most articles are authored by others.
-        if (user && user.primary_role !== 'public') {
+        if (isDraftRequest && user && user.primary_role !== 'public') {
+          // User requested draft version - use internal API with ID
+          // This will get the draft article which shows unpublished/draft content
+          try {
+            response = await internalAPI.getArticle(idOrSlug);
+            // If we got a published version, try to fetch the draft
+            if (response.data.draft_article_id) {
+              // This is a published version, fetch the associated draft
+              response = await internalAPI.getArticle(response.data.draft_article_id);
+            }
+          } catch (internalErr) {
+            throw internalErr;
+          }
+        } else if (user && user.primary_role !== 'public') {
           // User is authenticated and NOT PUBLIC - use internal API
           try {
             response = await internalAPI.getArticle(idOrSlug);
@@ -141,9 +159,9 @@ const ArticleDetailPage = () => {
         // ONLY record views for published articles
         // Don't block the request if this fails - it's non-critical
         try {
-          // Only attempt to record view if article is published
+          // Only attempt to record view if article is published and not a draft view
           const articleData = response.data;
-          if (articleData.is_published && articleData.status === 'published') {
+          if (articleData.is_published && articleData.status === 'published' && !isDraftRequest) {
             // Use public API for all users (both authenticated and anonymous can view articles)
             publicAPI.recordView(idOrSlug).catch((err) => {
               // Only log if not a "not found" error (article might not be visible to anonymous)
@@ -152,8 +170,8 @@ const ArticleDetailPage = () => {
               }
             });
           } else {
-            // Article is not published - view tracking disabled
-            console.debug(`View tracking disabled for unpublished article (status: ${articleData.status})`);
+            // Article is not published or this is a draft view - view tracking disabled
+            console.debug(`View tracking disabled for unpublished article or draft view (status: ${articleData.status}, isDraft: ${isDraftRequest})`);
           }
         } catch (viewErr) {
           // Silently fail
@@ -177,7 +195,7 @@ const ArticleDetailPage = () => {
     }
 
     loadArticle();
-  }, [idOrSlug, user, authLoading]);
+  }, [idOrSlug, user, authLoading, searchParams]);
 
   const loadRelatedArticles = async (currentArticle) => {
     try {
@@ -380,20 +398,34 @@ const ArticleDetailPage = () => {
         style={{ cursor: 'pointer' }}
         onClick={() => navigate(getArticleUrl(art))}
       >
+        {/* Row 1: Featured Image and Content */}
         <div className="d-flex gap-2">
+          {/* Featured Image Left */}
+          <div className="article-list-item-image">
+            <ImageWithFallback
+              src={art.image || art.image_url}
+              alt={artTitle}
+              type="article"
+              className="article-list-thumbnail"
+            />
+          </div>
+          
+          {/* Title and Excerpt Center with flex-grow-1 */}
           <div className="flex-grow-1">
             <h6 className="mb-2 article-list-item-title">{artTitle}</h6>
             {excerpt && (
-              <p className="mb-2 article-list-item-excerpt">{excerpt}</p>
+              <p className="mb-0 article-list-item-excerpt">{excerpt}</p>
             )}
           </div>
-          <div className="article-list-item-meta">
-            <FiEye size={12} />
-            <span>{art.view_count || 0}</span>
-            <span>•</span>
-            <FiHeart size={12} />
-            <span>{art.like_count || 0}</span>
-          </div>
+        </div>
+        
+        {/* Row 2: Meta Stick to Right End */}
+        <div className="article-list-item-meta">
+          <FiEye size={12} />
+          <span>{art.view_count || 0}</span>
+          <span>•</span>
+          <FiHeart size={12} />
+          <span>{art.like_count || 0}</span>
         </div>
       </div>
     );

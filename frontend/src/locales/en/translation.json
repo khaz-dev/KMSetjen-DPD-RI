@@ -80,6 +80,8 @@
     "welcome": "Welcome",
     "profile_updated": "Profile updated successfully",
     "settings_saved": "Settings saved successfully",
+    "avatar_updated": "Avatar updated successfully",
+    "avatar_removed": "Avatar removed successfully",
     "confirm_delete_file": "Are you sure you want to delete this file?",
     "this_action_cannot_be_undone": "This action cannot be undone."
   },
@@ -224,13 +226,20 @@
     "status_archived": "Archived",
     "delete_confirmation": "Delete Knowledge",
     "delete_article_confirm": "Are you sure you want to delete this knowledge?",
-    "delete_warning": "This action cannot be undone."
+    "delete_warning": "This action cannot be undone.",
+    "view_draft": "View Draft",
+    "view_published": "View Published"
   },
   "profile": {
     "title": "User Profile",
     "email": "Email",
     "first_name": "First Name",
     "last_name": "Last Name",
+    "nip": "NIP",
+    "unit_organisasi": "Unit Organisasi",
+    "jenis_jabatan": "Jenis Jabatan",
+    "jabatan": "Jabatan",
+    "avatar": "Avatar",
     "role": "Role",
     "roles": "User Roles",
     "joined": "Member Since",
@@ -245,7 +254,14 @@
     "content": "Content",
     "timestamp": "Date & Time",
     "no_roles": "No roles assigned",
-    "no_activity": "No activity yet"
+    "no_activity": "No activity yet",
+    "read_only": "Read-only",
+    "no_changes": "No changes to save",
+    "upload_avatar": "Click to upload avatar",
+    "change_avatar": "Click to change avatar",
+    "image_requirements": "Max 5MB, PNG/JPG/GIF",
+    "invalid_image_type": "Please select a valid image file",
+    "image_too_large": "Image file is too large (max 5MB)"
   },
   "settings": {
     "title": "Settings",
@@ -460,8 +476,13 @@
     "delete_confirmation": "Confirm Deletion",
     "delete_warning": "This action cannot be undone.",
     "category_saved": "Category saved successfully",
+    "category_created_successfully": "Category created successfully",
+    "category_updated_successfully": "Category updated successfully",
+    "category_deleted_successfully": "Category deleted successfully",
     "category_deleted": "Category deleted successfully",
-    "category_error": "Failed to save category"
+    "category_error": "Failed to save category",
+    "invalid_image_type": "Please select a valid image file",
+    "image_too_large": "Image file is too large (max 5MB)"
   },
   "tags": {
     "title": "Tag Management",
@@ -697,6 +718,10 @@
     "pending_review": "Pending Review",
     "save_draft": "Save as Draft",
     "submit_review": "Submit for Review",
+    "save_first": "Save article first",
+    "no_changes": "No changes to save",
+    "preview_draft": "Preview Draft",
+    "preview_published": "Preview Published",
     "publish": "Publish",
     "auto_saved": "Auto-saved",
     "saving": "Saving...",

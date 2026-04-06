@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Container, Form, Button, Row, Col, Card, Badge, Table } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
-import { authService } from '../services/api';
+import { useNotification } from '../contexts/NotificationContext';
+import { authService, getAbsoluteMediaUrl } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
 import './ProfilePage.css';
@@ -16,10 +17,10 @@ const ProfilePage = () => {
   const { user, loading: authLoading, logout } = useAuth();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+  const notification = useNotification();
   const [loading, setLoading] = useState(false);
   const [activityLoading, setActivityLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
   const [activityData, setActivityData] = useState(null);
   const [activityError, setActivityError] = useState(null);
 
@@ -28,8 +29,35 @@ const ProfilePage = () => {
     first_name: user?.first_name || '',
     last_name: user?.last_name || '',
     email: user?.email || '',
+    nip: user?.nip || '',
+    unit_organisasi: user?.unit_organisasi || '',
+    jenis_jabatan: user?.jenis_jabatan || '',
+    jabatan: user?.jabatan || '',
+    avatar: user?.avatar || null,
   });
   const [profileErrors, setProfileErrors] = useState({});
+  const [avatarPreview, setAvatarPreview] = useState(user?.avatar || null);
+  const [avatarChanged, setAvatarChanged] = useState(false);
+
+  // Sync profileData with user whenever user changes
+  useEffect(() => {
+    if (user) {
+      // FIX: Convert relative avatar URL to absolute URL with backend domain
+      const avatarPreviewUrl = getAbsoluteMediaUrl(user.avatar);
+
+      setProfileData({
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        email: user.email || '',
+        nip: user.nip || '',
+        unit_organisasi: user.unit_organisasi || '',
+        jenis_jabatan: user.jenis_jabatan || '',
+        jabatan: user.jabatan || '',
+        avatar: avatarPreviewUrl || null,
+      });
+      setAvatarPreview(avatarPreviewUrl || null);
+    }
+  }, [user]);
 
   // Fetch user activity data
   useEffect(() => {
@@ -108,31 +136,104 @@ const ProfilePage = () => {
     }
   };
 
-  const validateProfileForm = () => {
-    const errors = {};
-    if (!profileData.first_name) errors.first_name = t('validation.required');
-    if (!profileData.last_name) errors.last_name = t('validation.required');
-    if (!profileData.email) {
-      errors.email = t('validation.required');
-    } else if (!/\S+@\S+\.\S+/.test(profileData.email)) {
-      errors.email = t('validation.email_invalid');
+  const handleAvatarUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError(t('profile.invalid_image_type') || 'Please select a valid image file');
+        // Reset file input so same file can be selected again
+        e.target.value = '';
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        setError(t('profile.image_too_large') || 'Image file is too large (max 5MB)');
+        // Reset file input so same file can be selected again
+        e.target.value = '';
+        return;
+      }
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        setAvatarPreview(reader.result);
+        setProfileData((prev) => ({
+          ...prev,
+          avatar: file,
+        }));
+        setAvatarChanged(true);
+        setError(null);
+
+        // Auto-save avatar to backend after preview is set
+        await saveAvatarToBackend(file);
+        
+        // Reset file input so same file can be selected again
+        e.target.value = '';
+      };
+      reader.readAsDataURL(file);
     }
-    setProfileErrors(errors);
-    return Object.keys(errors).length === 0;
   };
 
-  const handleProfileSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateProfileForm()) return;
-
+  const saveAvatarToBackend = async (avatarFile) => {
     try {
       setLoading(true);
       setError(null);
-      await authService.updateProfile(profileData);
-      setSuccess(t('messages.profile_updated'));
-      setTimeout(() => setSuccess(null), 5175);
+
+      const formData = new FormData();
+      formData.append('avatar', avatarFile);
+
+      const response = await authService.updateProfile(formData);
+
+      // Update local profile data with response
+      if (response.data.user && response.data.user.avatar) {
+        // FIX: Backend returns relative URL like "/media/avatars/user_1.jpg"
+        // Convert to absolute URL by prepending backend domain
+        const absoluteAvatarUrl = getAbsoluteMediaUrl(response.data.user.avatar);
+        
+        setProfileData((prev) => ({
+          ...prev,
+          avatar: absoluteAvatarUrl,
+        }));
+        setAvatarPreview(absoluteAvatarUrl);
+      }
+
+      notification.success('t:messages.avatar_updated');
     } catch (err) {
-      setError(err.response?.data?.detail || t('errors.server_error'));
+      const errorMsg = err.response?.data?.error || err.response?.data?.detail || t('errors.server_error');
+      setError(errorMsg);
+      notification.error(errorMsg);
+      console.error('Failed to save avatar:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    setAvatarPreview(null);
+    setProfileData((prev) => ({
+      ...prev,
+      avatar: null,
+    }));
+
+    // Auto-save removal to backend
+    try {
+      setLoading(true);
+      setError(null);
+
+      const formData = new FormData();
+      formData.append('avatar', ''); // Empty string to remove
+
+      await authService.updateProfile(formData);
+
+      notification.success('t:messages.avatar_removed');
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || err.response?.data?.detail || t('errors.server_error');
+      setError(errorMsg);
+      notification.error(errorMsg);
+      console.error('Failed to remove avatar:', err);
     } finally {
       setLoading(false);
     }
@@ -150,95 +251,184 @@ const ProfilePage = () => {
           <p className="text-muted">{user?.email}</p>
         </div>
 
-        {error && <ErrorAlert message={error} onDismiss={() => setError(null)} />}
-        {success && (
-          <ErrorAlert
-            type="success"
-            message={success}
-            onDismiss={() => setSuccess(null)}
-          />
-        )}
         {activityError && <ErrorAlert message={activityError} onDismiss={() => setActivityError(null)} />}
 
         <Row className="mb-4">
-          <Col lg={8}>
+          <Col xs={12}>
             <Card className="profile-card mb-4">
               <Card.Header>
                 <Card.Title className="mb-0">{t('profile.edit_profile')}</Card.Title>
               </Card.Header>
               <Card.Body>
-                <Form onSubmit={handleProfileSubmit} className="profile-form">
-                  <Form.Group className="mb-3">
-                    <Form.Label>{t('profile.first_name')}</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="first_name"
-                      value={profileData.first_name}
-                      onChange={handleProfileChange}
-                      isInvalid={!!profileErrors.first_name}
-                      disabled={loading}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {profileErrors.first_name}
-                    </Form.Control.Feedback>
-                  </Form.Group>
+                {/* Avatar Section - Two Column Layout */}
+                <div className="avatar-profile-section mb-4">
+                  <Row>
+                    {/* Left Column - Avatar Upload */}
+                    <Col md={4} className="text-center">
+                      <div className="avatar-upload-wrapper">
+                        <input
+                          type="file"
+                          id="avatar-upload"
+                          accept="image/*"
+                          onChange={handleAvatarUpload}
+                          style={{ display: 'none' }}
+                        />
+                        <label htmlFor="avatar-upload" style={{ cursor: 'pointer', margin: 0 }}>
+                          <div className="avatar-preview-container">
+                            {avatarPreview ? (
+                              <div className="avatar-current">
+                                <img 
+                                  src={avatarPreview} 
+                                  alt="Avatar Preview" 
+                                  className="avatar-image"
+                                />
+                              </div>
+                            ) : (
+                              <div className="avatar-placeholder">
+                                <p>📷</p>
+                                <small>{t('profile.upload_avatar') || 'Upload Avatar'}</small>
+                              </div>
+                            )}
+                          </div>
+                        </label>
+                        {avatarPreview && (
+                          <div className="avatar-actions mt-3">
+                            <button 
+                              type="button"
+                              className="btn btn-sm btn-outline-primary me-2"
+                              disabled={loading}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                document.getElementById('avatar-upload').click();
+                              }}
+                            >
+                              {loading ? t('messages.loading') : (t('buttons.change_image') || 'Change')}
+                            </button>
+                            <button 
+                              type="button"
+                              className="btn btn-sm btn-outline-danger"
+                              disabled={loading}
+                              onClick={handleAvatarRemove}
+                            >
+                              {loading ? t('messages.loading') : (t('buttons.remove_image') || 'Remove')}
+                            </button>
+                          </div>
+                        )}
+                        {!avatarPreview && (
+                          <small className="d-block mt-2 text-muted">{t('profile.image_requirements') || 'Max 5MB, PNG/JPG/GIF'}</small>
+                        )}
+                      </div>
+                    </Col>
 
-                  <Form.Group className="mb-3">
-                    <Form.Label>{t('profile.last_name')}</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="last_name"
-                      value={profileData.last_name}
-                      onChange={handleProfileChange}
-                      isInvalid={!!profileErrors.last_name}
-                      disabled={loading}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {profileErrors.last_name}
-                    </Form.Control.Feedback>
-                  </Form.Group>
+                    {/* Right Column - Profile Information */}
+                    <Col md={8}>
+                      <div className="profile-info-section">
+                        {/* Row 1: Nama Depan and Nama Belakang */}
+                        <Row className="mb-3">
+                          <Col md={6}>
+                            <Form.Group className="mb-3">
+                              <Form.Label className="fw-bold">{t('profile.first_name')}</Form.Label>
+                              <Form.Control
+                                type="text"
+                                value={profileData.first_name}
+                                disabled
+                                className="bg-light"
+                              />
+                              <Form.Text className="text-muted">{t('profile.read_only') || 'Read-only'}</Form.Text>
+                            </Form.Group>
+                          </Col>
 
-                  <Form.Group className="mb-3">
-                    <Form.Label>{t('profile.email')}</Form.Label>
-                    <Form.Control
-                      type="email"
-                      name="email"
-                      value={profileData.email}
-                      onChange={handleProfileChange}
-                      isInvalid={!!profileErrors.email}
-                      disabled={loading}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {profileErrors.email}
-                    </Form.Control.Feedback>
-                  </Form.Group>
+                          <Col md={6}>
+                            <Form.Group className="mb-3">
+                              <Form.Label className="fw-bold">{t('profile.last_name')}</Form.Label>
+                              <Form.Control
+                                type="text"
+                                value={profileData.last_name}
+                                disabled
+                                className="bg-light"
+                              />
+                              <Form.Text className="text-muted">{t('profile.read_only') || 'Read-only'}</Form.Text>
+                            </Form.Group>
+                          </Col>
+                        </Row>
 
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    disabled={loading}
-                    className="mb-2"
-                  >
-                    {loading ? t('messages.loading') : t('buttons.save')}
-                  </Button>
-                </Form>
-              </Card.Body>
-            </Card>
-          </Col>
+                        {/* Row 2: Email and NIP */}
+                        <Row className="mb-3">
+                          <Col md={6}>
+                            <Form.Group className="mb-3">
+                              <Form.Label className="fw-bold">{t('profile.email')}</Form.Label>
+                              <Form.Control
+                                type="email"
+                                value={profileData.email}
+                                disabled
+                                className="bg-light"
+                              />
+                              <Form.Text className="text-muted">{t('profile.read_only') || 'Read-only'}</Form.Text>
+                            </Form.Group>
+                          </Col>
 
-          <Col lg={4}>
-            <Card className="profile-actions-card">
-              <Card.Body>
-                <Button
-                  variant="outline-danger"
-                  className="w-100"
-                  onClick={() => {
-                    logout();
-                    navigate('/login');
-                  }}
-                >
-                  {t('nav.logout')}
-                </Button>
+                          <Col md={6}>
+                            <Form.Group className="mb-3">
+                              <Form.Label className="fw-bold">{t('profile.nip') || 'NIP'}</Form.Label>
+                              <Form.Control
+                                type="text"
+                                value={profileData.nip}
+                                disabled
+                                className="bg-light"
+                              />
+                              <Form.Text className="text-muted">{t('profile.read_only') || 'Read-only'}</Form.Text>
+                            </Form.Group>
+                          </Col>
+                        </Row>
+
+                        {/* Row 3: Unit Organisasi (Full Width) */}
+                        <Row className="mb-3">
+                          <Col md={12}>
+                            <Form.Group className="mb-3">
+                              <Form.Label className="fw-bold">{t('profile.unit_organisasi') || 'Unit Organisasi'}</Form.Label>
+                              <Form.Control
+                                type="text"
+                                value={profileData.unit_organisasi}
+                                disabled
+                                className="bg-light"
+                              />
+                              <Form.Text className="text-muted">{t('profile.read_only') || 'Read-only'}</Form.Text>
+                            </Form.Group>
+                          </Col>
+                        </Row>
+
+                        {/* Row 4: Jenis Jabatan and Jabatan */}
+                        <Row className="mb-3">
+                          <Col md={6}>
+                            <Form.Group className="mb-3">
+                              <Form.Label className="fw-bold">{t('profile.jenis_jabatan') || 'Jenis Jabatan'}</Form.Label>
+                              <Form.Control
+                                type="text"
+                                value={profileData.jenis_jabatan}
+                                disabled
+                                className="bg-light"
+                              />
+                              <Form.Text className="text-muted">{t('profile.read_only') || 'Read-only'}</Form.Text>
+                            </Form.Group>
+                          </Col>
+
+                          <Col md={6}>
+                            <Form.Group className="mb-3">
+                              <Form.Label className="fw-bold">{t('profile.jabatan') || 'Jabatan'}</Form.Label>
+                              <Form.Control
+                                type="text"
+                                value={profileData.jabatan}
+                                disabled
+                                className="bg-light"
+                              />
+                              <Form.Text className="text-muted">{t('profile.read_only') || 'Read-only'}</Form.Text>
+                            </Form.Group>
+                          </Col>
+                        </Row>
+                      </div>
+                    </Col>
+                  </Row>
+                </div>
               </Card.Body>
             </Card>
           </Col>
