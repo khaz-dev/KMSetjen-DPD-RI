@@ -16,6 +16,7 @@ RUN if [ -f package-lock.json ]; then npm ci --legacy-peer-deps; else npm instal
 COPY . .
 
 # Accept build arguments for Vite environment variables
+ARG VITE_APP_SUBPATH
 ARG VITE_API_BASE_URL
 ARG VITE_API_URL
 ARG VITE_API_TIMEOUT
@@ -27,7 +28,8 @@ ARG VITE_GOOGLE_REDIRECT_URI
 ARG VITE_RECAPTCHA_SITE_KEY
 
 # Set environment variables for build
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL \
+ENV VITE_APP_SUBPATH=$VITE_APP_SUBPATH \
+    VITE_API_BASE_URL=$VITE_API_BASE_URL \
     VITE_API_URL=$VITE_API_URL \
     VITE_API_TIMEOUT=$VITE_API_TIMEOUT \
     FRONTEND_URL=$FRONTEND_URL \
