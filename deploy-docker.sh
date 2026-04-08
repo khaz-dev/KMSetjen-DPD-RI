@@ -87,7 +87,7 @@ if [ ! -f "package-lock.json" ]; then
 fi
 
 npm ci --legacy-peer-deps
-VITE_APP_SUBPATH=/kmsetjendpdri npm run build
+VITE_APP_SUBPATH=/kms npm run build
 
 if [ ! -d "dist" ] || [ ! -f "dist/index.html" ]; then
     print_error "Frontend build failed - dist/index.html not found"
@@ -179,12 +179,12 @@ echo "  Frontend: http://localhost:5175"
 echo "  Backend API: http://localhost:8002/api"
 echo "  Django Admin: http://localhost:8002/admin"
 echo ""
-echo "Production URL: https://khaz.app/kmsetjendpdri/"
+echo "Production URL: https://khaz.app/kms/"
 echo ""
 echo "Next Steps:"
 echo "  1. Configure Nginx reverse proxy (if not already done)"
 echo "  2. Setup SSL certificates (Let's Encrypt)"
-echo "  3. Test application at https://khaz.app/kmsetjendpdri/"
+echo "  3. Test application at https://khaz.app/kms/"
 echo ""
 echo "Useful Commands:"
 echo "  docker-compose logs -f              # Follow all logs"

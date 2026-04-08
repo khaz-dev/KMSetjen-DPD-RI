@@ -17,7 +17,7 @@ export default defineConfig({
   // ========================================================================
   // Base path configuration for subpath deployment
   // Development: '/' (root)
-  // Production: '/kmsetjendpdri/' (subpath on khaz.app)
+  // Production: '/kms/' (subpath on khaz.app)
   // ========================================================================
   base: process.env.VITE_APP_SUBPATH || '/',
   
@@ -32,11 +32,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path,  // Keep path as-is
       },
-      // Also proxy /kmsetjendpdri/api for production-like development
-      '/kmsetjendpdri/api': {
+      // Also proxy /kms/api for production-like development
+      '/kms/api': {
         target: 'http://localhost:8002',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/kmsetjendpdri/, ''),  // Strip subpath
+        rewrite: (path) => path.replace(/^\/kms/, ''),  // Strip subpath
       },
     },
   },
