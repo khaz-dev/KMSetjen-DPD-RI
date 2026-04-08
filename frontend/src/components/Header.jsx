@@ -24,13 +24,17 @@ const Header = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const { language, changeLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
+  
+  // Get app subpath for static assets
+  const appSubpath = import.meta.env.VITE_APP_SUBPATH || '/';
+  const logoUrl = `${appSubpath.replace(/\/$/, '')}/logo.png`;
 
   return (
     <Navbar bg="light" expand="lg" sticky="top" className="navbar-custom">
       <Container>
         <Navbar.Brand as={Link} to="/" className="brand-logo">
           <img
-            src="/logo.png"
+            src={logoUrl}
             alt="KMS Logo"
             style={{ height: '2.5rem', width: '2.5rem', objectFit: 'contain' }}
           />

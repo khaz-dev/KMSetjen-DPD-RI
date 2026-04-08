@@ -198,10 +198,14 @@ function AppContent() {
 }
 
 function App() {
+  // Get the app subpath from Vite environment variable
+  const appSubpath = import.meta.env.VITE_APP_SUBPATH || '/';
+  
   return (
     <ThemeProvider>
       <NotificationProvider>
         <Router
+          basename={appSubpath}
           future={{
             v7_startTransition: true,
             v7_relativeSplatPath: true,

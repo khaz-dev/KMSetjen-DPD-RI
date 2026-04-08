@@ -3,10 +3,14 @@
  * Centralized configuration for default and fallback images
  */
 
+// Get app subpath from Vite environment
+const appSubpath = import.meta.env.VITE_APP_SUBPATH || '/';
+const basePath = appSubpath.replace(/\/$/, '');
+
 export const DEFAULT_IMAGES = {
-  ARTICLE: '/default-article-image.svg',
-  CATEGORY: '/default-category-image.svg',
-  LOGO: '/logo.png'
+  ARTICLE: `${basePath}/default-article-image.svg`,
+  CATEGORY: `${basePath}/default-category-image.svg`,
+  LOGO: `${basePath}/logo.png`
 };
 
 /**
