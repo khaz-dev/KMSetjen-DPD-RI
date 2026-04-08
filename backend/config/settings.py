@@ -14,11 +14,31 @@ import logging.config
 # ENVIRONMENT SETUP
 # ============================================================================
 # settings.py is at: backend/config/settings.py
-# So: __file__.parent.parent.parent = backend, and .parent = project_root
-BASE_DIR = Path(__file__).resolve().parent.parent.parent  # Points to: d:\Project\KMSetjen DPD RI\
+# In local development: __file__.parent.parent.parent = project_root
+# In Docker (build context ./backend): __file__.parent.parent = /app
+# We detect Docker by checking the parent directory structure
+_settings_file = Path(__file__).resolve()
+_parent_parent = _settings_file.parent.parent  # backend or /app
+
+# Check if parent folder is named 'backend' to determine environment
+if _parent_parent.name == 'backend':
+    # Local development: config is inside backend folder
+    BASE_DIR = _parent_parent.parent  # Go up to project root
+else:
+    # Docker: config is directly inside /app (no backend folder)
+    BASE_DIR = _parent_parent
+
 env = environ.Env()
-# Load .env from project root (same level as backend/ folder)
+# Load .env from BASE_DIR
 env_file = os.path.join(BASE_DIR, '.env')
+environ.Env.read_env(env_file)
+
+env = environ.Env()
+# Load .env from project root (same level as backend/ folder) or /app in Docker
+env_file = os.path.join(BASE_DIR, '.env')
+if not os.path.exists(env_file):
+    # Try parent directory if we're in Docker
+    env_file = os.path.join(BASE_DIR.parent if hasattr(BASE_DIR, 'parent') else '/', '.env')
 environ.Env.read_env(env_file)
 
 # ============================================================================
@@ -208,6 +228,10 @@ USE_TZ = True
 # ============================================================================
 # LOGGING
 # ============================================================================
+# Create logs directory if it doesn't exist
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+os.makedirs(LOGS_DIR, exist_ok=True)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -238,7 +262,7 @@ LOGGING = {
         'file': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'django.log'),
+            'filename': os.path.join(LOGS_DIR, 'django.log'),
             'maxBytes': 1024 * 1024 * 10,  # 10 MB
             'backupCount': 5,
             'formatter': 'verbose',
@@ -246,7 +270,7 @@ LOGGING = {
         'audit_file': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'audit.log'),
+            'filename': os.path.join(LOGS_DIR, 'audit.log'),
             'maxBytes': 1024 * 1024 * 10,  # 10 MB
             'backupCount': 10,
             'formatter': 'verbose',
@@ -464,7 +488,7 @@ CORS_EXPOSE_HEADERS = [
 CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 
 # Security Audit Logging
-SECURITY_AUDIT_LOG_FILE = os.path.join(BASE_DIR, 'logs', 'security_audit.log')
+SECURITY_AUDIT_LOG_FILE = os.path.join(LOGS_DIR, 'security_audit.log')
 SECURITY_AUDIT_ENABLED = True
 
 # Rate Limiting Configuration
