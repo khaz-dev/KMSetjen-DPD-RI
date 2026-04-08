@@ -25,9 +25,20 @@ const Header = () => {
   const { language, changeLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   
-  // Get app subpath for static assets
-  const appSubpath = import.meta.env.VITE_APP_SUBPATH || '/';
-  const logoUrl = `${appSubpath.replace(/\/$/, '')}/logo.png`;
+  // Get app subpath - try from import.meta.env first, otherwise derive from window location
+  let appSubpath = import.meta.env.VITE_APP_SUBPATH || '/';
+  
+  // If still using default, try to detect from current path
+  if (appSubpath === '/') {
+    const path = window.location.pathname;
+    const match = path.match(/^(\/[^/]+)/);  // Match /kms or /kmsetjendpdri etc
+    if (match && match[1] !== '/') {
+      appSubpath = match[1];
+    }
+  }
+  
+  // Compute logo URL with the subpath
+  const logoUrl = appSubpath === '/' ? '/logo.png' : `${appSubpath}/logo.png`;
 
   return (
     <Navbar bg="light" expand="lg" sticky="top" className="navbar-custom">

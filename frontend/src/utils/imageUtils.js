@@ -3,9 +3,19 @@
  * Centralized configuration for default and fallback images
  */
 
-// Get app subpath from Vite environment
-const appSubpath = import.meta.env.VITE_APP_SUBPATH || '/';
-const basePath = appSubpath.replace(/\/$/, '');
+// Get app subpath from Vite environment or detect from window location
+let appSubpath = import.meta.env.VITE_APP_SUBPATH || '/';
+
+// If still using default, try to detect from current path
+if (typeof window !== 'undefined' && appSubpath === '/') {
+  const path = window.location.pathname;
+  const match = path.match(/^(\/[^/]+)/);  // Match /kms or /kmsetjendpdri etc
+  if (match && match[1] !== '/') {
+    appSubpath = match[1];
+  }
+}
+
+const basePath = appSubpath === '/' ? '' : appSubpath;
 
 export const DEFAULT_IMAGES = {
   ARTICLE: `${basePath}/default-article-image.svg`,
