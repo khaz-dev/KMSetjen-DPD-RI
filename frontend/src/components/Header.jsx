@@ -25,19 +25,20 @@ const Header = () => {
   const { language, changeLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   
-  // Get app subpath - try from import.meta.env first, otherwise derive from window location
-  let appSubpath = import.meta.env.VITE_APP_SUBPATH || '/';
-  
-  // If still using default, try to detect from current path
-  if (appSubpath === '/') {
+  // Detect app subpath from current URL (primary method)
+  // This works at runtime and is more reliable than build-time environment variables
+  const getAppSubpath = () => {
     const path = window.location.pathname;
-    const match = path.match(/^(\/[^/]+)/);  // Match /kms or /kmsetjendpdri etc
-    if (match && match[1] !== '/') {
-      appSubpath = match[1];
+    // Match /kms, /kmsetjendpdri, etc from the pathname
+    const match = path.match(/^(\/[a-z_]+)/);
+    if (match && match[1] && match[1] !== '/') {
+      return match[1];
     }
-  }
+    // Fallback to environment variable
+    return import.meta.env.VITE_APP_SUBPATH || '/';
+  };
   
-  // Compute logo URL with the subpath
+  const appSubpath = getAppSubpath();
   const logoUrl = appSubpath === '/' ? '/logo.png' : `${appSubpath}/logo.png`;
 
   return (

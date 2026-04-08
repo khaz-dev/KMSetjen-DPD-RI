@@ -3,18 +3,23 @@
  * Centralized configuration for default and fallback images
  */
 
-// Get app subpath from Vite environment or detect from window location
-let appSubpath = import.meta.env.VITE_APP_SUBPATH || '/';
-
-// If still using default, try to detect from current path
-if (typeof window !== 'undefined' && appSubpath === '/') {
+// Detect app subpath from window location at runtime
+// This is the primary method as it's more reliable than build-time environment variables
+const getAppSubpath = () => {
+  if (typeof window === 'undefined') return '/';
+  
   const path = window.location.pathname;
-  const match = path.match(/^(\/[^/]+)/);  // Match /kms or /kmsetjendpdri etc
-  if (match && match[1] !== '/') {
-    appSubpath = match[1];
+  // Match /kms, /kmsetjendpdri, etc from the pathname
+  const match = path.match(/^(\/[a-z_]+)/);
+  if (match && match[1] && match[1] !== '/') {
+    return match[1];
   }
-}
+  
+  // Fallback to environment variable if pathname detection fails
+  return import.meta.env.VITE_APP_SUBPATH || '/';
+};
 
+const appSubpath = getAppSubpath();
 const basePath = appSubpath === '/' ? '' : appSubpath;
 
 export const DEFAULT_IMAGES = {
