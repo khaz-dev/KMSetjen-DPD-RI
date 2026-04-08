@@ -28,18 +28,17 @@ else:
     # Docker: config is directly inside /app (no backend folder)
     BASE_DIR = _parent_parent
 
+# Initialize environment
 env = environ.Env()
-# Load .env from BASE_DIR
+# Try to load .env from BASE_DIR first, then from parent
 env_file = os.path.join(BASE_DIR, '.env')
-environ.Env.read_env(env_file)
-
-env = environ.Env()
-# Load .env from project root (same level as backend/ folder) or /app in Docker
-env_file = os.path.join(BASE_DIR, '.env')
-if not os.path.exists(env_file):
-    # Try parent directory if we're in Docker
-    env_file = os.path.join(BASE_DIR.parent if hasattr(BASE_DIR, 'parent') else '/', '.env')
-environ.Env.read_env(env_file)
+if os.path.exists(env_file):
+    environ.Env.read_env(env_file)
+else:
+    # In Docker container, .env may not be copied into image,
+    # but should be available from docker-compose env_file or environment variables
+    # So we just continue without it - the values will come from docker-compose
+    pass
 
 # ============================================================================
 # SECURITY
