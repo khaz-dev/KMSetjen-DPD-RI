@@ -114,7 +114,7 @@ const LoginPage = () => {
                 disabled={loading}
               >
                 <img
-                  src="/logo_nusa.png"
+                  src={images.LOGO_NUSA}
                   alt="Nusa Logo"
                   style={{
                     height: "1.5rem",

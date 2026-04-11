@@ -27,7 +27,8 @@ export const getDefaultImages = () => {
   return {
     ARTICLE: `${basePath}/default-article-image.svg`,
     CATEGORY: `${basePath}/default-category-image.svg`,
-    LOGO: `${basePath}/logo.png`
+    LOGO: `${basePath}/logo.png`,
+    LOGO_NUSA: `${basePath}/logo_nusa.png`
   };
 };
 
@@ -38,7 +39,8 @@ const basePath = appSubpath === '/' ? '' : appSubpath;
 export const DEFAULT_IMAGES = {
   ARTICLE: `${basePath}/default-article-image.svg`,
   CATEGORY: `${basePath}/default-category-image.svg`,
-  LOGO: `${basePath}/logo.png`
+  LOGO: `${basePath}/logo.png`,
+  LOGO_NUSA: `${basePath}/logo_nusa.png`
 };
 
 /**
