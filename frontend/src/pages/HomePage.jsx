@@ -13,6 +13,7 @@ import {
   FiLayers, FiActivity, FiTrendingUp
 } from 'react-icons/fi';
 import ImageWithFallback from '../components/ImageWithFallback';
+import { getDefaultImages } from '../utils/imageUtils';
 import './HomePage.css';
 
 /**
@@ -153,6 +154,8 @@ const HomePage = () => {
     );
   }
 
+  const images = getDefaultImages();
+
   return (
     <div className="homepage">
       {/* Hero Section */}
@@ -182,7 +185,7 @@ const HomePage = () => {
             <Col md={6}>
               <div className="hero-image">
                 <img
-                  src="/logo.png"
+                  src={images.LOGO}
                   alt="KMS Logo"
                   className="hero-logo"
                 />

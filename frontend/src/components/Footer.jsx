@@ -3,6 +3,7 @@ import { Container, Row, Col } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../contexts/ThemeContext";
+import { getDefaultImages } from "../utils/imageUtils";
 import "./Footer.css";
 
 /**
@@ -13,6 +14,7 @@ const Footer = () => {
   const { t } = useTranslation();
   const { isDarkMode } = useTheme();
   const currentYear = new Date().getFullYear();
+  const images = getDefaultImages();
 
   return (
     <footer
@@ -23,7 +25,7 @@ const Footer = () => {
           <Col md={5} className="mb-4 mb-md-0">
             <h5 className="brand-name">
               <img
-                src="/logo.png"
+                src={images.LOGO}
                 alt="KMS Logo"
                 style={{
                   height: "2.5rem",

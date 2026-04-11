@@ -5,7 +5,7 @@
 
 // Detect app subpath from window location at runtime
 // This is the primary method as it's more reliable than build-time environment variables
-const getAppSubpath = () => {
+export const getAppSubpath = () => {
   if (typeof window === 'undefined') return '/';
   
   const path = window.location.pathname;
@@ -19,6 +19,19 @@ const getAppSubpath = () => {
   return import.meta.env.VITE_APP_SUBPATH || '/';
 };
 
+// Get default images with current subpath - can be called at render time
+export const getDefaultImages = () => {
+  const appSubpath = getAppSubpath();
+  const basePath = appSubpath === '/' ? '' : appSubpath;
+  
+  return {
+    ARTICLE: `${basePath}/default-article-image.svg`,
+    CATEGORY: `${basePath}/default-category-image.svg`,
+    LOGO: `${basePath}/logo.png`
+  };
+};
+
+// Static export for backward compatibility
 const appSubpath = getAppSubpath();
 const basePath = appSubpath === '/' ? '' : appSubpath;
 

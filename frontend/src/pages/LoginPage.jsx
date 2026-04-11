@@ -10,6 +10,7 @@ import {
   isGoogleConfigured,
 } from "../services/googleService";
 import ErrorAlert from "../components/ErrorAlert";
+import { getDefaultImages } from "../utils/imageUtils";
 import "./AuthPages.css";
 
 /**
@@ -18,6 +19,7 @@ import "./AuthPages.css";
  */
 const LoginPage = () => {
   const { t } = useTranslation();
+  const images = getDefaultImages();
   const navigate = useNavigate();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -70,7 +72,7 @@ const LoginPage = () => {
         <div className="auth-card">
           <div className="auth-header">
             <img
-              src="/logo.png"
+              src={images.LOGO}
               alt="KMS Logo"
               className="auth-logo"
             />
