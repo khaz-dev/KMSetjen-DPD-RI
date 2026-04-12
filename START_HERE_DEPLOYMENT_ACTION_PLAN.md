@@ -83,7 +83,7 @@ ssh -i c:\Users\khair\khaz root@165.245.191.216
 cd /var/www/html/kmsetjendpdri/frontend
 
 # Build frontend
-VITE_APP_SUBPATH=/kmsetjendpdri npm run build
+VITE_APP_SUBPATH=/kms npm run build
 
 # Fix permissions
 sudo chown -R www-data:www-data dist/
@@ -93,11 +93,11 @@ sudo chmod -R 755 dist/
 sudo systemctl reload nginx
 
 # Test
-curl -I https://khaz.app/kmsetjendpdri/
+curl -I https://khaz.app/kms/
 # Should return: HTTP/2 200 OK (not 403)
 ```
 
-**Done!** Application should be accessible at https://khaz.app/kmsetjendpdri/
+**Done!** Application should be accessible at https://khaz.app/kms/
 
 ---
 
@@ -218,7 +218,7 @@ sudo systemctl restart postgresql
    DB_HOST=host.docker.internal
 
    # Frontend API URLs
-   VITE_API_BASE_URL=https://khaz.app/kmsetjendpdri/api
+   VITE_API_BASE_URL=https://khaz.app/kms/api
    CORS_ALLOWED_ORIGINS=https://khaz.app,https://www.khaz.app
 
    # Docker Redis (not localhost)
@@ -268,13 +268,13 @@ sudo systemctl restart postgresql
 
 1. **Configure Nginx**
    ```bash
-   sudo cp /var/www/html/kmsetjendpdri/nginx-kmsetjendpdri-config.conf \
-           /etc/nginx/sites-available/kmsetjendpdri
+   sudo cp /var/www/html/kmsetjendpdri/nginx-kms-docker.conf \
+           /etc/nginx/sites-available/kms
 
-   sudo ln -s /etc/nginx/sites-available/kmsetjendpdri \
-             /etc/nginx/sites-enabled/kmsetjendpdri
+   sudo ln -s /etc/nginx/sites-available/kms \
+             /etc/nginx/sites-enabled/kms
 
-   sudo rm -f /etc/nginx/sites-enabled/default
+   sudo rm -f /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/kmsetjendpdri
 
    sudo nginx -t
    # Should say "successful"
@@ -316,18 +316,18 @@ sudo systemctl restart postgresql
 2. **External Tests**
    ```bash
    # Test HTTP redirect
-   curl -I http://khaz.app/kmsetjendpdri/
+   curl -I http://khaz.app/kms/
 
    # Test HTTPS
-   curl -I https://khaz.app/kmsetjendpdri/
+   curl -I https://khaz.app/kms/
    # Should return 200 OK (not 403!)
 
    # Test API
-   curl -I https://khaz.app/kmsetjendpdri/api/
+   curl -I https://khaz.app/kms/api/
    ```
 
 3. **Browser Test**
-   - Open: https://khaz.app/kmsetjendpdri/
+   - Open: https://khaz.app/kms/
    - Should see React frontend
    - Green lock icon (SSL valid)
    - No console errors
@@ -402,14 +402,14 @@ This automates:
 ### 403 Forbidden Still Appears
 ```bash
 # Check frontend exists
-ls /var/www/html/kmsetjendpdri/dist/index.html
+ls /var/www/html/kms/dist/index.html
 
 # If missing: rebuild frontend (Option A steps)
-cd frontend && VITE_APP_SUBPATH=/kmsetjendpdri npm run build
+cd frontend && VITE_APP_SUBPATH=/kms npm run build
 
 # Check permissions
-sudo chown -R www-data:www-data /var/www/html/kmsetjendpdri/
-sudo chmod -R 755 /var/www/html/kmsetjendpdri/dist/
+sudo chown -R www-data:www-data /var/www/html/kms/
+sudo chmod -R 755 /var/www/html/kms/dist/
 
 # Reload nginx
 sudo systemctl reload nginx
@@ -458,7 +458,7 @@ connection.ensure_connection()  # Should succeed
 2. **DEPLOYMENT_CHECKLIST.md** - Complete pre/during/post checklist
 3. **FIX_403_FORBIDDEN_NOW.md** - Quick fix for current issue
 4. **deploy-docker.sh** - Automated deployment script
-5. **nginx-kmsetjendpdri-config.conf** - Nginx configuration (already in project)
+5. **nginx-kms-docker.conf** - Nginx configuration (already in project)
 6. **.env** - Environment configuration (edit with your values)
 
 ---
@@ -496,12 +496,12 @@ psql -U postgres -d kmsdb -c "SELECT 1;"
 
 **Option A (Quick - 5 min):**
 ```bash
-cd /var/www/html/kmsetjendpdri/frontend
-VITE_APP_SUBPATH=/kmsetjendpdri npm run build
+cd /var/www/html/kms/frontend
+VITE_APP_SUBPATH=/kms npm run build
 sudo chown -R www-data:www-data dist/
 sudo chmod -R 755 dist/
 sudo systemctl reload nginx
-curl -I https://khaz.app/kmsetjendpdri/
+curl -I https://khaz.app/kms/
 ```
 
 **Option B (Full - 45 min):**
@@ -528,7 +528,7 @@ curl -I https://khaz.app/kmsetjendpdri/
   docker-compose restart         # Restart all services
   sudo systemctl status postgresql    # Check PostgreSQL
   sudo systemctl status nginx    # Check nginx
-  sudo tail /var/log/nginx/kmsetjendpdri_error.log  # Nginx errors
+  sudo tail /var/log/nginx/kms_error.log  # Nginx errors
   ```
 
 ---
@@ -537,7 +537,7 @@ curl -I https://khaz.app/kmsetjendpdri/
 
 You're done when:
 
-✓ https://khaz.app/kmsetjendpdri/ loads (no 403)
+✓ https://khaz.app/kms/ loads (no 403)
 ✓ React frontend displays
 ✓ API endpoints respond
 ✓ SSL certificate valid (green lock)

@@ -26,6 +26,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     curl \
+    netcat-traditional \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security
@@ -38,6 +39,10 @@ COPY --from=builder /root/.local /home/django/.local
 
 # Copy application code
 COPY --chown=django:django . .
+
+# Copy entrypoint script
+COPY --chown=django:django entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 # Set environment variables
 ENV PATH=/home/django/.local/bin:$PATH \
@@ -61,5 +66,6 @@ RUN python manage.py collectstatic --noinput --clear || true
 # Expose port
 EXPOSE 8002
 
-# Start application with gunicorn
+# Use entrypoint for initialization, then start application
+ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["gunicorn", "--bind", "0.0.0.0:8002", "--workers", "4", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "config.wsgi:application"]
