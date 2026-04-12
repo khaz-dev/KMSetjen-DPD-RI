@@ -6,6 +6,7 @@ the proxy needs to communicate the script name via X-Script-Name header.
 This middleware converts it to Django's SCRIPT_NAME.
 """
 import logging
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from django.utils.deprecation import MiddlewareMixin
 
 logger = logging.getLogger(__name__)
@@ -48,6 +49,7 @@ class ScriptNameMiddleware(MiddlewareMixin):
     def process_response(self, request, response):
         """
         Process response - adjust Location header if needed for redirects.
+        Ensure both the path and the 'next' parameter include the SCRIPT_NAME.
         """
         # Check if this is a redirect response
         if response.status_code in [301, 302, 303, 307, 308]:
@@ -56,14 +58,44 @@ class ScriptNameMiddleware(MiddlewareMixin):
             
             # If Location header exists and SCRIPT_NAME is set
             if location and script_name and not location.startswith('http'):
-                # Check if the location already includes the script name
-                if not location.startswith(script_name):
-                    # For relative URLs, add the script name prefix
-                    if location.startswith('/'):
-                        response['Location'] = script_name + location
-                        logger.debug(
-                            f"ScriptNameMiddleware: Updated Location header from '{location}' "
-                            f"to '{script_name + location}'"
-                        )
+                # Parse the location URL
+                parsed = urlparse(location)
+                path = parsed.path
+                query_string = parsed.query
+                
+                # Check if the path already includes the script name
+                if not path.startswith(script_name):
+                    # Add script name to the path
+                    path = script_name + path
+                    
+                    # Parse query parameters
+                    if query_string:
+                        params = parse_qs(query_string, keep_blank_values=True)
+                        
+                        # Fix the 'next' parameter if it exists and doesn't include script_name
+                        if 'next' in params:
+                            next_url = params['next'][0]
+                            if next_url.startswith('/') and not next_url.startswith(script_name):
+                                params['next'] = [script_name + next_url]
+                                logger.debug(
+                                    f"ScriptNameMiddleware: Updated 'next' parameter from '{next_url}' "
+                                    f"to '{script_name + next_url}'"
+                                )
+                        
+                        # Rebuild query string
+                        new_query_parts = []
+                        for key, values in params.items():
+                            for value in values:
+                                new_query_parts.append(f"{key}={value}")
+                        query_string = '&'.join(new_query_parts)
+                    
+                    # Rebuild the location URL
+                    new_location = urlunparse((parsed.scheme, parsed.netloc, path, parsed.params, query_string, parsed.fragment))
+                    response['Location'] = new_location
+                    
+                    logger.debug(
+                        f"ScriptNameMiddleware: Updated Location header from '{location}' "
+                        f"to '{new_location}'"
+                    )
         
         return response
