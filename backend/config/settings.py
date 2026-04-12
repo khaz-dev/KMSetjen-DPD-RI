@@ -207,13 +207,15 @@ REST_FRAMEWORK = {
 # For development (localhost): Don't use subpath
 # For production/staging: Use subpath /kmsetjendpdri
 ENVIRONMENT = env('ENVIRONMENT', default='development')
-if ENVIRONMENT == 'development':
-    app_subpath = ''  # No subpath for local development
-else:
-    app_subpath = env('APP_SUBPATH', default='')  # Use APP_SUBPATH for production
+app_subpath = env('APP_SUBPATH', default='')  # Get subpath from environment
 
-STATIC_URL = f'{app_subpath}/static/' if app_subpath else '/static/'
-MEDIA_URL = f'{app_subpath}/media/' if app_subpath else '/media/'
+# STATIC_URL should NOT include subpath - it's for Django's internal file serving
+# WhiteNoise and Django will serve files from this path
+STATIC_URL = '/static/'
+MEDIA_URL = '/media/'
+
+# Store subpath for template rendering and URL generation
+APP_SUBPATH = app_subpath
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

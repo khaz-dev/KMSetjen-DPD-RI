@@ -6,6 +6,7 @@ the proxy needs to communicate the script name via X-Script-Name header.
 This middleware converts it to Django's SCRIPT_NAME.
 """
 import logging
+import re
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from django.utils.deprecation import MiddlewareMixin
 
@@ -19,10 +20,16 @@ class ScriptNameMiddleware(MiddlewareMixin):
     This allows Django to correctly generate URLs when running behind
     a reverse proxy with a URL prefix like /kms.
     
-    Without this, Django will generate incorrect redirect URLs like:
+    It also:
+    1. Fixes redirect URLs to include the script name
+    2. Rewrites static and media file URLs in HTML responses to include the script name
+    
+    Without this, Django will generate incorrect URLs like:
       /admin/login/?next=/admin/
+      /static/admin/css/base.css
     Instead of:
       /kms/admin/login/?next=/kms/admin/
+      /kms/static/admin/css/base.css
     """
     
     def process_request(self, request):
@@ -36,9 +43,6 @@ class ScriptNameMiddleware(MiddlewareMixin):
             # Set SCRIPT_NAME so Django knows the URL prefix
             request.META['SCRIPT_NAME'] = script_name
             
-            # Also ensure PATH_INFO doesn't include the script name
-            # This is already handled by Nginx (it strips /kms from the path before proxying)
-            # but we double-check here for safety
             logger.debug(
                 f"ScriptNameMiddleware: Set SCRIPT_NAME='{script_name}' "
                 f"for path {request.path}"
@@ -48,54 +52,110 @@ class ScriptNameMiddleware(MiddlewareMixin):
     
     def process_response(self, request, response):
         """
-        Process response - adjust Location header if needed for redirects.
-        Ensure both the path and the 'next' parameter include the SCRIPT_NAME.
+        Process response to:
+        1. Fix redirect URLs and 'next' parameters to include SCRIPT_NAME
+        2. Rewrite static/media URLs in HTML to include SCRIPT_NAME
         """
-        # Check if this is a redirect response
+        script_name = request.META.get('SCRIPT_NAME', '')
+        
+        # Fix redirect responses
         if response.status_code in [301, 302, 303, 307, 308]:
-            location = response.get('Location', '')
-            script_name = request.META.get('SCRIPT_NAME', '')
-            
-            # If Location header exists and SCRIPT_NAME is set
-            if location and script_name and not location.startswith('http'):
-                # Parse the location URL
-                parsed = urlparse(location)
-                path = parsed.path
-                query_string = parsed.query
-                
-                # Check if the path already includes the script name
-                if not path.startswith(script_name):
-                    # Add script name to the path
-                    path = script_name + path
-                    
-                    # Parse query parameters
-                    if query_string:
-                        params = parse_qs(query_string, keep_blank_values=True)
-                        
-                        # Fix the 'next' parameter if it exists and doesn't include script_name
-                        if 'next' in params:
-                            next_url = params['next'][0]
-                            if next_url.startswith('/') and not next_url.startswith(script_name):
-                                params['next'] = [script_name + next_url]
-                                logger.debug(
-                                    f"ScriptNameMiddleware: Updated 'next' parameter from '{next_url}' "
-                                    f"to '{script_name + next_url}'"
-                                )
-                        
-                        # Rebuild query string
-                        new_query_parts = []
-                        for key, values in params.items():
-                            for value in values:
-                                new_query_parts.append(f"{key}={value}")
-                        query_string = '&'.join(new_query_parts)
-                    
-                    # Rebuild the location URL
-                    new_location = urlunparse((parsed.scheme, parsed.netloc, path, parsed.params, query_string, parsed.fragment))
-                    response['Location'] = new_location
-                    
-                    logger.debug(
-                        f"ScriptNameMiddleware: Updated Location header from '{location}' "
-                        f"to '{new_location}'"
-                    )
+            self._fix_redirect_location(response, script_name)
+        
+        # Rewrite static and media URLs in HTML responses
+        if script_name and 'text/html' in response.get('Content-Type', ''):
+            self._rewrite_static_urls(response, script_name)
         
         return response
+    
+    def _fix_redirect_location(self, response, script_name):
+        """Fix Location header in redirect responses"""
+        if not script_name:
+            return
+        
+        location = response.get('Location', '')
+        
+        # If Location header exists and is relative (not absolute with http/https)
+        if location and not location.startswith('http'):
+            # Parse the location URL
+            parsed = urlparse(location)
+            path = parsed.path
+            query_string = parsed.query
+            
+            # Check if the path already includes the script name
+            if not path.startswith(script_name):
+                # Add script name to the path
+                path = script_name + path
+                
+                # Parse query parameters
+                if query_string:
+                    params = parse_qs(query_string, keep_blank_values=True)
+                    
+                    # Fix the 'next' parameter if it exists and doesn't include script_name
+                    if 'next' in params:
+                        next_url = params['next'][0]
+                        if next_url.startswith('/') and not next_url.startswith(script_name):
+                            params['next'] = [script_name + next_url]
+                            logger.debug(
+                                f"ScriptNameMiddleware: Updated 'next' parameter from '{next_url}' "
+                                f"to '{script_name + next_url}'"
+                            )
+                    
+                    # Rebuild query string
+                    new_query_parts = []
+                    for key, values in params.items():
+                        for value in values:
+                            if value:
+                                new_query_parts.append(f"{key}={value}")
+                            else:
+                                new_query_parts.append(key)
+                    query_string = '&'.join(new_query_parts)
+                
+                # Rebuild the location URL
+                new_location = urlunparse((parsed.scheme, parsed.netloc, path, parsed.params, query_string, parsed.fragment))
+                response['Location'] = new_location
+                
+                logger.debug(
+                    f"ScriptNameMiddleware: Updated Location header from '{location}' "
+                    f"to '{new_location}'"
+                )
+    
+    def _rewrite_static_urls(self, response, script_name):
+        """Rewrite /static/ and /media/ URLs in HTML to include script name"""
+        try:
+            # Get response content
+            content = response.content.decode(response.charset or 'utf-8')
+            original_content = content
+            
+            # Patterns to match static and media URLs
+            # Match href="/static/..." and src="/static/..." and similar patterns
+            # But avoid rewriting already rewritten URLs
+            patterns = [
+                # href="/static/...
+                (r'href=(["\'])(/static/)', rf'href=\1{script_name}\2'),
+                # src="/static/...
+                (r'src=(["\'])(/static/)', rf'src=\1{script_name}\2'),
+                # href="/media/...
+                (r'href=(["\'])(/media/)', rf'href=\1{script_name}\2'),
+                # src="/media/...
+                (r'src=(["\'])(/media/)', rf'src=\1{script_name}\2'),
+                # url(/static/...) in CSS
+                (r'url\((["\']?)(/static/)', rf'url(\1{script_name}\2'),
+                # url(/media/...) in CSS
+                (r'url\((["\']?)(/media/)', rf'url(\1{script_name}\2'),
+            ]
+            
+            # Apply all regex patterns to rewrite URLs
+            for pattern, replacement in patterns:
+                content = re.sub(pattern, replacement, content)
+            
+            # If content was modified, update response
+            if content != original_content:
+                response.content = content.encode(response.charset or 'utf-8')
+                logger.debug(
+                    f"ScriptNameMiddleware: Rewrote static/media URLs in HTML response"
+                )
+        except Exception as e:
+            # If something goes wrong with rewriting, just return the original response
+            logger.error(f"ScriptNameMiddleware: Error rewriting URLs: {e}")
+            pass
