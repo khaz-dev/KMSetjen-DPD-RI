@@ -81,13 +81,21 @@ class ScriptNameMiddleware(MiddlewareMixin):
             parsed = urlparse(location)
             path = parsed.path
             query_string = parsed.query
+            fragment = parsed.fragment
+            
+            logger.debug(
+                f"ScriptNameMiddleware: Processing redirect - "
+                f"path='{path}', script_name='{script_name}', "
+                f"starts_with_script_name={path.startswith(script_name)}"
+            )
             
             # Check if the path already includes the script name
-            if not path.startswith(script_name):
+            if path and not path.startswith(script_name):
                 # Add script name to the path
-                path = script_name + path
+                new_path = script_name + path
                 
                 # Parse query parameters
+                new_query_parts = []
                 if query_string:
                     params = parse_qs(query_string, keep_blank_values=True)
                     
@@ -102,22 +110,23 @@ class ScriptNameMiddleware(MiddlewareMixin):
                             )
                     
                     # Rebuild query string
-                    new_query_parts = []
                     for key, values in params.items():
                         for value in values:
                             if value:
                                 new_query_parts.append(f"{key}={value}")
                             else:
                                 new_query_parts.append(key)
-                    query_string = '&'.join(new_query_parts)
+                
+                new_query_string = '&'.join(new_query_parts)
                 
                 # Rebuild the location URL
-                new_location = urlunparse((parsed.scheme, parsed.netloc, path, parsed.params, query_string, parsed.fragment))
+                new_location = urlunparse((parsed.scheme, parsed.netloc, new_path, parsed.params, new_query_string, fragment))
                 response['Location'] = new_location
                 
-                logger.debug(
-                    f"ScriptNameMiddleware: Updated Location header from '{location}' "
-                    f"to '{new_location}'"
+                logger.info(
+                    f"ScriptNameMiddleware: Fixed redirect Location header - "
+                    f"from '{location}' to '{new_location}' - "
+                    f"(status={response.status_code})"
                 )
     
     def _rewrite_static_urls(self, response, script_name):
