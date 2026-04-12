@@ -46,11 +46,11 @@ docker-compose exec kms_django python manage.py create_admin --generate
 
 # Output shows:
 # Generated secure password: xX9kL2@pQ#mN5vB!
-# ✓ Admin user created: admin_prod
+# ✓ Admin user created: khaz_prod
 # =========================================================
 # ADMIN CREDENTIALS:
-# Username: admin_prod
-# Email: admin@khaz.app
+# Username: khaz_prod
+# Email: khairilazmiashari@gmail.com
 # Password: xX9kL2@pQ#mN5vB!
 # =========================================================
 
@@ -60,7 +60,7 @@ docker-compose exec kms_django python manage.py create_admin --generate
 **Then Test:**
 ```
 Browser: https://khaz.app/kms/admin/
-Username: admin_prod
+Username: khaz_prod
 Password: [the generated password]
 ```
 
@@ -77,8 +77,8 @@ cd /var/www/html/kms
 docker-compose exec kms_django python manage.py createsuperuser
 
 # Prompts:
-# Username: admin_production
-# Email address: admin@khaz.app  
+# Username: khaz_production
+# Email address: khairilazmiashari@gmail.com  
 # Password: [enter your secure password]
 # Password (again): [confirm]
 # Superuser created successfully.
@@ -87,7 +87,7 @@ docker-compose exec kms_django python manage.py createsuperuser
 **Then Test:**
 ```
 Browser: https://khaz.app/kms/admin/
-Username: admin_production
+Username: khaz_production
 Password: [your password]
 ```
 
@@ -115,13 +115,13 @@ User = get_user_model()
 User.objects.filter(is_superuser=True).values('username', 'email')
 
 # Should output:
-# <QuerySet [{'username': 'admin_prod', 'email': 'admin@khaz.app'}]>
+# <QuerySet [{'username': 'khaz_prod', 'email': 'khairilazmiashari@gmail.com'}]>
 ```
 
 ### 3. Check Admin Panel Works ✓
 ```bash
 # Get admin cookie-based session
-curl -c cookies.txt -d "username=admin_prod&password=YourPassword" \
+curl -c cookies.txt -d "username=khaz_prod&password=YourPassword" \
   https://khaz.app/kms/admin/login/
 
 # List articles
@@ -156,9 +156,9 @@ User.objects.all().count()  # Should show > 0
 ```bash
 # Reset password
 docker-compose exec kms_django python manage.py create_admin \
-  --username admin_prod \
+  --username khaz_prod \
   --password "MyNewPassword123!" \
-  --email admin@khaz.app
+  --email khairilazmiashari@gmail.com
 ```
 
 **Check 3: Are there database issues?**
@@ -183,12 +183,12 @@ docker-compose logs kms_django | grep -i "script\|middleware\|SCRIPT_NAME"
 ### Issue: Password doesn't work
 ```bash
 # Manually reset admin password
-docker-compose exec kms_django python manage.py changepassword admin_prod
+docker-compose exec kms_django python manage.py changepassword khaz_prod
 # Prompts for new password
 
 # Or recreate:
 docker-compose exec kms_django python manage.py create_admin \
-  --username admin_prod \
+  --username khaz_prod \
   --password "CompletelyNewPassword123!"
 ```
 
@@ -200,7 +200,7 @@ docker-compose exec kms_django python manage.py create_admin \
 docker-compose exec kms_django python manage.py shell
 from django.contrib.auth import get_user_model
 User = get_user_model()
-user = User.objects.get(username='admin_prod')
+user = User.objects.get(username='khaz_prod')
 user.is_staff = True
 user.is_superuser = True
 user.save()
@@ -223,7 +223,7 @@ user.save()
 
 **Why Option B is best:**
 - ✅ Auto-generates strong password (16 characters, symbols)
-- ✅ Uses `admin_prod` username (avoid generic `admin`)
+- ✅ Uses `khaz_prod` username (avoid generic `admin`)
 - ✅ Professional email format
 - ✅ Can be run multiple times safely
 - ✅ Provides clear credential output
@@ -256,7 +256,7 @@ docker-compose exec kms_django python manage.py create_admin --generate
 
 ### Update Admin Password
 ```bash
-docker-compose exec kms_django python manage.py changepassword admin_prod
+docker-compose exec kms_django python manage.py changepassword khaz_prod
 # Prompts for new password interactively
 ```
 

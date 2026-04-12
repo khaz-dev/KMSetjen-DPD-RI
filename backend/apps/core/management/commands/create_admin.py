@@ -1,6 +1,6 @@
 """
 Create or update Django admin superuser with secure credentials.
-Usage: python manage.py create_admin --username admin_prod --password YourSecurePassword123!
+Usage: python manage.py create_admin --username khaz_prod --password YourSecurePassword123!
        python manage.py create_admin --generate
 """
 from django.core.management.base import BaseCommand, CommandError
@@ -18,13 +18,13 @@ class Command(BaseCommand):
             '--username',
             type=str,
             default=None,
-            help='Username for admin (default: admin_prod)',
+            help='Username for admin (default: khaz_prod)',
         )
         parser.add_argument(
             '--email',
             type=str,
             default=None,
-            help='Email for admin (default: admin@khaz.app)',
+            help='Email for admin (default: khairilazmiashari@gmail.com)',
         )
         parser.add_argument(
             '--password',
@@ -39,8 +39,8 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        username = options.get('username') or 'admin_prod'
-        email = options.get('email') or 'admin@khaz.app'
+        username = options.get('username') or 'khaz_prod'
+        email = options.get('email') or 'khairilazmiashari@gmail.com'
         password = options.get('password')
         
         # Generate password if requested

@@ -45,7 +45,7 @@
 python manage.py create_admin --generate
 
 # Use specific credentials
-python manage.py create_admin --username admin_prod --password "YourPassword123!"
+python manage.py create_admin --username khaz_prod --password "YourPassword123!"
 ```
 **Features**:
 - Generates cryptographically secure random passwords (16 chars, symbols)
@@ -112,7 +112,7 @@ docker-compose exec kms_django python manage.py seed_comprehensive
 ssh -i c:\Users\khair\khaz root@165.245.191.216
 cd /var/www/html/kms
 docker-compose exec kms_django python manage.py create_admin --generate
-# Creates admin_prod with auto-generated strong password
+# Creates khaz_prod with auto-generated strong password
 ```
 
 ### Option 3: Manual (4 min) - Custom Credentials
@@ -156,7 +156,7 @@ curl https://khaz.app/kms/api/v1/articles/
 
 ### Implementation:
 - ✅ Random password generation using secrets module + symbols
-- ✅ Username changed from generic `admin` to `admin_prod`
+- ✅ Username changed from generic `admin` to `khaz_prod`
 - ✅ Professional email format
 - ✅ Credentials displayed once then not logged
 - ✅ Non-root user in Docker (UID 1000)
@@ -165,7 +165,7 @@ curl https://khaz.app/kms/api/v1/articles/
 | Practice | Status | Evidence |
 |----------|--------|----------|
 | Strong passwords | ✅ | 16 char min, letters + digits + symbols |
-| Unique username | ✅ | `admin_prod` instead of `admin` |
+| Unique username | ✅ | `khaz_prod` instead of `admin` |
 | Non-reusable creds | ✅ | Each deployment can generate new |
 | Secure storage | ✅ | No secrets in code, use management command |
 | Docker security | ✅ | Non-root user, netcat for checks |
@@ -210,7 +210,7 @@ User.objects.all().count()
 ### Wrong password / need to reset
 ```bash
 # Reset password interactively
-docker-compose exec kms_django python manage.py changepassword admin_prod
+docker-compose exec kms_django python manage.py changepassword khaz_prod
 
 # Or create new admin
 docker-compose exec kms_django python manage.py create_admin --generate

@@ -38,7 +38,7 @@ python manage.py shell << END
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
-admin_exists = User.objects.filter(username='admin_prod', is_superuser=True).exists()
+admin_exists = User.objects.filter(username='khaz_prod', is_superuser=True).exists()
 
 if not admin_exists:
     print("  → Creating default admin user...")

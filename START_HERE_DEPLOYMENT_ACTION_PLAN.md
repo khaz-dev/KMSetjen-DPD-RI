@@ -285,7 +285,7 @@ sudo systemctl restart postgresql
    sudo certbot certonly --standalone \
      -d khaz.app \
      -d www.khaz.app \
-     --email admin@khaz.app \
+     --email khairilazmiashari@gmail.com \
      --non-interactive \
      --agree-tos
 

@@ -6,6 +6,16 @@
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 const GOOGLE_SCOPES = 'profile email openid';
 
+/**
+ * Get app subpath for URL construction
+ * @returns {string} App subpath (e.g., '/kms', '/', or '/kmsetjendpdri')
+ */
+const getAppSubpath = () => {
+  const subpath = import.meta.env.VITE_APP_SUBPATH || '/';
+  // Remove trailing slash for consistent URL construction
+  return subpath.replace(/\/$/, '');
+};
+
 // Cache to prevent duplicate code exchanges (React StrictMode fix)
 let pendingCodeExchange = null;
 const exchangedCodes = new Set();
@@ -19,7 +29,8 @@ export const getGoogleAuthorizationUrl = () => {
     throw new Error('Google Client ID not configured');
   }
 
-  const redirectUri = `${window.location.origin}/google/callback`;
+  const appSubpath = getAppSubpath();
+  const redirectUri = `${window.location.origin}${appSubpath}/google/callback`;
   const state = generateRandomState();
   
   // Store state for verification (using localStorage for persistence across redirect)
@@ -125,7 +136,8 @@ export const handleGoogleCallback = async (code, state, authService) => {
 
     // Exchange code for tokens via backend with retry logic
     // Note: Backend uses its configured redirect_uri (must match Google's registered URI)
-    const redirectUri = `${window.location.origin}/google/callback`;
+    const appSubpath = getAppSubpath();
+    const redirectUri = `${window.location.origin}${appSubpath}/google/callback`;
     console.debug('[GoogleService] Calling googleCallback with:');
     console.debug('[GoogleService] - redirectUri:', redirectUri);
     console.debug('[GoogleService] - code:', code.substring(0, 20) + '...');

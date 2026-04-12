@@ -350,7 +350,7 @@ SSO_CALLBACK_URL = env('SSO_CALLBACK_URL', default='http://localhost:8002/api/au
 # ============================================================================
 GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID', default='')
 GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET', default='')
-GOOGLE_REDIRECT_URI = env('GOOGLE_REDIRECT_URI', default='http://localhost:5175/google/callback')
+GOOGLE_REDIRECT_URI = env('GOOGLE_REDIRECT_URI', default='http://localhost:5175/kms/google/callback')
 
 # ============================================================================
 # GOOGLE RECAPTCHA CONFIGURATION
