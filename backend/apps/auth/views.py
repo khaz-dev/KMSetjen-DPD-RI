@@ -457,7 +457,7 @@ def google_callback(request):
     {
         "code": "authorization_code_from_google",
         "state": "csrf_state_token",
-        "redirect_uri": "http://localhost:5175/google/callback"
+        "redirect_uri": "http://localhost:5175/kms/google/callback/"
     }
     
     Response:
@@ -495,7 +495,7 @@ def google_callback(request):
         # Get Google OAuth configuration from Django settings
         google_client_id = getattr(settings, 'GOOGLE_CLIENT_ID', '')
         google_client_secret = getattr(settings, 'GOOGLE_CLIENT_SECRET', '')
-        google_redirect_uri = getattr(settings, 'GOOGLE_REDIRECT_URI', 'http://localhost:5175/google/callback')
+        google_redirect_uri = getattr(settings, 'GOOGLE_REDIRECT_URI', 'http://localhost:5175/kms/google/callback/')
         
         if not google_client_id or not google_client_secret:
             logger.error('[GoogleCallback] Google OAuth not configured on server')

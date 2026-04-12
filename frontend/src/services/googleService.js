@@ -30,7 +30,7 @@ export const getGoogleAuthorizationUrl = () => {
   }
 
   const appSubpath = getAppSubpath();
-  const redirectUri = `${window.location.origin}${appSubpath}/google/callback`;
+  const redirectUri = `${window.location.origin}${appSubpath}/google/callback/`;
   const state = generateRandomState();
   
   // Store state for verification (using localStorage for persistence across redirect)
@@ -137,7 +137,7 @@ export const handleGoogleCallback = async (code, state, authService) => {
     // Exchange code for tokens via backend with retry logic
     // Note: Backend uses its configured redirect_uri (must match Google's registered URI)
     const appSubpath = getAppSubpath();
-    const redirectUri = `${window.location.origin}${appSubpath}/google/callback`;
+    const redirectUri = `${window.location.origin}${appSubpath}/google/callback/`;
     console.debug('[GoogleService] Calling googleCallback with:');
     console.debug('[GoogleService] - redirectUri:', redirectUri);
     console.debug('[GoogleService] - code:', code.substring(0, 20) + '...');
