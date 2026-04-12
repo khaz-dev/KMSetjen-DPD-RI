@@ -40,10 +40,6 @@ COPY --from=builder /root/.local /home/django/.local
 # Copy application code
 COPY --chown=django:django . .
 
-# Copy entrypoint script
-COPY --chown=django:django entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
-
 # Set environment variables
 ENV PATH=/home/django/.local/bin:$PATH \
     PYTHONUNBUFFERED=1 \
@@ -66,6 +62,5 @@ RUN python manage.py collectstatic --noinput --clear || true
 # Expose port
 EXPOSE 8002
 
-# Use entrypoint for initialization, then start application
-ENTRYPOINT ["/app/entrypoint.sh"]
+# Start application with gunicorn
 CMD ["gunicorn", "--bind", "0.0.0.0:8002", "--workers", "4", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "config.wsgi:application"]
