@@ -1,0 +1,17 @@
+{% extends "admin/base.html" %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <!-- Custom favicon with subpath support -->
+  {% if APP_SUBPATH %}
+    <!-- Staging/Production: Use subpath for favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ APP_SUBPATH }}/favicon.ico" />
+    <link rel="icon" type="image/svg+xml" href="{{ APP_SUBPATH }}/favicon.svg" />
+    <link rel="shortcut icon" href="{{ APP_SUBPATH }}/favicon.ico" />
+  {% else %}
+    <!-- Local development: Use root favicon endpoint -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+  {% endif %}
+{% endblock %}

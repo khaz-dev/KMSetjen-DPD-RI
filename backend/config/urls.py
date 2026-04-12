@@ -7,6 +7,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from config.favicon_views import favicon_view, favicon_svg_view
 
 @require_http_methods(["GET"])
 def api_root(request):
@@ -44,6 +45,10 @@ def api_endpoint(request):
     })
 
 urlpatterns = [
+    # Favicon support for root domain (for admin pages)
+    path('favicon.ico', favicon_view, name='favicon-ico'),
+    path('favicon.svg', favicon_svg_view, name='favicon-svg'),
+    
     # Root API
     path('', api_root, name='api-root'),
     path('health/', health_check, name='health-check'),
