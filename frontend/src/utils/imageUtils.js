@@ -3,19 +3,22 @@
  * Centralized configuration for default and fallback images
  */
 
-// Detect app subpath from window location at runtime
-// This is the primary method as it's more reliable than build-time environment variables
+/**
+ * Get app subpath from build-time environment variable.
+ * 
+ * IMPORTANT: This MUST use import.meta.env.VITE_APP_SUBPATH, not window.location.pathname,
+ * because:
+ * - The app subpath is a deployment-time configuration constant
+ * - window.location.pathname includes BOTH app subpath AND current page route
+ * - Cannot reliably distinguish between them (e.g., /knowledges could be a route or subpath)
+ * - Bug example: On local dev, /knowledges route was mistakenly detected as the app subpath,
+ *   resulting in logo path /knowledges/logo.png instead of /logo.png
+ * 
+ * Solution: Always use the build-time environment variable
+ * @returns {string} App subpath (e.g., '/', '/kms', '/kmsetjendpdri')
+ */
 export const getAppSubpath = () => {
-  if (typeof window === 'undefined') return '/';
-  
-  const path = window.location.pathname;
-  // Match /kms, /kmsetjendpdri, etc from the pathname
-  const match = path.match(/^(\/[a-z_]+)/);
-  if (match && match[1] && match[1] !== '/') {
-    return match[1];
-  }
-  
-  // Fallback to environment variable if pathname detection fails
+  // Use environment variable set at build time (more reliable than runtime detection)
   return import.meta.env.VITE_APP_SUBPATH || '/';
 };
 
