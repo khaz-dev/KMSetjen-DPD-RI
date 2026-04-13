@@ -70,3 +70,10 @@ htmlcov/
 # Archives
 *.zip
 *.tar.gz
+
+# Temporary data exports (user migrations, backups - never track)
+*_export.json
+*_import.json
+*_merge*.json
+users_export.json
+backend/users*.json
