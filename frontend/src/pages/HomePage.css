@@ -526,3 +526,123 @@
     display: none;
   }
 }
+
+/* Repositories Section */
+.repositories-section {
+  background-color: #ffffff;
+  color: #212529;
+  transition: background-color 0.3s;
+}
+
+.repositories-section h2 {
+  color: #212529;
+  font-weight: 600;
+}
+
+.repositories-section > .text-muted {
+  color: #6c757d !important;
+}
+
+[data-theme="dark"] .repositories-section {
+  background-color: #1a1a1a;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .repositories-section h2 {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .repositories-section > .text-muted {
+  color: #d0d0d0 !important;
+}
+
+/* Repository Card */
+.repository-card {
+  border: 1px solid #e0e0e0;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  color: #212529;
+}
+
+.repository-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  border-color: #14b8a6;
+}
+
+.repository-icon-container {
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  color: white;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+
+[data-theme="dark"] .repository-card {
+  background: #2d2d2d;
+  color: #ffffff;
+  border-color: #404040;
+}
+
+[data-theme="dark"] .repository-card:hover {
+  border-color: #5eead4;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .repository-icon-container {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+}
+
+.repository-card h5 {
+  color: #14b8a6;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .repository-card h5 {
+  color: #5eead4;
+}
+
+.repository-card .text-muted {
+  color: #6c757d;
+}
+
+[data-theme="dark"] .repository-card .text-muted {
+  color: #d0d0d0 !important;
+}
+
+.repository-card .badge {
+  font-size: 0.75rem;
+}
+
+.repository-card .btn-sm {
+  font-size: 0.85rem;
+  padding: 0.35rem 0.75rem;
+}
+
+.repository-card .btn-outline-secondary {
+  color: #6c757d;
+  border-color: #dee2e6;
+}
+
+.repository-card .btn-outline-secondary:hover {
+  background-color: #e9ecef;
+  border-color: #dee2e6;
+}
+
+[data-theme="dark"] .repository-card .btn-outline-secondary {
+  color: #d0d0d0;
+  border-color: #404040;
+}
+
+[data-theme="dark"] .repository-card .btn-outline-secondary:hover {
+  background-color: #404040;
+  border-color: #505050;
+}
+

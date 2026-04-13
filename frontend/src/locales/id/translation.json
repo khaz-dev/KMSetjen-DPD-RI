@@ -100,11 +100,21 @@
     "search_placeholder": "Cari pengetahuan, kategori...",
     "popular_articles": "Pengetahuan Populer",
     "browse_categories": "Jelajahi berdasarkan Kategori",
+    "explore_repositories": "Jelajahi Repositori Lainnya",
+    "explore_repositories_subtitle": "Akses sumber pengetahuan penting dari Setjen DPD RI",
     "share_knowledge": "Bagikan Pengetahuan Anda",
     "share_subtitle": "Berkontribusi pada basis pengetahuan kami dengan berbagi keahlian Anda dengan komunitas DPD RI.",
     "no_articles": "Belum ada pengetahuan tersedia.",
     "no_categories": "Belum ada kategori tersedia.",
-    "articles_count": "pengetahuan"
+    "articles_count": "pengetahuan",
+    "perpustakaan_title": "Perpustakaan DPD RI",
+    "perpustakaan_desc": "Perpustakaan khusus yang menyelenggarakan koleksi pengetahuan dan sumber daya dari DPD RI",
+    "perpustakaan_status": "Dalam Pengembangan",
+    "jdih_title": "JDIH DPD RI",
+    "jdih_desc": "Jaringan Dokumentasi dan Informasi Hukum yang berisi peraturan perundang-undangan dan dokumen hukum terkait DPD RI",
+    "ppid_title": "PPID DPD RI",
+    "ppid_desc": "Pejabat Pengelola Informasi dan Dokumentasi yang menyediakan akses informasi publik dari Setjen DPD RI",
+    "open_external": "Buka di Jendela Baru"
   },
   "login": {
     "title": "Masuk ke KMS",

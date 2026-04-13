@@ -100,11 +100,21 @@
     "search_placeholder": "Search knowledge, categories...",
     "popular_articles": "Popular Knowledge",
     "browse_categories": "Browse by Category",
+    "explore_repositories": "Explore Other Repositories",
+    "explore_repositories_subtitle": "Access important knowledge resources from DPD RI Secretariat",
     "share_knowledge": "Share Your Knowledge",
     "share_subtitle": "Contribute to our knowledge base by sharing your expertise with the DPD RI community.",
     "no_articles": "No articles available yet.",
     "no_categories": "No categories available yet.",
-    "articles_count": "knowledge"
+    "articles_count": "knowledge",
+    "perpustakaan_title": "DPD RI Library",
+    "perpustakaan_desc": "A specialized library that organizes a collection of knowledge and resources from DPD RI",
+    "perpustakaan_status": "Under Development",
+    "jdih_title": "JDIH DPD RI",
+    "jdih_desc": "Legal Documentation and Information Network containing regulations and legal documents related to DPD RI",
+    "ppid_title": "PPID DPD RI",
+    "ppid_desc": "Public Information and Documentation Officers providing access to public information from DPD RI Secretariat",
+    "open_external": "Open in New Window"
   },
   "login": {
     "title": "Login to KMS",

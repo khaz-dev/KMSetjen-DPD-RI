@@ -10,7 +10,7 @@ import { useLanguage } from '../hooks/useLanguage';
 import { 
   FiEye, FiHeart, FiFileText, FiBell, FiBook, 
   FiBarChart2, FiRss, FiFolder, FiTag, FiHome, FiUsers,
-  FiLayers, FiActivity, FiTrendingUp
+  FiLayers, FiActivity, FiTrendingUp, FiExternalLink
 } from 'react-icons/fi';
 import ImageWithFallback from '../components/ImageWithFallback';
 import { getDefaultImages } from '../utils/imageUtils';
@@ -329,6 +329,86 @@ const HomePage = () => {
                 <p className="text-muted">{t('home.no_categories')}</p>
               </Col>
             )}
+          </Row>
+        </Container>
+      </section>
+
+      {/* Related Repositories */}
+      <section className="py-5 repositories-section">
+        <Container>
+          <h2 className="mb-2">{t('home.explore_repositories')}</h2>
+          <p className="text-muted mb-4">{t('home.explore_repositories_subtitle')}</p>
+          <Row>
+            {/* Perpustakaan DPD RI */}
+            <Col md={4} className="mb-3">
+              <Card className="repository-card h-100">
+                <div className="repository-icon-container">
+                  <FiBook size={32} />
+                </div>
+                <Card.Body className="d-flex flex-column">
+                  <h5 className="mb-2">{t('home.perpustakaan_title')}</h5>
+                  <p className="text-muted flex-grow-1 small">
+                    {t('home.perpustakaan_desc')}
+                  </p>
+                  <div className="d-flex justify-content-between align-items-center mt-3">
+                    <span className="badge bg-warning text-dark">
+                      {t('home.perpustakaan_status')}
+                    </span>
+                    <button className="btn btn-sm btn-outline-secondary" disabled>
+                      {t('home.open_external')}
+                    </button>
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+
+            {/* JDIH DPD RI */}
+            <Col md={4} className="mb-3">
+              <Card className="repository-card h-100">
+                <div className="repository-icon-container">
+                  <FiFileText size={32} />
+                </div>
+                <Card.Body className="d-flex flex-column">
+                  <h5 className="mb-2">{t('home.jdih_title')}</h5>
+                  <p className="text-muted flex-grow-1 small">
+                    {t('home.jdih_desc')}
+                  </p>
+                  <a 
+                    href="https://jdih.dpd.go.id/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="btn btn-sm btn-primary w-100"
+                  >
+                    <FiExternalLink size={14} className="me-1" />
+                    {t('home.open_external')}
+                  </a>
+                </Card.Body>
+              </Card>
+            </Col>
+
+            {/* PPID DPD RI */}
+            <Col md={4} className="mb-3">
+              <Card className="repository-card h-100">
+                <div className="repository-icon-container">
+                  <FiFolder size={32} />
+                </div>
+                <Card.Body className="d-flex flex-column">
+                  <h5 className="mb-2">{t('home.ppid_title')}</h5>
+                  <p className="text-muted flex-grow-1 small">
+                    {t('home.ppid_desc')}
+                  </p>
+                  <a 
+                    href="https://ppid.dpd.go.id/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="btn btn-sm btn-primary w-100"
+                  >
+                    <FiExternalLink size={14} className="me-1" />
+                    {t('home.open_external')}
+                  </a>
+                </Card.Body>
+              </Card>
+            </Col>
           </Row>
         </Container>
       </section>
