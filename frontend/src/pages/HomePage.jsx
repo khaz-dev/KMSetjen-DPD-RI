@@ -13,7 +13,7 @@ import {
   FiLayers, FiActivity, FiTrendingUp, FiExternalLink
 } from 'react-icons/fi';
 import ImageWithFallback from '../components/ImageWithFallback';
-import { getDefaultImages } from '../utils/imageUtils';
+import { getDefaultImages, getAssetPath } from '../utils/imageUtils';
 import './HomePage.css';
 
 /**
@@ -344,7 +344,7 @@ const HomePage = () => {
               <Card className="repository-card h-100">
                 <div className="repository-image-container">
                   <ImageWithFallback 
-                    src="/perpustakaan.jpg" 
+                    src={getAssetPath('perpustakaan.jpg')} 
                     alt={t('home.perpustakaan_title')}
                     className="repository-image"
                     type="repository"
@@ -373,7 +373,7 @@ const HomePage = () => {
               <Card className="repository-card h-100">
                 <div className="repository-image-container">
                   <ImageWithFallback 
-                    src="/jdih.png" 
+                    src={getAssetPath('jdih.png')} 
                     alt={t('home.jdih_title')}
                     className="repository-image"
                     type="repository"
@@ -403,7 +403,7 @@ const HomePage = () => {
               <Card className="repository-card h-100">
                 <div className="repository-image-container">
                   <ImageWithFallback 
-                    src="/ppid.jpg" 
+                    src={getAssetPath('ppid.jpg')} 
                     alt={t('home.ppid_title')}
                     className="repository-image"
                     type="repository"

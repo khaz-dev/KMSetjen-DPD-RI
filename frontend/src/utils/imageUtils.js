@@ -22,6 +22,24 @@ export const getAppSubpath = () => {
   return import.meta.env.VITE_APP_SUBPATH || '/';
 };
 
+/**
+ * Get the full path for assets in the public folder
+ * Handles subpath deployment automatically
+ * 
+ * Examples:
+ * - On localhost (/): getAssetPath('logo.png') → '/logo.png'
+ * - On staging (/kms): getAssetPath('logo.png') → '/kms/logo.png'
+ * - On production (/kmsetjendpdri): getAssetPath('logo.png') → '/kmsetjendpdri/logo.png'
+ * 
+ * @param {string} assetName - Name of asset file (e.g., 'perpustakaan.jpg', 'jdih.png')
+ * @returns {string} - Full path including subpath if needed
+ */
+export const getAssetPath = (assetName) => {
+  const appSubpath = getAppSubpath();
+  const basePath = appSubpath === '/' ? '' : appSubpath;
+  return `${basePath}/${assetName}`;
+};
+
 // Get default images with current subpath - can be called at render time
 export const getDefaultImages = () => {
   const appSubpath = getAppSubpath();
@@ -89,5 +107,7 @@ export default {
   DEFAULT_IMAGES,
   getDefaultImage,
   isValidImageSource,
-  handleImageError
+  handleImageError,
+  getAssetPath,
+  getAppSubpath
 };
