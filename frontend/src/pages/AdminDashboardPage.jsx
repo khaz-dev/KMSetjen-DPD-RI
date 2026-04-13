@@ -4,7 +4,7 @@ import { Container, Row, Col, Card, Spinner, Alert } from 'react-bootstrap';
 import { FiUsers, FiFileText, FiActivity, FiTrendingUp } from 'react-icons/fi';
 import AdminSidebar from '../components/AdminSidebar';
 import { useTheme } from '../contexts/ThemeContext';
-import axios from 'axios';
+import { adminAPI } from '../services/api';
 import './AdminDashboardPage.css';
 
 /**
@@ -54,16 +54,8 @@ function AdminDashboardPage({ onLogout }) {
       setLoading(true);
       setError(null);
 
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/v1/admin/statistics/`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-          },
-        }
-      );
-
-      setStats(response.data);
+      const response = await adminAPI.getStatistics();
+      setStats(response);
     } catch (err) {
       console.error('Error loading statistics:', err);
       setError(
