@@ -5,6 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../hooks/useLanguage";
 import { useTheme } from "../hooks/useTheme";
 import { getAbsoluteMediaUrl } from "../services/api";
+import { getDefaultImages } from "../utils/imageUtils";
 import {
   FaUser,
   FaCog,
@@ -25,28 +26,16 @@ const Header = () => {
   const { language, changeLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   
-  // Detect app subpath from current URL (primary method)
-  // This works at runtime and is more reliable than build-time environment variables
-  const getAppSubpath = () => {
-    const path = window.location.pathname;
-    // Match /kms, /kmsetjendpdri, etc from the pathname
-    const match = path.match(/^(\/[a-z_]+)/);
-    if (match && match[1] && match[1] !== '/') {
-      return match[1];
-    }
-    // Fallback to environment variable
-    return import.meta.env.VITE_APP_SUBPATH || '/';
-  };
-  
-  const appSubpath = getAppSubpath();
-  const logoUrl = appSubpath === '/' ? '/logo.png' : `${appSubpath}/logo.png`;
+  // Get default images (including correct logo path) from imageUtils
+  // This ensures logo works correctly on all routes with proper subpath handling
+  const images = getDefaultImages();
 
   return (
     <Navbar bg="light" expand="lg" sticky="top" className="navbar-custom">
       <Container>
         <Navbar.Brand as={Link} to="/" className="brand-logo">
           <img
-            src={logoUrl}
+            src={images.LOGO}
             alt="KMS Logo"
             style={{ height: '2.5rem', width: '2.5rem', objectFit: 'contain' }}
           />
