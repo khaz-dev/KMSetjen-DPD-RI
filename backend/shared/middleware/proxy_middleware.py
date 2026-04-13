@@ -177,6 +177,29 @@ class ScriptNameMiddleware(MiddlewareMixin):
                 
                 # CSS url() with media files
                 (r'(url\()(["\']?)(/media[^"\']*?)\2(\))', rf'\1\2{script_name}\3\2\4'),
+                
+                # ============================================================
+                # NEW: Generic patterns to catch /admin/ and /jsi18n/ in ANY context
+                # These catch inline JavaScript, data attributes, assignments, etc.
+                # that the specific HTML attribute patterns might miss
+                # ============================================================
+                
+                # Match any /admin/... surrounded by quotes (catches inline JS, data attrs, etc)
+                # Pattern: "/admin/..." or '/admin/...'
+                # This handles: window.location="/admin/...", var path="/admin/", etc.
+                (r'(["\'])(/admin[^"\']*?)\1', rf'\1{script_name}\2\1'),
+                
+                # Match any /jsi18n/... surrounded by quotes (Django i18n endpoint)
+                # This handles: <script src="/admin/jsi18n/">, var i18n="/jsi18n/", etc.
+                (r'(["\'])(/jsi18n/[^"\']*?)\1', rf'\1{script_name}\2\1'),
+                
+                # Match /auth/... (for Django rest framework auth endpoints)
+                (r'(["\'])(/auth[^"\']*?)\1', rf'\1{script_name}\2\1'),
+                
+                # Match patterns like: = "/admin/...", : "/admin/..."
+                # This handles JavaScript assignments and simple key: value patterns
+                (r'([=:]\s*)(["\'])(/admin[^"\']*?)\2', rf'\1\2{script_name}\3\2'),
+                (r'([=:]\s*)(["\'])(/jsi18n/[^"\']*?)\2', rf'\1\2{script_name}\3\2'),
             ]
             
             # Apply all patterns
