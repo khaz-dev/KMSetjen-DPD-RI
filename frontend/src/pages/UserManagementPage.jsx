@@ -7,7 +7,7 @@ import {
 } from 'react-bootstrap';
 import { FiEdit2, FiTrash2, FiPlus, FiSearch } from 'react-icons/fi';
 import AdminSidebar from '../components/AdminSidebar';
-import axios from 'axios';
+import { adminAPI } from '../services/api';
 import './UserManagementPage.css';
 
 /**
@@ -125,35 +125,29 @@ function UserManagementPage({ onLogout }) {
       setLoading(true);
       setError(null);
 
-      let url = `${import.meta.env.VITE_API_URL}/api/v1/admin/users/?page=${currentPage}&page_size=${itemsPerPage}`;
+      const params = {
+        page: currentPage,
+        page_size: itemsPerPage,
+      };
       
       if (searchQuery) {
-        url += `&search=${encodeURIComponent(searchQuery)}`;
+        params.search = searchQuery;
       }
       
       // Add filters
       if (filterStatus === 'active') {
-        url += `&is_active=true`;
+        params.is_active = true;
       } else if (filterStatus === 'inactive') {
-        url += `&is_active=false`;
+        params.is_active = false;
       }
-      
+
       if (filterStaff === 'staff') {
-        url += `&is_staff=true`;
+        params.is_staff = true;
       } else if (filterStaff === 'regular') {
-        url += `&is_staff=false`;
+        params.is_staff = false;
       }
 
-      const response = await axios.get(url, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-        },
-      });
-
-      setUsers(response.data.results || []);
-      
-      // Determine page size: Use selected value
-      const effectivePageSize = itemsPerPage;
+      const response = await adminAPI.getUsers(params);
       const totalItems = response.data.count || 0;
       const calculatedTotalPages = Math.ceil(totalItems / effectivePageSize);
       
@@ -186,14 +180,8 @@ function UserManagementPage({ onLogout }) {
   const handleOpenModal = (user = null) => {
     if (user) {
       // Fetch full user details (including roles) from detail endpoint
-      axios.get(
-        `${import.meta.env.VITE_API_URL}/api/v1/admin/users/${user.id}/`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-          },
-        }
-      ).then((response) => {
+      adminAPI.getUser(user.id)
+      .then((response) => {
         const fullUser = response.data;
         setModalMode('edit');
         setSelectedUser(fullUser);
@@ -267,14 +255,10 @@ function UserManagementPage({ onLogout }) {
 
   const loadRoles = useCallback(async () => {
     try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/v1/admin/roles/?page=1&page_size=100`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-          },
-        }
-      );
+      const response = await adminAPI.getRoles({
+        page: 1,
+        page_size: 100,
+      });
       setRoles(response.data.results || []);
     } catch (err) {
       console.error('Error loading roles:', err);
@@ -317,20 +301,11 @@ function UserManagementPage({ onLogout }) {
     try {
       setSubmitting(true);
 
-      const endpoint = modalMode === 'create'
-        ? `${import.meta.env.VITE_API_URL}/api/v1/admin/users/`
-        : `${import.meta.env.VITE_API_URL}/api/v1/admin/users/${selectedUser.id}/`;
-
-      const method = modalMode === 'create' ? 'post' : 'put';
-
-      await axios({
-        method,
-        url: endpoint,
-        data: formData,
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-        },
-      });
+      if (modalMode === 'create') {
+        await adminAPI.createUser(formData);
+      } else {
+        await adminAPI.updateUser(selectedUser.id, formData);
+      }
 
       setError(null);
       loadUsers();
@@ -351,14 +326,7 @@ function UserManagementPage({ onLogout }) {
     setConfirmAction('delete');
     setConfirmCallback(() => async () => {
       try {
-        await axios.delete(
-          `${import.meta.env.VITE_API_URL}/api/v1/admin/users/${userId}/`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-            },
-          }
-        );
+        await adminAPI.deleteUser(userId);
 
         setError(null);
         loadUsers();
@@ -377,16 +345,11 @@ function UserManagementPage({ onLogout }) {
     setConfirmAction(user.is_active ? 'deactivate' : 'activate');
     setConfirmCallback(() => async () => {
       try {
-        const endpoint =
-          user.is_active
-            ? `${import.meta.env.VITE_API_URL}/api/v1/admin/users/${user.id}/deactivate/`
-            : `${import.meta.env.VITE_API_URL}/api/v1/admin/users/${user.id}/activate/`;
-
-        await axios.post(endpoint, {}, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-          },
-        });
+        if (user.is_active) {
+          await adminAPI.deactivateUser(user.id);
+        } else {
+          await adminAPI.activateUser(user.id);
+        }
 
         setError(null);
         loadUsers();
@@ -418,15 +381,7 @@ function UserManagementPage({ onLogout }) {
       });
 
       // Start the sync in the background
-      axios.post(
-        `${import.meta.env.VITE_API_URL}/api/v1/admin/users/sync-external-users/`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-          },
-        }
-      ).then(response => {
+      adminAPI.syncExternalUsers().then(response => {
         if (response.data.success) {
           setSyncStatus('success');
           setSyncProgress(100);

@@ -386,6 +386,9 @@ export const adminAPI = {
   deactivateUser: (id) =>
     apiClient.post(`/v1/admin/users/${id}/deactivate/`),
   
+  syncExternalUsers: () =>
+    apiClient.post('/v1/admin/users/sync-external-users/', {}),
+  
   // Roles
   getRoles: (params) =>
     apiClient.get('/v1/admin/roles/', { params }),

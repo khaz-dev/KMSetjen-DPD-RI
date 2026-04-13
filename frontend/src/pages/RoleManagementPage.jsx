@@ -7,7 +7,7 @@ import {
 } from 'react-bootstrap';
 import { FiEdit2, FiTrash2, FiPlus } from 'react-icons/fi';
 import AdminSidebar from '../components/AdminSidebar';
-import axios from 'axios';
+import { adminAPI } from '../services/api';
 import './RoleManagementPage.css';
 
 /**
@@ -108,14 +108,9 @@ function RoleManagementPage({ onLogout }) {
       setLoading(true);
       setError(null);
 
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/v1/admin/roles/?page=${currentPage}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-          },
-        }
-      );
+      const response = await adminAPI.getRoles({
+        page: currentPage,
+      });
 
       const rolesList = response.data.results || [];
       
@@ -138,14 +133,9 @@ function RoleManagementPage({ onLogout }) {
   const loadPermissions = useCallback(async () => {
     try {
       console.log('[RoleManagement] Loading permissions...');
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/v1/admin/permissions/?page_size=100`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-          },
-        }
-      );
+      const response = await adminAPI.getPermissions({
+        page_size: 100,
+      });
 
       // Extract results from paginated response
       const permissionsList = response.data.results || response.data || [];
@@ -283,16 +273,17 @@ function RoleManagementPage({ onLogout }) {
     try {
       setSubmitting(true);
 
-      const endpoint = modalMode === 'create'
-        ? `${import.meta.env.VITE_API_URL}/api/v1/admin/roles/`
-        : `${import.meta.env.VITE_API_URL}/api/v1/admin/roles/${selectedRole.id}/`;
-
-      const method = modalMode === 'create' ? 'post' : 'put';
+      const roleData = {
+        code: formData.code,
+        name_id: formData.name,
+        name_en: formData.name,
+        description_id: formData.description,
+        description_en: formData.description,
+        permissions: formData.permissions,
+      };
 
       console.log('[RoleManagement FORM] Submitting:', {
         mode: modalMode,
-        endpoint,
-        method,
         formData: {
           code: formData.code,
           name_id: formData.name,
@@ -303,21 +294,9 @@ function RoleManagementPage({ onLogout }) {
         }
       });
 
-      const response = await axios({
-        method,
-        url: endpoint,
-        data: {
-          code: formData.code,
-          name_id: formData.name,
-          name_en: formData.name,
-          description_id: formData.description,
-          description_en: formData.description,
-          permissions: formData.permissions,
-        },
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-        },
-      });
+      const response = modalMode === 'create'
+        ? await adminAPI.createRole(roleData)
+        : await adminAPI.updateRole(selectedRole.id, roleData);
 
       console.log('[RoleManagement FORM] Success:', response.status, response.data);
       setError(null);
@@ -378,16 +357,9 @@ function RoleManagementPage({ onLogout }) {
     console.log('[RoleManagement DELETE] User confirmed, sending DELETE request...');
     
     try {
-      const apiUrl = `${import.meta.env.VITE_API_URL}/api/v1/admin/roles/${roleId}/`;
-      const token = localStorage.getItem('access_token');
+      console.log('[RoleManagement DELETE] Deleting role ID:', roleId);
       
-      console.log('[RoleManagement DELETE] API URL:', apiUrl);
-      console.log('[RoleManagement DELETE] Has token:', !!token);
-      
-      const response = await axios.delete(apiUrl, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const response = await adminAPI.deleteRole(roleId);
       });
 
       console.log('[RoleManagement DELETE] Success! Response:', response.status, response.data);
