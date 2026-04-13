@@ -457,8 +457,10 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Input Validation & File Upload Limits
-DATA_UPLOAD_MAX_MEMORY_SIZE = 2621440  # 2.5MB
-FILE_UPLOAD_MAX_MEMORY_SIZE = 2621440  # 2.5MB
+# These limits must be coordinated with nginx client_max_body_size (currently 100M)
+# and match the MAX_FILE_SIZE constant (50MB)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB (matches constants.MAX_FILE_SIZE)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB (for file uploads like avatars, attachments)
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
 FILE_UPLOAD_PERMISSIONS = 0o644
 FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
