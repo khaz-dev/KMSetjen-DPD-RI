@@ -34,7 +34,9 @@ export const getGoogleAuthorizationUrl = () => {
   let redirectUri = GOOGLE_REDIRECT_URI;
   if (!redirectUri) {
     const appSubpath = getAppSubpath();
-    redirectUri = `${window.location.origin}${appSubpath}/google/callback`;
+    // Must match exactly what's registered in Google Cloud Console
+    // For localhost: registered as http://localhost:5175/google/callback/ (WITH slash)
+    redirectUri = `${window.location.origin}${appSubpath}/google/callback/`;
   }
   
   const state = generateRandomState();
