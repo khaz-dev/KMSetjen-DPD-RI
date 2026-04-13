@@ -360,7 +360,6 @@ function RoleManagementPage({ onLogout }) {
       console.log('[RoleManagement DELETE] Deleting role ID:', roleId);
       
       const response = await adminAPI.deleteRole(roleId);
-      });
 
       console.log('[RoleManagement DELETE] Success! Response:', response.status, response.data);
       
