@@ -342,22 +342,28 @@ const HomePage = () => {
             {/* Perpustakaan DPD RI */}
             <Col md={4} className="mb-3">
               <Card className="repository-card h-100">
-                <div className="repository-icon-container">
-                  <FiBook size={32} />
+                <div className="repository-image-container">
+                  <ImageWithFallback 
+                    src="/perpustakaan.jpg" 
+                    alt={t('home.perpustakaan_title')}
+                    className="repository-image"
+                    type="repository"
+                  />
+                  <div className="repository-image-overlay"></div>
+                  <div className="repository-status-badge">
+                    <span className="badge bg-warning text-dark">
+                      {t('home.perpustakaan_status')}
+                    </span>
+                  </div>
                 </div>
                 <Card.Body className="d-flex flex-column">
                   <h5 className="mb-2">{t('home.perpustakaan_title')}</h5>
                   <p className="text-muted flex-grow-1 small">
                     {t('home.perpustakaan_desc')}
                   </p>
-                  <div className="d-flex justify-content-between align-items-center mt-3">
-                    <span className="badge bg-warning text-dark">
-                      {t('home.perpustakaan_status')}
-                    </span>
-                    <button className="btn btn-sm btn-outline-secondary" disabled>
-                      {t('home.open_external')}
-                    </button>
-                  </div>
+                  <button className="btn btn-sm btn-outline-secondary w-100" disabled>
+                    {t('home.open_external')}
+                  </button>
                 </Card.Body>
               </Card>
             </Col>
@@ -365,8 +371,14 @@ const HomePage = () => {
             {/* JDIH DPD RI */}
             <Col md={4} className="mb-3">
               <Card className="repository-card h-100">
-                <div className="repository-icon-container">
-                  <FiFileText size={32} />
+                <div className="repository-image-container">
+                  <ImageWithFallback 
+                    src="/jdih.png" 
+                    alt={t('home.jdih_title')}
+                    className="repository-image"
+                    type="repository"
+                  />
+                  <div className="repository-image-overlay"></div>
                 </div>
                 <Card.Body className="d-flex flex-column">
                   <h5 className="mb-2">{t('home.jdih_title')}</h5>
@@ -389,8 +401,14 @@ const HomePage = () => {
             {/* PPID DPD RI */}
             <Col md={4} className="mb-3">
               <Card className="repository-card h-100">
-                <div className="repository-icon-container">
-                  <FiFolder size={32} />
+                <div className="repository-image-container">
+                  <ImageWithFallback 
+                    src="/ppid.jpg" 
+                    alt={t('home.ppid_title')}
+                    className="repository-image"
+                    type="repository"
+                  />
+                  <div className="repository-image-overlay"></div>
                 </div>
                 <Card.Body className="d-flex flex-column">
                   <h5 className="mb-2">{t('home.ppid_title')}</h5>

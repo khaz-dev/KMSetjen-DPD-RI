@@ -48,13 +48,14 @@ export const DEFAULT_IMAGES = {
 
 /**
  * Get the appropriate default image based on image type
- * @param {string} type - Image type ('article', 'category', 'logo')
+ * @param {string} type - Image type ('article', 'category', 'repository', 'logo')
  * @returns {string} - Path to default image
  */
 export const getDefaultImage = (type = 'article') => {
   const defaultImages = {
     'article': DEFAULT_IMAGES.ARTICLE,
     'category': DEFAULT_IMAGES.CATEGORY,
+    'repository': DEFAULT_IMAGES.CATEGORY, // Use category default for repositories
     'logo': DEFAULT_IMAGES.LOGO
   };
   return defaultImages[type] || DEFAULT_IMAGES.ARTICLE;

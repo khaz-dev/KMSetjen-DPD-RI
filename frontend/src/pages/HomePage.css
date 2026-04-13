@@ -558,7 +558,7 @@
 
 /* Repository Card */
 .repository-card {
-  border: 1px solid #e0e0e0;
+  border: none;
   transition: all 0.2s;
   position: relative;
   overflow: hidden;
@@ -566,37 +566,90 @@
   flex-direction: column;
   background: white;
   color: #212529;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .repository-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-  border-color: #14b8a6;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15) !important;
 }
 
-.repository-icon-container {
-  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
-  color: white;
-  height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
+.repository-image-container {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  background-color: #e9ecef;
+  flex: 0 0 auto;
 }
 
+.repository-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+  display: block;
+}
+
+.repository-image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.15) 100%);
+  transition: background 0.3s ease;
+}
+
+.repository-status-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  backdrop-filter: blur(5px);
+}
+
+.repository-status-badge .badge {
+  font-size: 0.75rem;
+  padding: 0.35rem 0.75rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.repository-card:hover .repository-image {
+  transform: scale(1.05);
+}
+
+.repository-card:hover .repository-image-overlay {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.25) 100%);
+}
+
+/* Light Mode - Repository Card */
+[data-theme="light"] .repository-card {
+  background: white;
+  color: #212529;
+}
+
+/* Dark Mode - Repository Card */
 [data-theme="dark"] .repository-card {
   background: #2d2d2d;
   color: #ffffff;
-  border-color: #404040;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme="dark"] .repository-card:hover {
-  border-color: #5eead4;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4) !important;
 }
 
-[data-theme="dark"] .repository-icon-container {
-  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+[data-theme="dark"] .repository-image-container {
+  background-color: #1f1f1f;
+}
+
+[data-theme="dark"] .repository-image-overlay {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.35) 100%);
+}
+
+[data-theme="dark"] .repository-card:hover .repository-image-overlay {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.45) 100%);
 }
 
 .repository-card h5 {
@@ -617,10 +670,6 @@
   color: #d0d0d0 !important;
 }
 
-.repository-card .badge {
-  font-size: 0.75rem;
-}
-
 .repository-card .btn-sm {
   font-size: 0.85rem;
   padding: 0.35rem 0.75rem;
@@ -631,9 +680,14 @@
   border-color: #dee2e6;
 }
 
-.repository-card .btn-outline-secondary:hover {
+.repository-card .btn-outline-secondary:hover:not(:disabled) {
   background-color: #e9ecef;
   border-color: #dee2e6;
+}
+
+.repository-card .btn-outline-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 [data-theme="dark"] .repository-card .btn-outline-secondary {
@@ -641,8 +695,13 @@
   border-color: #404040;
 }
 
-[data-theme="dark"] .repository-card .btn-outline-secondary:hover {
+[data-theme="dark"] .repository-card .btn-outline-secondary:hover:not(:disabled) {
   background-color: #404040;
   border-color: #505050;
+}
+
+[data-theme="dark"] .repository-card .btn-outline-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
