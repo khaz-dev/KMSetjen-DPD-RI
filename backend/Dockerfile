@@ -7,9 +7,15 @@ FROM python:3.11-slim as builder
 WORKDIR /app
 
 # Install system dependencies
+# CRITICAL: Include image processing libraries for Pillow compilation
+# These are needed for image validation (JPEG, PNG, WebP, etc.)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
+    libjpeg62-turbo-dev \
+    libpng-dev \
+    libwebp-dev \
+    zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
@@ -23,10 +29,16 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install runtime system dependencies
+# CRITICAL: Image processing libraries MUST be included for Pillow/PIL to work
+# Without these, avatar uploads fail with "cannot identify image file" error
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     curl \
     netcat-traditional \
+    libjpeg62-turbo \
+    libpng16-16 \
+    libwebp7 \
+    libzlib1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security

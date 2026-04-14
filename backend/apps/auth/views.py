@@ -236,75 +236,100 @@ def update_profile(request):
     Note: Only avatar can be updated via this endpoint.
     Other fields (first_name, last_name, email, nip, etc.) are read-only.
     """
-    user = request.user
-    
-    # Handle avatar upload
-    if 'avatar' in request.FILES:
-        avatar_file = request.FILES['avatar']
+    try:
+        user = request.user
         
-        # Validate file type
-        allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-        if avatar_file.content_type not in allowed_types:
+        # Handle avatar upload
+        if 'avatar' in request.FILES:
+            avatar_file = request.FILES['avatar']
+            
+            # Validate file type
+            allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+            if avatar_file.content_type not in allowed_types:
+                return Response({
+                    'success': False,
+                    'error': 'Invalid image type. Allowed: JPEG, PNG, GIF, WebP'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Validate file size (max 5MB)
+            max_size = 5 * 1024 * 1024
+            if avatar_file.size > max_size:
+                return Response({
+                    'success': False,
+                    'error': 'Image file is too large (max 5MB)'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Delete old avatar if exists
+            if user.avatar:
+                try:
+                    from django.core.files.storage import default_storage
+                    old_path = user.avatar.name
+                    if old_path:
+                        default_storage.delete(old_path)
+                except Exception as del_err:
+                    # Log but don't fail if deletion fails
+                    logger.warning(f'Failed to delete old avatar for user {user.id}: {str(del_err)}')
+            
+            # Set new avatar
+            user.avatar = avatar_file
+        
+        # Handle avatar removal (if avatar field is sent as null/empty)
+        elif 'avatar' in request.data and (request.data['avatar'] is None or request.data['avatar'] == ''):
+            if user.avatar:
+                try:
+                    from django.core.files.storage import default_storage
+                    storage_path = user.avatar.name
+                    if storage_path:
+                        default_storage.delete(storage_path)
+                except Exception as del_err:
+                    # Log but don't fail if deletion fails
+                    logger.warning(f'Failed to delete avatar for user {user.id}: {str(del_err)}')
+            
+            user.avatar = None
+        
+        # Save user with error handling
+        try:
+            user.save()
+        except Exception as save_err:
+            logger.error(f'Failed to save user {user.id} avatar: {str(save_err)}', exc_info=True)
             return Response({
                 'success': False,
-                'error': 'Invalid image type. Allowed: JPEG, PNG, GIF, WebP'
-            }, status=status.HTTP_400_BAD_REQUEST)
+                'error': f'Failed to save avatar: {str(save_err)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-        # Validate file size (max 5MB)
-        max_size = 5 * 1024 * 1024
-        if avatar_file.size > max_size:
-            return Response({
-                'success': False,
-                'error': 'Image file is too large (max 5MB)'
-            }, status=status.HTTP_400_BAD_REQUEST)
+        # Generate avatar URL with error handling
+        try:
+            avatar_url = user.avatar.url if user.avatar else None
+        except Exception as url_err:
+            logger.error(f'Failed to generate avatar URL for user {user.id}: {str(url_err)}', exc_info=True)
+            avatar_url = None
         
-        # Delete old avatar if exists
-        if user.avatar:
-            try:
-                from django.core.files.storage import default_storage
-                old_path = user.avatar.name
-                if old_path:
-                    default_storage.delete(old_path)
-            except Exception:
-                pass  # Log but don't fail if deletion fails
-        
-        # Set new avatar
-        user.avatar = avatar_file
+        return Response({
+            'success': True,
+            'message': 'Profile updated successfully',
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'avatar': avatar_url,
+                'nip': user.nip,
+                'unit_organisasi': user.unit_organisasi,
+                'jenis_jabatan': user.jenis_jabatan,
+                'jabatan': user.jabatan,
+                'phone': user.phone,
+                'preferred_language': user.preferred_language,
+                'theme_mode': user.theme_mode,
+            }
+        })
     
-    # Handle avatar removal (if avatar field is sent as null/empty)
-    elif 'avatar' in request.data and (request.data['avatar'] is None or request.data['avatar'] == ''):
-        if user.avatar:
-            try:
-                from django.core.files.storage import default_storage
-                storage_path = user.avatar.name
-                if storage_path:
-                    default_storage.delete(storage_path)
-            except Exception:
-                pass  # Log but don't fail if deletion fails
-        
-        user.avatar = None
-    
-    user.save()
-    
-    return Response({
-        'success': True,
-        'message': 'Profile updated successfully',
-        'user': {
-            'id': user.id,
-            'username': user.username,
-            'email': user.email,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'avatar': user.avatar.url if user.avatar else None,
-            'nip': user.nip,
-            'unit_organisasi': user.unit_organisasi,
-            'jenis_jabatan': user.jenis_jabatan,
-            'jabatan': user.jabatan,
-            'phone': user.phone,
-            'preferred_language': user.preferred_language,
-            'theme_mode': user.theme_mode,
-        }
-    })
+    except Exception as err:
+        logger.error(f'Unexpected error in update_profile for user {request.user.id}: {str(err)}', exc_info=True)
+        return Response({
+            'success': False,
+            'error': f'An unexpected error occurred: {str(err)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
