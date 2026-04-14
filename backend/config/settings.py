@@ -106,7 +106,9 @@ MIDDLEWARE = [
 ]
 
 # Add SecurityMiddleware only in production (DEBUG=False causes HTTPS redirects)
-if not DEBUG:
+# Use environment variable to control this - production should have this, staging should not
+ENABLE_SECURITY_MIDDLEWARE = env.bool('ENABLE_SECURITY_MIDDLEWARE', default=False)
+if ENABLE_SECURITY_MIDDLEWARE:
     MIDDLEWARE.insert(0, 'django.middleware.security.SecurityMiddleware')
 
 # ============================================================================
