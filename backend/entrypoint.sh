@@ -43,14 +43,32 @@ echo "  ✓ Permissions fixed"
 cd /app
 
 echo "⏳ Waiting for PostgreSQL..."
-while ! nc -z ${DB_HOST:-host.docker.internal} ${DB_PORT:-5432}; do
+DB_HOST=${DB_HOST:-host.docker.internal}
+DB_PORT=${DB_PORT:-5432}
+max_attempts=30
+attempt=0
+while ! nc -z "$DB_HOST" "$DB_PORT" 2>/dev/null; do
+  attempt=$((attempt + 1))
+  if [ $attempt -ge $max_attempts ]; then
+    echo "⚠ PostgreSQL timeout (${max_attempts}s), continuing anyway..."
+    break
+  fi
   sleep 1
 done
 echo "✓ PostgreSQL is ready"
 
 # Wait for Redis to be ready
 echo "⏳ Waiting for Redis..."
-while ! nc -z ${REDIS_HOST:-redis} ${REDIS_PORT:-6379}; do
+REDIS_HOST=${REDIS_HOST:-redis}
+REDIS_PORT=${REDIS_PORT:-6379}
+max_attempts=30
+attempt=0
+while ! nc -z "$REDIS_HOST" "$REDIS_PORT" 2>/dev/null; do
+  attempt=$((attempt + 1))
+  if [ $attempt -ge $max_attempts ]; then
+    echo "⚠ Redis timeout (${max_attempts}s), continuing anyway..."
+    break
+  fi
   sleep 1  
 done
 echo "✓ Redis is ready"
