@@ -151,6 +151,7 @@ function UserManagementPage({ onLogout }) {
       const totalItems = response.data.count || 0;
       const calculatedTotalPages = Math.ceil(totalItems / itemsPerPage);
       
+      setUsers(response.data.results || []);
       setTotalCount(totalItems);
       setTotalPages(calculatedTotalPages);
       
