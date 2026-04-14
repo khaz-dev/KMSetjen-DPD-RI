@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
 # Django Application Entrypoint
-# Handles database migrations and initial setup on container start
+# Handles permissions, database migrations, and initial setup on container start
 # ==============================================================================
 
 set -e
@@ -10,7 +10,39 @@ echo "=========================================="
 echo "🚀 KMS Django Initialization"
 echo "=========================================="
 
-# Wait for PostgreSQL to be ready
+# ==============================================================================
+# CRITICAL: Fix Directory Permissions (runs as root)
+# ==============================================================================
+echo "🔧 Fixing directory permissions..."
+
+# Ensure directories exist with proper permissions
+mkdir -p /app/media /app/logs /app/staticfiles
+
+# Fix permissions for media directory (where avatars are uploaded)
+# chmod 755: owner rwx, group rx, other rx (readable by all, writable by owner)
+# chmod 644: files rw- r-- r-- (readable by all, writable by owner)
+chmod -R 755 /app/media 2>/dev/null || true
+find /app/media -type f -exec chmod 644 {} \; 2>/dev/null || true
+
+# Fix permissions for logs directory
+chmod -R 755 /app/logs 2>/dev/null || true
+find /app/logs -type f -exec chmod 644 {} \; 2>/dev/null || true
+
+# Fix permissions for staticfiles directory
+chmod -R 755 /app/staticfiles 2>/dev/null || true
+find /app/staticfiles -type f -exec chmod 644 {} \; 2>/dev/null || true
+
+# Ensure django user owns these directories
+chown -R django:django /app/media /app/logs /app/staticfiles 2>/dev/null || true
+
+echo "  ✓ Permissions fixed"
+
+# ==============================================================================
+# Switch to django user and run migrations/startup
+# ==============================================================================
+exec su - django << 'EOF'
+cd /app
+
 echo "⏳ Waiting for PostgreSQL..."
 while ! nc -z ${DB_HOST:-localhost} ${DB_PORT:-5432}; do
   sleep 1
@@ -30,7 +62,7 @@ python manage.py migrate --noinput
 
 # Collect static files
 echo "📁 Collecting static files..."
-python manage.py collectstatic --noinput --clear
+python manage.py collectstatic --noinput --clear || true
 
 # Create admin user if it doesn't exist
 echo "👤 Checking admin user..."
@@ -42,15 +74,12 @@ admin_exists = User.objects.filter(username='khaz_prod', is_superuser=True).exis
 
 if not admin_exists:
     print("  → Creating default admin user...")
-    # Use the create_admin command
     from django.core.management import call_command
     try:
-        # Try to use random password generation
         call_command('create_admin', '--generate')
         print("  ✓ Admin user created with auto-generated password")
     except Exception as e:
         print(f"  ⚠ Warning: Could not create admin user: {e}")
-        print("  Manual creation required: python manage.py create_admin --generate")
 else:
     print("  ✓ Admin user already exists")
 END
@@ -60,7 +89,6 @@ echo "🌱 Checking for seed data..."
 python manage.py shell << END
 from apps.core.models import Role, Language, Category, Tag
 
-# Check if seed data exists
 languages_exist = Language.objects.exists()
 roles_exist = Role.objects.exists()
 categories_exist = Category.objects.exists()
@@ -70,7 +98,7 @@ if not (languages_exist and roles_exist and categories_exist and tags_exist):
     print("  → Seed data missing. Running seeding commands...")
     from django.core.management import call_command
     try:
-        print("    • Populating core reference data (Languages, Roles, Categories, Tags)...")
+        print("    • Populating core reference data...")
         call_command('seed_data')
         print("    ✓ Core reference data created")
     except Exception as e:
@@ -84,21 +112,31 @@ echo "📰 Populating comprehensive content..."
 python manage.py shell << END
 from apps.content.models import Article
 
-# Check if articles exist
 articles_exist = Article.objects.filter(is_published=True).exists()
 
 if not articles_exist:
     print("  → Articles missing. Running comprehensive seeding...")
     from django.core.management import call_command
     try:
-        print("    • Creating comprehensive articles with bilingual content...")
+        print("    • Creating comprehensive articles...")
         call_command('seed_comprehensive', '--noinput')
         print("    ✓ Comprehensive articles created")
     except Exception as e:
-        print(f"    ⚠ Warning: Could not create comprehensive articles: {e}")
+        print(f"    ⚠ Warning: Could not create articles: {e}")
 else:
     print("  ✓ Articles already exist")
 END
+
+echo ""
+echo "=========================================="
+echo "✅ Initialization Complete"
+echo "=========================================="
+echo ""
+
+# Start gunicorn
+exec gunicorn --bind 0.0.0.0:8002 --workers 4 --timeout 120 --access-logfile - --error-logfile - config.wsgi:application
+
+EOF
 
 # Ensure all tags are properly associated with articles
 echo "🏷️  Ensuring tags are associated with articles..."

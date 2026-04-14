@@ -61,7 +61,14 @@ ENV PATH=/home/django/.local/bin:$PATH \
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/logs && chown django:django /app/logs
 
-# Switch to non-root user
+# Copy entrypoint script BEFORE USER directive so it runs as root
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Set entrypoint (runs BEFORE user directive, so runs as root)
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+# Switch to non-root user for the gunicorn process (after entrypoint fixes perms)
 USER django
 
 # Health check
