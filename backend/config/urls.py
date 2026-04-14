@@ -66,6 +66,10 @@ urlpatterns = [
     path('api/auth/', include('apps.auth.urls')),
 ]
 
+# Serve media and static files
+# CRITICAL: Remove DEBUG condition - media files must be served on production too
+# Django will serve media files on production since Nginx proxies to Django
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Only serve static files in DEBUG mode (WhiteNoiseMiddleware handles in production)
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
