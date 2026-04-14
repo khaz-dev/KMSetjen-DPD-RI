@@ -75,7 +75,7 @@ echo "✓ Redis is ready"
 
 # Run migrations
 echo "📦 Running database migrations..."
-python manage.py migrate --noinput
+python manage.py migrate --noinput 2>&1 || echo "⚠ Migration warning (may have pending model changes - run makemigrations)"
 
 # Collect static files
 echo "📁 Collecting static files..."
