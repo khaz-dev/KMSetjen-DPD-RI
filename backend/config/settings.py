@@ -416,7 +416,7 @@ SIMPLE_JWT = {
 SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
-SECURE_SSL_REDIRECT = not DEBUG  # Disabled in development (DEBUG=True), enabled in production (DEBUG=False)
+SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=not DEBUG)  # Read from env, default to not DEBUG
 SECURE_PROXY_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  # Trust X-Forwarded-Proto header from Nginx
 SECURE_CONTENT_SECURITY_POLICY = {
     'default-src': ("'self'",),
@@ -476,10 +476,10 @@ CORS_ALLOWED_ORIGINS = env.list(
     default=[
         'http://localhost:5175',
         'http://127.0.0.1:5175',
-        'https://kms.dpd.go.id',
-        'https://kms-be.dpd.go.id',
-        'https://khaz.app',
+        'https://kms.khaz.app',
+        'https://kms-be.khaz.app',
         'https://www.khaz.app',
+        'https://khaz.app',
     ]
 )
 CORS_ALLOW_CREDENTIALS = True
@@ -521,7 +521,6 @@ RATE_LIMIT_CONFIG = {
 
 # Production-only security hardening
 if not DEBUG:
-    SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 

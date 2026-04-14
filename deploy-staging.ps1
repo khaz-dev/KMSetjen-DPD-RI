@@ -94,9 +94,7 @@ $SSHKeyPath = $Config.SSHKeyPath
 
 function Write-Header {
     param([string]$Text)
-    Write-Host "`n╔════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-    Write-Host "║ $Text" -ForegroundColor Cyan
-    Write-Host "╚════════════════════════════════════════════════════════╝`n" -ForegroundColor Cyan
+    Write-Host "`n=== $Text ===`n" -ForegroundColor Cyan
 }
 
 function Write-Step {
@@ -106,18 +104,18 @@ function Write-Step {
 
 function Write-Ok {
     param([string]$Text)
-    Write-Host "  ✓ $Text" -ForegroundColor Green
+    Write-Host "  [OK] $Text" -ForegroundColor Green
 }
 
 function Write-Error {
     param([string]$Text)
-    Write-Host "  ✗ ERROR: $Text" -ForegroundColor Red
+    Write-Host "  [ERROR] $Text" -ForegroundColor Red
     exit 1
 }
 
 function Write-Info {
     param([string]$Text)
-    Write-Host "  → $Text" -ForegroundColor Cyan
+    Write-Host "  [INFO] $Text" -ForegroundColor Cyan
 }
 
 # ============================================================================
@@ -144,7 +142,7 @@ Write-Ok "SSH key found"
 Write-Step "Testing server connectivity" 2
 $sshTest = & ssh -i "$SSHKeyPath" -o ConnectTimeout=5 "$ServerUser@$ServerIP" "echo OK" 2>&1
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "Cannot connect to $ServerIP: $sshTest"
+    Write-Error "Cannot connect to $($ServerIP): $sshTest"
 }
 Write-Ok "Server is reachable"
 
@@ -178,10 +176,10 @@ Write-Header "DEPLOYMENT EXECUTION"
 Write-Step "Copying $($Config.EnvFile) to server" 1
 
 if ($DryRun) {
-    Write-Info "[DRY RUN] Would copy: $LocalEnvFile to $ServerUser@$ServerIP:$ServerProjectPath/.env"
+    Write-Info "[DRY RUN] Would copy: $LocalEnvFile to $ServerUser@$($ServerIP):$ServerProjectPath/.env"
 }
 else {
-    $result = & scp -i "$SSHKeyPath" "$LocalEnvFile" "$ServerUser@$ServerIP`:$ServerProjectPath/.env" 2>&1
+    $result = & scp -i "$SSHKeyPath" "$LocalEnvFile" "$ServerUser@$($ServerIP):$ServerProjectPath/.env" 2>&1
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Failed to copy .env file: $result"
     }
@@ -209,7 +207,7 @@ if ($DryRun) {
     Write-Info "[DRY RUN] Would pull: git pull origin main"
 }
 else {
-    $result = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "cd $ServerProjectPath && git pull origin main" 2>&1
+    $result = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "cd $ServerProjectPath; git pull origin main" 2>&1
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Failed to pull code: $result"
     }
@@ -237,7 +235,7 @@ if (-not $DryRun) {
     Write-Host "Waiting for deployment to complete...`n" -ForegroundColor Yellow
     
     $healthCheckArg = if ($SkipHealthCheck) { "" } else { "--health-check" }
-    & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "cd $ServerProjectPath && sudo ./deploy-master.sh $Environment $healthCheckArg"
+    & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "cd $ServerProjectPath; sudo ./deploy-master.sh $Environment $healthCheckArg"
     
     $deployStatus = $LASTEXITCODE
     if ($deployStatus -ne 0) {
@@ -256,7 +254,7 @@ if (-not $DryRun) {
     Write-Header "DEPLOYMENT VERIFICATION"
     
     Write-Step "Checking containers" 1
-    $result = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "cd $ServerProjectPath && docker-compose ps" 2>&1
+    $result = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "cd $ServerProjectPath; docker-compose ps" 2>&1
     Write-Host $result
     
     Write-Step "Testing API endpoint" 2
@@ -286,7 +284,7 @@ else {
     Write-Host "`nNext steps:" -ForegroundColor Cyan
     Write-Host "  1. Test: https://$($ServerIP)/" -ForegroundColor White
     Write-Host "  2. Check logs: ssh -i `"$SSHKeyPath`" $ServerUser@$ServerIP" -ForegroundColor White
-    Write-Host "     Then: cd $ServerProjectPath && docker-compose logs -f" -ForegroundColor White
+    Write-Host "     Then: cd $ServerProjectPath; docker-compose logs -f" -ForegroundColor White
 }
 
 Write-Host ""
