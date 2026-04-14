@@ -118,12 +118,28 @@ log_info "Deploying containers..."
 log_info "Running migrations..."
 [[ "$DRY_RUN" != "true" ]] && sleep 3 && docker-compose exec -T django python manage.py migrate --noinput || echo "[DRY RUN] Would run migrations"
 
-# Step 4: Nginx
+# Step 4: Verify SSL Certificate (CRITICAL!)
+log_info "Verifying SSL certificate..."
+if [[ ! -f "/etc/letsencrypt/live/khaz.app/fullchain.pem" ]]; then
+    log_error "SSL certificate not found at /etc/letsencrypt/live/khaz.app/fullchain.pem"
+fi
+
+# Check certificate has wildcard support
+CERT_CHECK=$(openssl x509 -text -noout -in "/etc/letsencrypt/live/khaz.app/fullchain.pem" | grep "DNS:" || true)
+if ! echo "$CERT_CHECK" | grep -q "\*\.khaz\.app"; then
+    log_warn "⚠️  WARNING: Certificate does not have wildcard (*.khaz.app)"
+    log_warn "Current domains in certificate:"
+    echo "$CERT_CHECK" | sed 's/.*DNS:/  DNS:/g'
+    log_warn "To fix: sudo certbot certonly --dns-cloudflare -d khaz.app -d \"*.khaz.app\" --expand"
+fi
+log_success "Certificate verified"
+
+# Step 5: Nginx
 log_info "Updating Nginx configuration..."
-[[ "$DRY_RUN" != "true" ]] && (cp "$DEPLOY_PATH/nginx-kms-docker.conf" /etc/nginx/sites-available/kms; nginx -s reload) || echo "[DRY RUN] Would update Nginx"
+[[ "$DRY_RUN" != "true" ]] && (cp "$DEPLOY_PATH/nginx-kms-subdomains.conf" /etc/nginx/sites-available/kms; nginx -t && systemctl reload nginx) || echo "[DRY RUN] Would update Nginx"
 log_success "Nginx configured"
 
-# Step 5: Health check
+# Step 6: Health check
 if [[ "$HEALTH_CHECK" == "true" ]] && [[ "$DRY_RUN" != "true" ]]; then
     log_info "Running health checks..."
     sleep 5
@@ -138,7 +154,13 @@ fi
 log_header "Deployment Completed"
 log_success "Environment: $ENVIRONMENT"
 log_success "URL: $URL"
+log_success "Certificate: /etc/letsencrypt/live/khaz.app/fullchain.pem"
 log_info "Deployment logs: $DEPLOY_PATH/deployment_logs/"
+log_info "To verify certificate domains:"
+log_info "  sudo openssl x509 -text -noout -in /etc/letsencrypt/live/khaz.app/fullchain.pem | grep DNS:"
+log_info "To renew certificate with wildcard support:"
+log_info "  export CLOUDFLARE_API_TOKEN='your-token'"
+log_info "  sudo bash deploy-master-enhanced.sh staging --cloudflare \$CLOUDFLARE_API_TOKEN"
 
 [[ "$DRY_RUN" == "true" ]] && log_warn "[DRY RUN] No actual changes were made"
 
