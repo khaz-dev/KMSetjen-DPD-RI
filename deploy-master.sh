@@ -37,11 +37,23 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-# Validate environment
+# Auto-detect deployment path from current directory (supports any folder name)
+DEPLOY_PATH="$(pwd)"
+
+# Validate environment and set domain/URL
 case "$ENVIRONMENT" in
-    staging)  DEPLOY_PATH="/var/www/html/kmsetjendpdri"; DOMAIN="khaz.app"; URL="https://khaz.app/kms" ;;
-    production) echo "Production deployment requires --confirm flag"; exit 1 ;;
-    *)        echo "Unknown environment: $ENVIRONMENT"; exit 1 ;;
+    staging)
+        DOMAIN="khaz.app"
+        URL="https://kms.khaz.app"  # Updated for subdomain routing
+        ;;
+    production)
+        echo "Production deployment requires --confirm flag"
+        exit 1
+        ;;
+    *)
+        echo "Unknown environment: $ENVIRONMENT"
+        exit 1
+        ;;
 esac
 
 # Colors
@@ -72,11 +84,12 @@ log_info "Environment: $ENVIRONMENT"
 log_info "Target URL: $URL"
 log_info "Deploy Path: $DEPLOY_PATH"
 
-[[ "$DRY_RUN" == "true" ]] && log_warn "[DRY RUN] No changes will be made"
+# Verify we're in a project directory (by checking for docker-compose.yml)
+if [[ ! -f "$DEPLOY_PATH/docker-compose.yml" ]]; then
+    log_error "docker-compose.yml not found in: $DEPLOY_PATH"
+fi
 
-# Verify deployment path
-[[ -d "$DEPLOY_PATH" ]] || log_error "Deployment path not found: $DEPLOY_PATH"
-[[ -f "$DEPLOY_PATH/docker-compose.yml" ]] || log_error "docker-compose.yml not found"
+[[ "$DRY_RUN" == "true" ]] && log_warn "[DRY RUN] No changes will be made"
 
 log_success "Deployment path verified"
 

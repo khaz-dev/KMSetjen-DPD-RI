@@ -21,13 +21,13 @@ BLUE='\033[0;34m'
 NC='\033[0m'  # No Color
 
 # Configuration
-PROJECT_DIR="/var/www/html/kmsetjendpdri"
+PROJECT_DIR="$(pwd)"  # Auto-detect from current directory
 BACKEND_DIR="$PROJECT_DIR/backend"
 FRONTEND_DIR="$PROJECT_DIR/frontend"
 GUNICORN_SOCKET="/var/run/gunicorn.sock"
-GUNICORN_SYSTEMD="/etc/systemd/system/kmsetjendpdri-gunicorn.service"
-NGINX_CONF="/etc/nginx/sites-available/kmsetjendpdri"
-NGINX_ENABLED="/etc/nginx/sites-enabled/kmsetjendpdri"
+GUNICORN_SYSTEMD="/etc/systemd/system/kms-gunicorn.service"  # Updated for new folder name
+NGINX_CONF="/etc/nginx/sites-available/kms"  # Updated for new folder name
+NGINX_ENABLED="/etc/nginx/sites-enabled/kms"  # Updated for new folder name
 
 # Functions for colored output
 log_info() {
