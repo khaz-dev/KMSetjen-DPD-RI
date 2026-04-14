@@ -63,10 +63,10 @@ RUN mkdir -p /app/logs && chown django:django /app/logs
 
 # Copy entrypoint script BEFORE USER directive so it runs as root
 COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+RUN chmod -v +x /app/entrypoint.sh && ls -la /app/entrypoint.sh
 
-# Set entrypoint (runs BEFORE user directive, so runs as root)
-ENTRYPOINT ["/app/entrypoint.sh"]
+# Set entrypoint with shell interpreter (runs BEFORE user directive, so runs as root)
+ENTRYPOINT ["bash", "/app/entrypoint.sh"]
 
 # Switch to non-root user for the gunicorn process (after entrypoint fixes perms)
 USER django
