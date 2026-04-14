@@ -18,9 +18,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
+# Copy requirements and install Python dependencies to global site-packages
 COPY requirements.txt .
-RUN pip install --user --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # ==============================================================================
 # Stage 2: Runtime
@@ -46,15 +46,11 @@ RUN useradd -m -u 1000 django && \
     mkdir -p /app/logs /app/staticfiles /app/media && \
     chown -R django:django /app
 
-# Copy Python dependencies from builder
-COPY --from=builder /root/.local /home/django/.local
-
 # Copy application code
 COPY --chown=django:django . .
 
 # Set environment variables
-ENV PATH=/home/django/.local/bin:$PATH \
-    PYTHONUNBUFFERED=1 \
+ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     DJANGO_SETTINGS_MODULE=config.settings
 
