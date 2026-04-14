@@ -417,6 +417,7 @@ SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SECURE_SSL_REDIRECT = not DEBUG  # Disabled in development (DEBUG=True), enabled in production (DEBUG=False)
+SECURE_PROXY_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  # Trust X-Forwarded-Proto header from Nginx
 SECURE_CONTENT_SECURITY_POLICY = {
     'default-src': ("'self'",),
     'script-src': ("'self'", "'unsafe-inline'"),
