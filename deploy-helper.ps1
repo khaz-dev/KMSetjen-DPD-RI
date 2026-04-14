@@ -31,8 +31,8 @@ param(
 # CONFIGURATION
 # ============================================================================
 $ProjectPath = Split-Path -Parent $MyInvocation.MyCommand.Path
-$ProjectName = "kmsetjendpdri"
-$ServerProjectPath = "/var/www/html/kmsetjendpdri"
+$ProjectName = "kms"
+$ServerProjectPath = "/var/www/html/kms"
 $EnvFile = ".env"
 
 # Color output functions

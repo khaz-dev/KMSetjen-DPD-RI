@@ -28,9 +28,9 @@ param(
 
 # Configuration
 $ProjectPath = Split-Path -Parent $MyInvocation.MyCommand.Path
-$SSHKeyPath = "$env:USERPROFILE\.ssh\id_rsa"
+$SSHKeyPath = "c:\Users\khair\khaz"
 $LocalEnvFile = "$ProjectPath\.env.staging"
-$ServerProjectPath = "/var/www/html/kmsetjendpdri"
+$ServerProjectPath = "/var/www/html/kms"
 
 # Colors
 $Colors = @{
@@ -62,7 +62,7 @@ function Write-Success {
     Write-Host "✓ $Text" -ForegroundColor Green
 }
 
-function Write-Error {
+function Stop-Deployment {
     param([string]$Text)
     Write-Host "✗ ERROR: $Text" -ForegroundColor Red
     exit 1
@@ -82,13 +82,13 @@ Write-Step "Checking prerequisites" 1
 
 # Check .env.staging exists
 if (-not (Test-Path $LocalEnvFile)) {
-    Write-Error ".env.staging not found at: $LocalEnvFile"
+    Stop-Deployment ".env.staging not found at: $LocalEnvFile"
 }
 Write-Success ".env.staging found"
 
 # Check SSH key
 if (-not (Test-Path $SSHKeyPath)) {
-    Write-Error "SSH key not found at: $SSHKeyPath"
+    Stop-Deployment "SSH key not found at: $SSHKeyPath"
 }
 Write-Success "SSH key found"
 
@@ -100,7 +100,7 @@ try {
     $result = Invoke-Expression $testCmd -ErrorAction Stop 2>&1
     Write-Success "Server is reachable"
 } catch {
-    Write-Error "Cannot connect to server at $ServerIP - $_"
+    Stop-Deployment "Cannot connect to server at $ServerIP - $_"
 }
 
 # ============================================================================
@@ -113,13 +113,13 @@ Write-Step "Copying .env.staging to server" 3
 try {
     if ($Verbose) { 
         Write-Info "Source: $LocalEnvFile"
-        Write-Info "Destination: $ServerUser@$ServerIP:$ServerProjectPath/.env"
+        Write-Info "Destination: $ServerUser@$($ServerIP):$ServerProjectPath/.env"
     }
     $scpCmd = "scp -i `"$SSHKeyPath`" `"$LocalEnvFile`" `"$ServerUser@$ServerIP`:`"$ServerProjectPath/.env`"`""
     Invoke-Expression $scpCmd -ErrorAction Stop | Out-Null
     Write-Success ".env.staging copied to server as .env"
 } catch {
-    Write-Error "Failed to copy .env file: $_"
+    Stop-Deployment "Failed to copy .env file: $_"
 }
 
 # Step 2: Set permissions on .env
@@ -130,31 +130,31 @@ try {
     Invoke-Expression $cmd -ErrorAction Stop | Out-Null
     Write-Success "Permissions set (600)"
 } catch {
-    Write-Error "Failed to set permissions: $_"
+    Stop-Deployment "Failed to set permissions: $_"
 }
 
 # Step 3: Pull latest code
 Write-Step "Pulling latest code from GitHub" 5
 try {
     $sshCmd = "ssh -i `"$SSHKeyPath`" $ServerUser@$ServerIP"
-    $cmd = "$sshCmd `"cd $ServerProjectPath && git pull origin main`""
+    $cmd = $sshCmd + " `"cd $ServerProjectPath; git pull origin main`""
     if ($Verbose) { Write-Info "Running: git pull origin main" }
     $result = Invoke-Expression $cmd -ErrorAction Stop 2>&1
     Write-Success "Code updated from GitHub"
     if ($Verbose) { Write-Info $result }
 } catch {
-    Write-Error "Failed to pull code: $_"
+    Stop-Deployment "Failed to pull code: $_"
 }
 
 # Step 4: Make deployment script executable
 Write-Step "Preparing deployment script" 6
 try {
     $sshCmd = "ssh -i `"$SSHKeyPath`" $ServerUser@$ServerIP"
-    $cmd = "$sshCmd `"chmod +x $ServerProjectPath/deploy-master.sh`""
+    $cmd = $sshCmd + " `"chmod +x $ServerProjectPath/deploy-master.sh`""
     Invoke-Expression $cmd -ErrorAction Stop | Out-Null
     Write-Success "Deployment script is executable"
 } catch {
-    Write-Error "Failed to update permissions: $_"
+    Stop-Deployment "Failed to update permissions: $_"
 }
 
 # Step 5: Run deployment on server
@@ -171,13 +171,13 @@ Write-Info "  ✓ SSL certificate verified`n"
 
 try {
     $sshCmd = "ssh -i `"$SSHKeyPath`" $ServerUser@$ServerIP"
-    $cmd = "$sshCmd `"cd $ServerProjectPath && sudo ./deploy-master.sh staging --health-check`""
+    $cmd = $sshCmd + " `"cd $ServerProjectPath; sudo ./deploy-master.sh staging --health-check`""
     
     # Run interactively so output is visible
     Invoke-Expression $cmd -ErrorAction Stop
     
 } catch {
-    Write-Error "Deployment script failed: $_"
+    Stop-Deployment "Deployment script failed: $_"
 }
 
 # ============================================================================
@@ -191,7 +191,7 @@ try {
     
     # Check containers
     Write-Info "Checking containers..."
-    $cmd = "$sshCmd `"cd $ServerProjectPath && docker-compose ps`""
+    $cmd = "$sshCmd `"cd $ServerProjectPath; docker-compose ps`""
     $output = Invoke-Expression $cmd -ErrorAction Stop 2>&1
     Write-Host $output
     
@@ -230,4 +230,4 @@ Write-Host "  ssh -i `"$SSHKeyPath`" $ServerUser@$ServerIP" -ForegroundColor Gra
 Write-Host "  cd $ServerProjectPath" -ForegroundColor Gray
 Write-Host "  docker-compose logs -f frontend" -ForegroundColor Gray
 
-Write-Host "`n✓ Deployment successful!`n" -ForegroundColor Green
+Write-Host "`nDeployment successful!`n" -ForegroundColor Green
