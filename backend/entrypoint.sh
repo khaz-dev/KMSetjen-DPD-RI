@@ -38,9 +38,8 @@ chown -R django:django /app/media /app/logs /app/staticfiles 2>/dev/null || true
 echo "  ✓ Permissions fixed"
 
 # ==============================================================================
-# Switch to django user and run migrations/startup
+# Run Django initialization (as root, which is fine for initial setup)
 # ==============================================================================
-exec su - django << 'EOF'
 cd /app
 
 echo "⏳ Waiting for PostgreSQL..."
@@ -127,17 +126,6 @@ else:
     print("  ✓ Articles already exist")
 END
 
-echo ""
-echo "=========================================="
-echo "✅ Initialization Complete"
-echo "=========================================="
-echo ""
-
-# Start gunicorn
-exec gunicorn --bind 0.0.0.0:8002 --workers 4 --timeout 120 --access-logfile - --error-logfile - config.wsgi:application
-
-EOF
-
 # Ensure all tags are properly associated with articles
 echo "🏷️  Ensuring tags are associated with articles..."
 python manage.py shell << END
@@ -168,5 +156,6 @@ echo "✅ Django Ready!"
 echo "=========================================="
 echo ""
 
-# Start Django application
-exec "$@"
+# Start Django application as django user (non-root for security)
+# Using su -s to avoid TTY requirement
+exec su -s /bin/bash django -c 'exec gunicorn --bind 0.0.0.0:8002 --workers 4 --timeout 120 --access-logfile - --error-logfile - config.wsgi:application'

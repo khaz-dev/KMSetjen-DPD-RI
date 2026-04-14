@@ -65,11 +65,8 @@ RUN mkdir -p /app/logs && chown django:django /app/logs
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod -v +x /app/entrypoint.sh && ls -la /app/entrypoint.sh
 
-# Set entrypoint with shell interpreter (runs BEFORE user directive, so runs as root)
+# Set entrypoint with shell interpreter (runs as root initially, then switches to django at end)
 ENTRYPOINT ["bash", "/app/entrypoint.sh"]
-
-# Switch to non-root user for the gunicorn process (after entrypoint fixes perms)
-USER django
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
