@@ -149,7 +149,7 @@ function UserManagementPage({ onLogout }) {
 
       const response = await adminAPI.getUsers(params);
       const totalItems = response.data.count || 0;
-      const calculatedTotalPages = Math.ceil(totalItems / effectivePageSize);
+      const calculatedTotalPages = Math.ceil(totalItems / itemsPerPage);
       
       setTotalCount(totalItems);
       setTotalPages(calculatedTotalPages);
