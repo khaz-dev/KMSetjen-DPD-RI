@@ -87,7 +87,9 @@ services:
       dockerfile: Dockerfile
       args:
         # Pass build arguments from .env to Docker build
-        VITE_APP_SUBPATH: ${VITE_APP_SUBPATH:-/}
+        # IMPORTANT: defaults should match staging/production, not localhost!
+        # Staging default: /kms, Production default: depends on deploy, Local default: /
+        VITE_APP_SUBPATH: ${VITE_APP_SUBPATH:-/kms}
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://django:8002/api}
         VITE_API_URL: ${VITE_API_URL:-http://django:8002}
         VITE_API_TIMEOUT: ${VITE_API_TIMEOUT:-10000}
