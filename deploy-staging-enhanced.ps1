@@ -371,30 +371,17 @@ sudo -E -u postgres psql -h localhost -c 'CREATE DATABASE kmsdb;' 2>/dev/null
     }
     Write-Info "Dump streamed successfully"
     
-    # Step 3: Verify import
+    # Step 3: Verify import with simple query
     Write-Info "[3] Verifying import..."
-    $verifyCmd = @"
-export PGPASSWORD='Okkdpdri@2026'
-ARTICLE_COUNT=\$(sudo -E -u postgres psql -h localhost kmsdb -t -c 'SELECT COUNT(*) FROM content_article;' 2>/dev/null)
-CATEGORY_COUNT=\$(sudo -E -u postgres psql -h localhost kmsdb -t -c 'SELECT COUNT(*) FROM content_category;' 2>/dev/null)
-echo "Articles: \$ARTICLE_COUNT"
-echo "Categories: \$CATEGORY_COUNT"
-if [ "\$ARTICLE_COUNT" -eq 0 ]; then
-  echo "ERROR: No articles imported"
-  exit 1
-fi
-"@
-    $verifyCmd = $verifyCmd -replace "`r`n", "`n"
-    $verifyResult = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" $verifyCmd
+    $verifyResult = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "export PGPASSWORD='Okkdpdri@2026'; sudo -E -u postgres psql -h localhost kmsdb -t -c 'SELECT COUNT(*) FROM content_article;' 2>/dev/null"
+    $articleCount = $verifyResult -as [int]
     
-    Write-Info "Verification output:"
-    $verifyResult | ForEach-Object { Write-Info "  $_" }
-    
-    if ($LASTEXITCODE -ne 0 -or $verifyResult -match "ERROR") {
-        Write-Error-Custom "Import verification failed"
+    if ($articleCount -gt 0) {
+        Write-Info "  Articles imported: $articleCount"
+        Write-Success "Database imported successfully"
+    } else {
+        Write-Error-Custom "Import verification failed - no articles found"
     }
-    
-    Write-Success "Database imported successfully"
 }
 
 # ============================================================================
