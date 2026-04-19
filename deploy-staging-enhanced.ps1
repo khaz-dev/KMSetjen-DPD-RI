@@ -356,17 +356,17 @@ sleep 1
 sudo -E -u postgres psql -h localhost -c 'CREATE DATABASE kmsdb;' 2>/dev/null
 "@
             $setupCmd = $setupCmd -replace "`r`n", "`n"
-            $setupResult = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" $setupCmd 2>&1
+            $setupResult = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" $setupCmd
             if ($LASTEXITCODE -ne 0) {
-                Write-Error-Custom "Failed to prepare remote database: $setupResult"
+                Write-Error-Custom "Failed to prepare remote database"
             }
             
             # Step 2: Stream dump directly to psql
             Write-Info "[2] Streaming data to remote database..."
             $importCmd = "export PGPASSWORD='Okkdpdri@2026'; sudo -E -u postgres psql -h localhost kmsdb 2>/dev/null"
-            $importResult = $dumpContent | & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" $importCmd 2>&1
+            $importResult = $dumpContent | & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" $importCmd
             if ($LASTEXITCODE -ne 0) {
-                Write-Error-Custom "Database import failed: $importResult"
+                Write-Error-Custom "Database import failed with exit code $LASTEXITCODE"
             }
             Write-Info "Dump streamed successfully"
             
@@ -384,7 +384,7 @@ if [ "\$ARTICLE_COUNT" -eq 0 ]; then
 fi
 "@
             $verifyCmd = $verifyCmd -replace "`r`n", "`n"
-            $verifyResult = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" $verifyCmd 2>&1
+            $verifyResult = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" $verifyCmd
             
             Write-Info "Verification output:"
             $verifyResult | ForEach-Object { Write-Info "  $_" }
