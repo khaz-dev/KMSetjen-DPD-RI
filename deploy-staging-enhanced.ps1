@@ -347,6 +347,7 @@ function Import-RemoteDatabase {
         }
         
         Write-Info "Dump file verified. Starting database import..."
+        Write-Info "Using remote dump file: $remoteDumpFile"
         
         # Database import with proper error handling and verification
         # CRITICAL: Use 'sudo -E' to preserve PGPASSWORD environment variable
@@ -354,14 +355,19 @@ function Import-RemoteDatabase {
 set -e
 cd '$ServerProjectPath'
 export PGPASSWORD='Okkdpdri@2026'
+export DUMP_FILE='$remoteDumpFile'
+
+echo '[0] Environment check'
+echo "DUMP_FILE=\$DUMP_FILE"
+ls -lh "\$DUMP_FILE" || echo "File not found: \$DUMP_FILE"
 
 echo '[1] Verifying dump file exists'
-if [ ! -f '$remoteDumpFile' ]; then
-  echo 'ERROR: Dump file not found: $remoteDumpFile'
+if [ ! -f "\$DUMP_FILE" ]; then
+  echo 'ERROR: Dump file not found:' "\$DUMP_FILE"
   ls -la . | head -20
   exit 1
 fi
-ls -lh '$remoteDumpFile'
+ls -lh "\$DUMP_FILE"
 
 echo '[2] Dropping existing database...'
 sudo -E -u postgres psql -h localhost -c 'DROP DATABASE IF EXISTS kmsdb;' 2>/dev/null || true
@@ -373,7 +379,7 @@ sudo -E -u postgres psql -h localhost -c 'CREATE DATABASE kmsdb;' 2>/dev/null
 if [ `$? -ne 0 ]; then echo 'ERROR: Failed to create database'; exit 1; fi
 
 echo '[4] Importing data from dump file...'
-if ! sudo -E -u postgres psql -h localhost kmsdb < '$remoteDumpFile' 2>/dev/null; then
+if ! sudo -E -u postgres psql -h localhost kmsdb < "\$DUMP_FILE" 2>/dev/null; then
   echo 'ERROR: Database import failed'
   exit 1
 fi
@@ -395,7 +401,7 @@ CATEGORY_COUNT=\`sudo -E -u postgres psql -h localhost kmsdb -t -c 'SELECT COUNT
 echo "Imported categories: \$CATEGORY_COUNT"
 
 echo '[7] Cleaning up dump file...'
-rm -f '$remoteDumpFile'
+rm -f "\$DUMP_FILE"
 
 echo 'Database import completed successfully'
 "@
