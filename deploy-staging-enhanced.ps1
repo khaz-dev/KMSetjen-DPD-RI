@@ -296,27 +296,32 @@ function Transfer-DatabaseDump {
         $remoteDumpFile = "$ServerProjectPath/$dumpFileName"
         
         Write-Info "Local file: $LocalDBDumpFile"
-        Write-Info "Remote destination: $ServerUser@$($ServerIP):$remoteDumpFile"
+        Write-Info "Remote destination: root@$($ServerIP):$remoteDumpFile"
         
-        # Transfer with verbose output
-        Write-Info "Executing: scp -i `"$SSHKeyPath`" `"$LocalDBDumpFile`" `"$ServerUser@$($ServerIP):$remoteDumpFile`""
-        $result = & scp -i "$SSHKeyPath" "$LocalDBDumpFile" "$ServerUser@$($ServerIP):$remoteDumpFile" 2>&1
+        # Transfer using SCP with proper escaping
+        # NOTE: Use backtick before colon in remote path for PowerShell string interpolation
+        Write-Info "Transferring file via SCP..."
+        $result = & scp -i "$SSHKeyPath" "$LocalDBDumpFile" "$ServerUser@$($ServerIP)`:$remoteDumpFile" 2>&1
+        $scpExitCode = $LASTEXITCODE
         
-        if ($LASTEXITCODE -ne 0) {
-            Write-Error-Custom "Failed to upload database dump. Exit code: $LASTEXITCODE. Output: $result"
+        if ($scpExitCode -ne 0) {
+            Write-Error-Custom "SCP transfer failed with exit code $scpExitCode. Output: $result"
         }
         
-        Write-Info "SCP transfer completed, verifying file on remote..."
+        Write-Info "Transfer completed. Verifying file on remote server..."
+        Start-Sleep -Seconds 1
         
-        # Verify file exists on remote server
-        $verifyCmd = "ls -lh '$remoteDumpFile' 2>&1"
-        $remoteVerify = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" $verifyCmd 2>&1
+        # Verify file exists using test command
+        $verifyOutput = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "test -f '$remoteDumpFile' && echo 'FOUND' || echo 'MISSING'" 2>&1
+        $verifyExitCode = $LASTEXITCODE
         
-        if ($LASTEXITCODE -ne 0 -or -not ($remoteVerify -match $dumpFileName)) {
-            Write-Error-Custom "File verification failed on remote server. File may not have uploaded. Output: $remoteVerify"
+        if ($verifyOutput -ne "FOUND") {
+            # Debug: show what files are in the directory
+            $dirList = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "ls -lah '$ServerProjectPath/' | head -10" 2>&1
+            Write-Error-Custom "File verification failed. Remote directory listing: $dirList"
         }
         
-        Write-Success "Database dump uploaded and verified on remote server"
+        Write-Success "Database dump uploaded and verified ($dumpFileName)"
     }
 }
 
