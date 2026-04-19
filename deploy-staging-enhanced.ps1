@@ -326,7 +326,7 @@ function Import-RemoteDatabase {
             echo 'Database import completed successfully'
 "@
         
-        $result = & ssh -i $SSHKeyPath "$ServerUser@$ServerIP" $remoteCmd 2>&1
+        $result = & ssh -i $SSHKeyPath "$ServerUser@$ServerIP" ($remoteCmd -replace "`r`n", "`n") 2>&1
         
         if ($LASTEXITCODE -ne 0) {
             Write-Error-Custom "Database import failed: $result"
@@ -513,7 +513,7 @@ function Update-Repository {
             git clean -fd
 "@
         
-        $result = & ssh -i $SSHKeyPath "$ServerUser@$ServerIP" $remoteCmd 2>&1
+        $result = & ssh -i $SSHKeyPath "$ServerUser@$ServerIP" ($remoteCmd -replace "`r`n", "`n") 2>&1
         
         if ($LASTEXITCODE -ne 0) {
             Write-Warning-Custom "Git update had issues: $result"
@@ -540,7 +540,7 @@ function Build-DockerImages {
             docker-compose build $cleanFlag
 "@
         
-        $result = & ssh -i $SSHKeyPath "$ServerUser@$ServerIP" $remoteCmd 2>&1
+        $result = & ssh -i $SSHKeyPath "$ServerUser@$ServerIP" ($remoteCmd -replace "`r`n", "`n") 2>&1
         
         if ($LASTEXITCODE -ne 0) {
             Write-Error-Custom "Docker build failed: $result"
@@ -562,7 +562,7 @@ function Stop-RemoteContainers {
             docker-compose down || true
 "@
         
-        & ssh -i $SSHKeyPath "$ServerUser@$ServerIP" $remoteCmd 2>&1 | Out-Null
+        & ssh -i $SSHKeyPath "$ServerUser@$ServerIP" ($remoteCmd -replace "`r`n", "`n") 2>&1 | Out-Null
         Write-Success "Containers stopped"
     }
 }
@@ -580,7 +580,7 @@ function Start-RemoteContainers {
             sleep 3
 "@
         
-        $result = & ssh -i $SSHKeyPath "$ServerUser@$ServerIP" $remoteCmd 2>&1
+        $result = & ssh -i $SSHKeyPath "$ServerUser@$ServerIP" ($remoteCmd -replace "`r`n", "`n") 2>&1
         
         if ($LASTEXITCODE -ne 0) {
             Write-Error-Custom "Failed to start containers: $result"
@@ -604,7 +604,7 @@ function Restart-RemoteContainers {
             sleep 3
 "@
         
-        $result = & ssh -i $SSHKeyPath "$ServerUser@$ServerIP" $remoteCmd 2>&1
+        $result = & ssh -i $SSHKeyPath "$ServerUser@$ServerIP" ($remoteCmd -replace "`r`n", "`n") 2>&1
         
         if ($LASTEXITCODE -ne 0) {
             Write-Error-Custom "Failed to restart containers: $result"
@@ -626,7 +626,7 @@ function Run-RemoteMigrations {
             docker-compose exec -T django python manage.py migrate --noinput || true
 "@
         
-        $result = & ssh -i $SSHKeyPath "$ServerUser@$ServerIP" $remoteCmd 2>&1
+        $result = & ssh -i $SSHKeyPath "$ServerUser@$ServerIP" ($remoteCmd -replace "`r`n", "`n") 2>&1
         
         if ($LASTEXITCODE -ne 0) {
             Write-Warning-Custom "Migrations had issues: $result"
