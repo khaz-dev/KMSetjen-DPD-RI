@@ -373,14 +373,15 @@ sudo -E -u postgres psql -h localhost -c 'CREATE DATABASE kmsdb;' 2>/dev/null
     
     # Step 3: Verify import with simple query
     Write-Info "[3] Verifying import..."
-    $verifyResult = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "export PGPASSWORD='Okkdpdri@2026'; sudo -E -u postgres psql -h localhost kmsdb -t -c 'SELECT COUNT(*) FROM content_article;' 2>/dev/null"
-    $articleCount = $verifyResult -as [int]
+    $verifyCmd = "export PGPASSWORD='Okkdpdri@2026'; sudo -E -u postgres psql -h localhost kmsdb -t -c 'SELECT COUNT(*) FROM content_article;'"
+    $verifyResult = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" $verifyCmd
+    $articleCount = ([string]$verifyResult).Trim() -as [int]
     
     if ($articleCount -gt 0) {
         Write-Info "  Articles imported: $articleCount"
         Write-Success "Database imported successfully"
     } else {
-        Write-Error-Custom "Import verification failed - no articles found"
+        Write-Error-Custom "Import verification failed - found $articleCount articles (expected > 0)"
     }
 }
 
