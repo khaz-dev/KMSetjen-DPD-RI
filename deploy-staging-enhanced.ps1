@@ -355,6 +355,7 @@ sudo -E -u postgres psql -h localhost -c 'DROP DATABASE IF EXISTS kmsdb;' 2>/dev
 sleep 1
 sudo -E -u postgres psql -h localhost -c 'CREATE DATABASE kmsdb;' 2>/dev/null
 "@
+            $setupCmd = $setupCmd -replace "`r`n", "`n"
             $setupResult = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" $setupCmd 2>&1
             if ($LASTEXITCODE -ne 0) {
                 Write-Error-Custom "Failed to prepare remote database: $setupResult"
@@ -382,6 +383,7 @@ if [ "\$ARTICLE_COUNT" -eq 0 ]; then
   exit 1
 fi
 "@
+            $verifyCmd = $verifyCmd -replace "`r`n", "`n"
             $verifyResult = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" $verifyCmd 2>&1
             
             Write-Info "Verification output:"
