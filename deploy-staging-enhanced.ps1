@@ -315,28 +315,29 @@ function Import-RemoteDatabase {
         }
         
         # Database import with proper error handling and verification
+        # CRITICAL FIX: Use 'sudo -E' to PRESERVE environment variables (PGPASSWORD)
         $remoteCmd = @"
 set -e
 cd '$ServerProjectPath'
 export PGPASSWORD='Okkdpdri@2026'
 
 echo '[1] Dropping existing database...'
-sudo -u postgres psql -h localhost -c 'DROP DATABASE IF EXISTS kmsdb;' 2>/dev/null || true
+sudo -E -u postgres psql -h localhost -c 'DROP DATABASE IF EXISTS kmsdb;' 2>/dev/null || true
 
 sleep 1
 
 echo '[2] Creating new database...'
-sudo -u postgres psql -h localhost -c 'CREATE DATABASE kmsdb;' 2>/dev/null
+sudo -E -u postgres psql -h localhost -c 'CREATE DATABASE kmsdb;' 2>/dev/null
 if [ `$? -ne 0 ]; then echo 'ERROR: Failed to create database'; exit 1; fi
 
 echo '[3] Importing data from dump file...'
-if ! sudo -u postgres psql -h localhost kmsdb < '$remoteDumpFile' 2>/dev/null; then
+if ! sudo -E -u postgres psql -h localhost kmsdb < '$remoteDumpFile' 2>/dev/null; then
   echo 'ERROR: Database import failed'
   exit 1
 fi
 
 echo '[4] Verifying import success...'
-ARTICLE_COUNT=\`sudo -u postgres psql -h localhost kmsdb -t -c 'SELECT COUNT(*) FROM content_article;' 2>/dev/null\`
+ARTICLE_COUNT=\`sudo -E -u postgres psql -h localhost kmsdb -t -c 'SELECT COUNT(*) FROM content_article;' 2>/dev/null\`
 if [ -z "\$ARTICLE_COUNT" ]; then
   echo 'ERROR: Could not verify article count'
   exit 1
@@ -348,7 +349,7 @@ if [ "\$ARTICLE_COUNT" -eq 0 ]; then
 fi
 
 echo '[5] Verifying categories...'
-CATEGORY_COUNT=\`sudo -u postgres psql -h localhost kmsdb -t -c 'SELECT COUNT(*) FROM content_category;' 2>/dev/null\`
+CATEGORY_COUNT=\`sudo -E -u postgres psql -h localhost kmsdb -t -c 'SELECT COUNT(*) FROM content_category;' 2>/dev/null\`
 echo "Imported categories: \$CATEGORY_COUNT"
 
 echo '[6] Cleaning up dump file...'
