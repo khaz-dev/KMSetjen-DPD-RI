@@ -1,38 +1,30 @@
 #!/bin/bash
 
 ################################################################################
-# KMSetjen DPD RI - Enhanced Master Deployment Script (Bash)
+# KMSetjen DPD RI - Enhanced Master Deployment Script (Bash v3.0)
 # ============================================================================
-# Version 2.0: Now includes SSL Certificate Management
-# 
-# This script handles COMPLETE deployment including:
-# - SSL certificate generation/renewal (with wildcard support)
-# - Docker container deployment
-# - Nginx configuration
-# - Health checks and validation
+# Comprehensive server-side deployment with 3 flexible modes:
+# 1. CLEAN - Fresh build with no data (for testing/development)
+# 2. UPDATE-WITH-DATA - Import data from backup/previous deployment
+# 3. UPDATE-ONLY - Code update only, keep existing data (production-safe)
 #
 # Features:
-# - Auto-detects certificate status
-# - Supports DNS-01 (Cloudflare) and manual DNS validation
-# - Validates certificate before deployment
-# - Automatic renewal with proper domain coverage
+# - SSL certificate management (auto-renewal)
+# - Database migration and backup
+# - Media file management
+# - Health checks and validation
+# - Comprehensive logging
 #
 # Usage:
-#   sudo bash deploy-master.sh staging
-#   sudo bash deploy-master.sh staging --cert-only
-#   sudo bash deploy-master.sh staging --verbose
-#   sudo bash deploy-master.sh staging --health-check
+#   sudo bash deploy-master.sh staging [--mode=clean|update-with-data|update-only]
+#   sudo bash deploy-master.sh production --mode=update-only
+#   sudo bash deploy-master.sh staging --mode=update-with-data --verbose
 #
 # Requirements:
 #   - Run as root (sudo)
 #   - Docker & Docker Compose installed
-#   - Certbot installed: sudo apt-get install certbot
-#   - For Cloudflare DNS: python3-certbot-dns-cloudflare installed
-#
-# Environment Variables (optional):
-#   CLOUDFLARE_API_TOKEN - For automatic DNS validation (recommended)
-#   EMAIL - Certbot notification email
-#   SKIP_CERT - Skip certificate checks (not recommended)
+#   - PostgreSQL client tools (psql, pg_dump)
+#   - Certbot for SSL (optional but recommended)
 #
 ################################################################################
 
@@ -43,30 +35,36 @@ set -e
 # =============================================================================
 
 ENVIRONMENT="${1:-staging}"
+MODE="${2:-update-only}"
 VERBOSE=${VERBOSE:-false}
 DRY_RUN=${DRY_RUN:-false}
 SKIP_BACKUP=${SKIP_BACKUP:-false}
-HEALTH_CHECK=${HEALTH_CHECK:-false}
-CERT_ONLY=${CERT_ONLY:-false}
 SKIP_CERT=${SKIP_CERT:-false}
-CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
-ADMIN_EMAIL=${EMAIL:-khairilazmiashari@gmail.com}
+HEALTH_CHECK=${HEALTH_CHECK:-true}
 
-# Parse arguments
+# Parse additional arguments
 shift 2>/dev/null || true
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --verbose)         VERBOSE=true ;;
-        --dry-run)         DRY_RUN=true ;;
-        --skip-backup)     SKIP_BACKUP=true ;;
-        --skip-cert)       SKIP_CERT=true ;;
-        --health-check)    HEALTH_CHECK=true ;;
-        --cert-only)       CERT_ONLY=true ;;
-        --cloudflare)      CLOUDFLARE_API_TOKEN="$2"; shift ;;
-        *)                 echo "Unknown option: $1"; exit 1 ;;
+        --mode=*)           MODE="${1#*=}" ;;
+        --verbose)          VERBOSE=true ;;
+        --dry-run)          DRY_RUN=true ;;
+        --skip-backup)      SKIP_BACKUP=true ;;
+        --skip-cert)        SKIP_CERT=true ;;
+        --no-health-check)  HEALTH_CHECK=false ;;
+        *)                  log_warn "Unknown option: $1" ;;
     esac
     shift
 done
+
+# Validate mode
+case "$MODE" in
+    clean|update-with-data|update-only) ;;
+    *)
+        echo "Invalid mode: $MODE (must be: clean, update-with-data, or update-only)"
+        exit 1
+        ;;
+esac
 
 # Auto-detect deployment path
 DEPLOY_PATH="$(pwd)"
@@ -75,25 +73,35 @@ LOG_DIR="$DEPLOY_PATH/deployment_logs"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 LOG_FILE="$LOG_DIR/deploy_${TIMESTAMP}.log"
 
+# Database configuration
+DB_NAME="kmsdb"
+DB_USER="postgres"
+DB_PASSWORD="${DB_PASSWORD:-Okkdpdri@2026}"
+DB_HOST="${DB_HOST:-localhost}"
+DB_PORT="${DB_PORT:-5432}"
+DB_DUMP_FILE="$BACKUP_DIR/db_backup_${TIMESTAMP}.sql"
+
+# Media configuration
+MEDIA_PATH="$DEPLOY_PATH/media"
+MEDIA_BACKUP_PATH="$BACKUP_DIR/media_backup_${TIMESTAMP}"
+
 # Certbot configuration
 CERT_DIR="/etc/letsencrypt/live"
 CERT_NAME="khaz.app"
-CLOUDFLARE_CONF="/etc/letsencrypt/cloudflare.ini"
-RENEWAL_DIR="/etc/letsencrypt/renewal"
 
 # Environment-specific configuration
 case "$ENVIRONMENT" in
     staging)
         DOMAIN="khaz.app"
-        SUBDOMAINS=("kms.khaz.app" "kms-be.khaz.app" "www.khaz.app")
-        BACKEND_URL="https://kms-be.khaz.app"
         FRONTEND_URL="https://kms.khaz.app"
+        BACKEND_URL="https://kms-be.khaz.app"
+        NGINX_CONFIG="nginx-kms-subdomains.conf"
         ;;
     production)
         DOMAIN="dpd.go.id"
-        SUBDOMAINS=("kms.dpd.go.id" "kms-be.dpd.go.id")
-        BACKEND_URL="https://kms-be.dpd.go.id"
         FRONTEND_URL="https://kms.dpd.go.id"
+        BACKEND_URL="https://kms-be.dpd.go.id"
+        NGINX_CONFIG="nginx-kms-production.conf"
         ;;
     *)
         echo "Unknown environment: $ENVIRONMENT"
@@ -113,396 +121,382 @@ NC='\033[0m'
 # LOGGING FUNCTIONS
 # =============================================================================
 
-mkdir -p "$LOG_DIR"
+mkdir -p "$LOG_DIR" "$BACKUP_DIR"
 
 log_info()    { echo -e "${BLUE}[INFO]${NC}     $1" | tee -a "$LOG_FILE"; }
 log_success() { echo -e "${GREEN}[✓]${NC}       $1" | tee -a "$LOG_FILE"; }
 log_error()   { echo -e "${RED}[ERROR]${NC}    $1" | tee -a "$LOG_FILE"; exit 1; }
 log_warn()    { echo -e "${YELLOW}[WARN]${NC}    $1" | tee -a "$LOG_FILE"; }
-log_header()  { echo ""; echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}" | tee -a "$LOG_FILE"; echo -e "${CYAN}║${NC} $1" | tee -a "$LOG_FILE"; echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}" | tee -a "$LOG_FILE"; echo ""; }
+log_header()  { 
+    echo "" | tee -a "$LOG_FILE"
+    echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}" | tee -a "$LOG_FILE"
+    echo -e "${CYAN}║${NC} $1" | tee -a "$LOG_FILE"
+    echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}" | tee -a "$LOG_FILE"
+    echo "" | tee -a "$LOG_FILE"
+}
+
+log_dry_run() { echo -e "${CYAN}[DRY RUN]${NC}   $1" | tee -a "$LOG_FILE"; }
 
 # =============================================================================
-# CERTIFICATE MANAGEMENT FUNCTIONS
+# VALIDATION FUNCTIONS
 # =============================================================================
 
-# Check if root
 check_root() {
     if [[ $EUID -ne 0 ]]; then
         log_error "Must run as root (sudo)"
     fi
 }
 
-# Check required tools
 check_requirements() {
     log_info "Checking system requirements..."
     
     local missing=()
     
-    # Check certbot
-    if ! command -v certbot &> /dev/null; then
-        missing+=("certbot (install: sudo apt-get install certbot)")
-    fi
-    
     # Check docker
     if ! command -v docker &> /dev/null; then
-        missing+=("docker (install: https://docs.docker.com/install)")
+        missing+=("docker")
+    else
+        log_success "Docker found"
     fi
     
     # Check docker-compose
     if ! command -v docker-compose &> /dev/null; then
-        missing+=("docker-compose (install: sudo apt-get install docker-compose)")
+        missing+=("docker-compose")
+    else
+        log_success "Docker Compose found"
     fi
     
-    # Check nginx
-    if ! command -v nginx &> /dev/null; then
-        missing+=("nginx (install: sudo apt-get install nginx)")
+    # Check PostgreSQL client
+    if ! command -v psql &> /dev/null; then
+        missing+=("psql (PostgreSQL client)")
+    else
+        log_success "PostgreSQL client found"
     fi
     
     if [[ ${#missing[@]} -gt 0 ]]; then
         log_error "Missing requirements: ${missing[*]}"
     fi
+}
+
+check_project_structure() {
+    log_info "Checking project structure..."
     
-    log_success "All requirements met"
+    if [[ ! -f "$DEPLOY_PATH/docker-compose.yml" ]]; then
+        log_error "docker-compose.yml not found"
+    fi
+    
+    if [[ ! -f "$DEPLOY_PATH/.env" ]]; then
+        log_warn ".env file not found (should be provided by deployment)"
+    fi
+    
+    if [[ ! -f "$DEPLOY_PATH/$NGINX_CONFIG" ]]; then
+        log_warn "Nginx config not found: $NGINX_CONFIG"
+    fi
+    
+    log_success "Project structure verified"
 }
 
-# Check if certificate exists
-cert_exists() {
-    [[ -f "$CERT_DIR/$CERT_NAME/fullchain.pem" ]]
-}
+# =============================================================================
+# BACKUP FUNCTIONS
+# =============================================================================
 
-# Get certificate expiration date
-get_cert_expiry() {
-    if cert_exists; then
-        openssl x509 -enddate -noout -in "$CERT_DIR/$CERT_NAME/fullchain.pem" | cut -d= -f2
+create_database_backup() {
+    if [[ "$SKIP_BACKUP" == "true" ]]; then
+        log_warn "Database backup SKIPPED"
+        return
+    fi
+    
+    log_info "Creating database backup..."
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry_run "Would backup database to: $DB_DUMP_FILE"
+        return
+    fi
+    
+    export PGPASSWORD="$DB_PASSWORD"
+    if pg_dump -h "$DB_HOST" -U "$DB_USER" "$DB_NAME" > "$DB_DUMP_FILE" 2>/dev/null; then
+        local size=$(du -h "$DB_DUMP_FILE" | cut -f1)
+        log_success "Database backed up ($size)"
     else
-        echo "N/A"
+        log_warn "Database backup failed (database may not exist yet)"
     fi
+    unset PGPASSWORD
 }
 
-# Check if certificate covers all required domains
-check_cert_domains() {
-    if ! cert_exists; then
-        return 1
+create_media_backup() {
+    if [[ "$SKIP_BACKUP" == "true" ]] || [[ ! -d "$MEDIA_PATH" ]]; then
+        return
     fi
     
-    log_info "Checking certificate domains..."
+    log_info "Backing up media files..."
     
-    # Get certificate SANs
-    local cert_domains=$(openssl x509 -noout -text -in "$CERT_DIR/$CERT_NAME/fullchain.pem" | grep "DNS:" | tr ',' '\n' | grep DNS | sed 's/.*DNS://' | tr -d ' ')
-    
-    local has_wildcard=false
-    local has_all_domains=true
-    
-    # Check for wildcard
-    if echo "$cert_domains" | grep -q "^\*\.$DOMAIN\$"; then
-        has_wildcard=true
-        log_success "✓ Certificate has wildcard: *.$DOMAIN"
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry_run "Would backup media to: $MEDIA_BACKUP_PATH"
+        return
     fi
     
-    # Check for specific domains
-    for subdomain in "${SUBDOMAINS[@]}"; do
-        if echo "$cert_domains" | grep -q "^$subdomain\$"; then
-            log_success "  ✓ $subdomain"
-        else
-            log_warn "  ✗ $subdomain (NOT in certificate)"
-            has_all_domains=false
-        fi
-    done
+    mkdir -p "$MEDIA_BACKUP_PATH"
+    cp -r "$MEDIA_PATH"/* "$MEDIA_BACKUP_PATH/" 2>/dev/null || true
+    log_success "Media backed up"
+}
+
+# =============================================================================
+# DATABASE MANAGEMENT FUNCTIONS
+# =============================================================================
+
+reset_database() {
+    log_info "Resetting database for clean build..."
     
-    # Certificate is valid if it has wildcard OR all specific domains
-    if [[ "$has_wildcard" == "true" ]] || [[ "$has_all_domains" == "true" ]]; then
-        return 0
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry_run "Would reset database: DROP DATABASE IF EXISTS $DB_NAME"
+        return
+    fi
+    
+    export PGPASSWORD="$DB_PASSWORD"
+    
+    # Drop existing database
+    psql -h "$DB_HOST" -U "$DB_USER" -c "DROP DATABASE IF EXISTS $DB_NAME;" 2>/dev/null || true
+    
+    # Create fresh database
+    psql -h "$DB_HOST" -U "$DB_USER" -c "CREATE DATABASE $DB_NAME;" 2>/dev/null || {
+        log_error "Failed to create database"
+    }
+    
+    unset PGPASSWORD
+    log_success "Database reset complete"
+}
+
+import_database() {
+    local dump_file="$1"
+    
+    if [[ ! -f "$dump_file" ]]; then
+        log_warn "Database dump file not found: $dump_file"
+        return
+    fi
+    
+    log_info "Importing database from: $dump_file"
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry_run "Would import database from dump"
+        return
+    fi
+    
+    export PGPASSWORD="$DB_PASSWORD"
+    
+    # Import data
+    if psql -h "$DB_HOST" -U "$DB_USER" "$DB_NAME" < "$dump_file" 2>/dev/null; then
+        log_success "Database imported successfully"
     else
-        return 1
-    fi
-}
-
-# Check if certificate is about to expire
-cert_expiring_soon() {
-    if ! cert_exists; then
-        return 1
+        log_warn "Database import had issues"
     fi
     
-    local expiry_date=$(get_cert_expiry)
-    local expiry_epoch=$(date -d "$expiry_date" +%s)
-    local current_epoch=$(date +%s)
-    local days_left=$(( ($expiry_epoch - $current_epoch) / 86400 ))
-    
-    if [[ $days_left -lt 30 ]]; then
-        log_warn "Certificate expires in $days_left days"
-        return 0
-    else
-        log_info "Certificate valid for $days_left days"
-        return 1
-    fi
-}
-
-# Setup Cloudflare credentials
-setup_cloudflare_credentials() {
-    if [[ -z "$CLOUDFLARE_API_TOKEN" ]]; then
-        log_warn "CLOUDFLARE_API_TOKEN not provided, skipping Cloudflare setup"
-        return 1
-    fi
-    
-    log_info "Setting up Cloudflare credentials..."
-    
-    if [[ "$DRY_RUN" != "true" ]]; then
-        cat > "$CLOUDFLARE_CONF" <<EOF
-dns_cloudflare_api_token = $CLOUDFLARE_API_TOKEN
-EOF
-        chmod 600 "$CLOUDFLARE_CONF"
-        log_success "Cloudflare credentials configured"
-    else
-        log_info "[DRY RUN] Would configure Cloudflare credentials"
-    fi
-}
-
-# Install Cloudflare Certbot plugin
-install_cloudflare_plugin() {
-    if command -v certbot-dns-cloudflare &> /dev/null || python3 -c "import certbot_dns_cloudflare" 2>/dev/null; then
-        log_success "Cloudflare plugin already installed"
-        return 0
-    fi
-    
-    log_info "Installing python3-certbot-dns-cloudflare..."
-    if [[ "$DRY_RUN" != "true" ]]; then
-        apt-get update -qq
-        apt-get install -y -qq python3-certbot-dns-cloudflare
-        log_success "Cloudflare plugin installed"
-    else
-        log_info "[DRY RUN] Would install Cloudflare plugin"
-    fi
-}
-
-# Check Cloudflare availability
-has_cloudflare_support() {
-    [[ ! -z "$CLOUDFLARE_API_TOKEN" ]] && [[ -f "$CLOUDFLARE_CONF" ]]
-}
-
-# Renew certificate using Cloudflare DNS
-renew_cert_cloudflare() {
-    log_info "Renewing certificate with Cloudflare DNS validation..."
-    
-    install_cloudflare_plugin
-    setup_cloudflare_credentials
-    
-    if [[ "$DRY_RUN" != "true" ]]; then
-        if certbot certonly --dns-cloudflare \
-            --dns-cloudflare-credentials "$CLOUDFLARE_CONF" \
-            -d "$DOMAIN" \
-            -d "*.$DOMAIN" \
-            --agree-tos \
-            --email "$ADMIN_EMAIL" \
-            --expand \
-            --non-interactive; then
-            log_success "Certificate renewed successfully with Cloudflare"
-            return 0
-        else
-            log_error "Certificate renewal failed with Cloudflare"
-        fi
-    else
-        log_info "[DRY RUN] Would renew certificate with Cloudflare"
-    fi
-}
-
-# Renew certificate using manual DNS
-renew_cert_manual() {
-    log_warn "Manual DNS validation required for wildcard certificate"
-    log_info "You'll need to add DNS TXT record(s) to your domain registrar"
-    
-    if [[ "$DRY_RUN" != "true" ]]; then
-        certbot certonly --manual \
-            -d "$DOMAIN" \
-            -d "*.$DOMAIN" \
-            --agree-tos \
-            --email "$ADMIN_EMAIL" \
-            --expand
-    else
-        log_info "[DRY RUN] Would request manual DNS validation"
-    fi
-}
-
-# Create initial certificate if doesn't exist
-create_certificate() {
-    if cert_exists; then
-        log_info "Certificate already exists"
-        return 0
-    fi
-    
-    log_info "Creating new SSL certificate for $DOMAIN..."
-    
-    # Try Cloudflare first
-    if has_cloudflare_support; then
-        log_info "Using Cloudflare DNS validation"
-        renew_cert_cloudflare
-    else
-        log_warn "Cloudflare not configured, using manual DNS validation"
-        log_warn "You'll need to manually verify DNS records"
-        renew_cert_manual
-    fi
-}
-
-# Validate certificate health
-validate_certificate() {
-    log_header "Certificate Validation"
-    
-    if [[ "$SKIP_CERT" == "true" ]]; then
-        log_warn "Certificate check SKIPPED (not recommended for production)"
-        return 0
-    fi
-    
-    # Check if certificate exists
-    if ! cert_exists; then
-        log_warn "Certificate does not exist yet"
-        create_certificate
-    fi
-    
-    # Check if expiring soon
-    if cert_expiring_soon; then
-        log_info "Renewing expiring certificate..."
-        if has_cloudflare_support; then
-            renew_cert_cloudflare
-        else
-            log_warn "Please renew certificate manually: certbot renew"
-            return 1
-        fi
-    fi
-    
-    # Check domain coverage
-    if ! check_cert_domains; then
-        log_error "Certificate does not cover required domains. Renew with: certbot certonly -d $DOMAIN -d *.$DOMAIN"
-    fi
-    
-    log_success "Certificate validation passed"
+    unset PGPASSWORD
 }
 
 # =============================================================================
 # DEPLOYMENT FUNCTIONS
 # =============================================================================
 
-# Create backups
-create_backup() {
-    if [[ "$SKIP_BACKUP" == "true" ]]; then
-        return 0
+update_code() {
+    log_info "Updating code from Git..."
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry_run "Would update: git pull origin main"
+        return
     fi
     
-    log_info "Creating backup..."
-    mkdir -p "$BACKUP_DIR"
-    
-    if [[ "$DRY_RUN" != "true" ]]; then
-        local backup_file="$BACKUP_DIR/backup_${TIMESTAMP}.tar.gz"
-        tar -czf "$backup_file" \
-            docker-compose.yml \
-            .env \
-            ../*.conf 2>/dev/null || true
-        log_success "Backup created: $backup_file"
-    fi
-}
-
-# Update repository
-update_repo() {
-    log_info "Updating repository..."
-    cd "$DEPLOY_PATH"
-    
-    if [[ "$DRY_RUN" != "true" ]]; then
-        git pull origin main || log_warn "Git pull failed (might be offline)"
+    if git pull origin main 2>&1 | tee -a "$LOG_FILE"; then
+        log_success "Code updated from Git"
     else
-        log_info "[DRY RUN] Would pull from git"
+        log_warn "Git update had issues"
     fi
-    log_success "Repository updated"
 }
 
-# Build Docker images
-build_docker() {
-    log_info "Building Docker images..."
-    cd "$DEPLOY_PATH"
+build_docker_images() {
+    local clean_flag=""
     
-    if [[ "$DRY_RUN" != "true" ]]; then
-        docker-compose build --no-cache || log_error "Docker build failed"
+    if [[ "$MODE" == "clean" ]]; then
+        clean_flag="--no-cache"
+        log_info "Building Docker images (clean build, no cache)..."
     else
-        log_info "[DRY RUN] Would build Docker images"
+        log_info "Building Docker images..."
     fi
-    log_success "Docker images built"
-}
-
-# Deploy containers
-deploy_containers() {
-    log_info "Deploying containers..."
-    cd "$DEPLOY_PATH"
     
-    if [[ "$DRY_RUN" != "true" ]]; then
-        docker-compose down || true
-        docker-compose up -d || log_error "Docker deployment failed"
-        sleep 3
-    else
-        log_info "[DRY RUN] Would deploy containers"
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry_run "Would build: docker-compose build $clean_flag"
+        return
     fi
-    log_success "Containers deployed"
+    
+    if docker-compose build $clean_flag 2>&1 | tee -a "$LOG_FILE"; then
+        log_success "Docker images built successfully"
+    else
+        log_error "Docker build failed"
+    fi
 }
 
-# Run migrations
+stop_containers() {
+    log_info "Stopping containers..."
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry_run "Would stop: docker-compose down"
+        return
+    fi
+    
+    docker-compose down || true
+    sleep 2
+    log_success "Containers stopped"
+}
+
+start_containers() {
+    log_info "Starting containers..."
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry_run "Would start: docker-compose up -d"
+        return
+    fi
+    
+    docker-compose up -d || log_error "Failed to start containers"
+    sleep 3
+    log_success "Containers started"
+}
+
 run_migrations() {
     log_info "Running database migrations..."
     
-    if [[ "$DRY_RUN" != "true" ]]; then
-        docker-compose exec -T django python manage.py migrate --noinput || log_warn "Migrations failed"
-    else
-        log_info "[DRY RUN] Would run migrations"
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry_run "Would run: docker-compose exec django python manage.py migrate"
+        return
     fi
-    log_success "Migrations completed"
+    
+    if docker-compose exec -T django python manage.py migrate --noinput 2>&1 | tee -a "$LOG_FILE"; then
+        log_success "Migrations completed"
+    else
+        log_warn "Migrations had issues or no migrations pending"
+    fi
 }
 
-# Update Nginx
-update_nginx() {
-    log_info "Updating Nginx configuration..."
+# =============================================================================
+# DEPLOYMENT MODES
+# =============================================================================
+
+deploy_clean() {
+    log_header "DEPLOYMENT MODE: CLEAN BUILD"
+    log_info "Fresh build with no data migration"
     
-    if [[ "$DRY_RUN" != "true" ]]; then
-        local nginx_conf=""
-        case "$ENVIRONMENT" in
-            staging)
-                nginx_conf="nginx-kms-subdomains.conf"
-                ;;
-            production)
-                nginx_conf="nginx-kms-production.conf"
-                ;;
-        esac
-        
-        if [[ -f "$DEPLOY_PATH/$nginx_conf" ]]; then
-            cp "$DEPLOY_PATH/$nginx_conf" /etc/nginx/sites-available/kms
-            nginx -t || log_error "Nginx config test failed"
-            systemctl reload nginx || log_error "Nginx reload failed"
-        else
-            log_error "Nginx config not found: $nginx_conf"
-        fi
-    else
-        log_info "[DRY RUN] Would update Nginx"
-    fi
-    log_success "Nginx configured"
+    check_project_structure
+    
+    create_database_backup
+    
+    update_code
+    
+    reset_database
+    
+    build_docker_images
+    
+    stop_containers
+    
+    start_containers
+    
+    run_migrations
 }
 
-# Health check
-run_health_check() {
-    if [[ "$HEALTH_CHECK" != "true" ]]; then
-        return 0
+deploy_update_with_data() {
+    log_header "DEPLOYMENT MODE: UPDATE WITH DATA MIGRATION"
+    log_info "Syncing local database (from backup/staging)"
+    
+    check_project_structure
+    
+    create_database_backup
+    
+    create_media_backup
+    
+    update_code
+    
+    stop_containers
+    
+    # Import from latest backup if available
+    if [[ -f "$DB_DUMP_FILE" ]]; then
+        import_database "$DB_DUMP_FILE"
     fi
     
-    log_info "Running health checks..."
-    sleep 5
+    build_docker_images
     
-    # Check backend health
-    if curl -sf "http://127.0.0.1:8002/health/" > /dev/null 2>&1; then
-        log_success "Backend health check passed"
+    start_containers
+    
+    run_migrations
+}
+
+deploy_update_only() {
+    log_header "DEPLOYMENT MODE: UPDATE ONLY"
+    log_info "Code update only, existing data preserved"
+    
+    check_project_structure
+    
+    # Optional backup for safety
+    create_database_backup
+    
+    update_code
+    
+    build_docker_images
+    
+    stop_containers
+    
+    start_containers
+    
+    # Run migrations in case there are new ones
+    run_migrations
+}
+
+# =============================================================================
+# CERTIFICATE MANAGEMENT
+# =============================================================================
+
+validate_certificate() {
+    if [[ "$SKIP_CERT" == "true" ]]; then
+        log_warn "Certificate validation SKIPPED"
+        return
+    fi
+    
+    log_header "Certificate Validation"
+    
+    if [[ ! -f "$CERT_DIR/$CERT_NAME/fullchain.pem" ]]; then
+        log_warn "SSL certificate not found for $DOMAIN"
+        log_info "To create certificate: sudo certbot certonly --manual -d $DOMAIN -d *.$DOMAIN"
+        return
+    fi
+    
+    local expiry=$(openssl x509 -enddate -noout -in "$CERT_DIR/$CERT_NAME/fullchain.pem" | cut -d= -f2)
+    log_success "Certificate found, expires: $expiry"
+}
+
+# =============================================================================
+# HEALTH CHECKS
+# =============================================================================
+
+run_health_checks() {
+    if [[ "$HEALTH_CHECK" != "true" ]] || [[ "$DRY_RUN" == "true" ]]; then
+        return
+    fi
+    
+    log_header "Health Checks"
+    
+    log_info "Checking container status..."
+    docker-compose ps | tee -a "$LOG_FILE"
+    
+    sleep 3
+    
+    log_info "Testing backend API..."
+    if curl -sf http://127.0.0.1:8002/health/ > /dev/null 2>&1; then
+        log_success "Backend API responding"
     else
-        log_warn "Backend health check timed out"
+        log_warn "Backend API not responding yet (may still be starting)"
     fi
     
-    # Check frontend (basic connectivity)
-    if [[ "$DRY_RUN" != "true" ]]; then
-        if timeout 10 bash -c "echo > /dev/tcp/127.0.0.1/5175" 2>/dev/null; then
-            log_success "Frontend port responding"
-        else
-            log_warn "Frontend port not responding"
-        fi
+    log_info "Checking database connectivity..."
+    if docker-compose exec -T django python manage.py dbshell <<< "SELECT 1;" > /dev/null 2>&1; then
+        log_success "Database connected"
+    else
+        log_warn "Database connectivity issue"
     fi
 }
 
@@ -512,58 +506,55 @@ run_health_check() {
 
 trap 'log_error "Deployment failed! Check logs: $LOG_FILE"' ERR
 
-log_header "KMSetjen DPD RI - Master Deployment Enhanced"
+log_header "KMSetjen DPD RI - Master Deployment Enhanced v3.0"
 
 log_info "Environment: $ENVIRONMENT"
+log_info "Mode: $MODE"
 log_info "Domain: $DOMAIN"
-log_info "Subdomains: ${SUBDOMAINS[*]}"
 log_info "Deploy Path: $DEPLOY_PATH"
 log_info "Log File: $LOG_FILE"
 
 [[ "$DRY_RUN" == "true" ]] && log_warn "[DRY RUN] No changes will be made"
 [[ "$SKIP_CERT" == "true" ]] && log_warn "[SKIP CERT] Certificate validation disabled"
+[[ "$VERBOSE" == "true" ]] && log_warn "[VERBOSE] Detailed logging enabled"
 
-# Check prerequisites
+# Validation
 check_root
 check_requirements
+check_project_structure
 
-# Verify project structure
-if [[ ! -f "$DEPLOY_PATH/docker-compose.yml" ]]; then
-    log_error "docker-compose.yml not found in: $DEPLOY_PATH"
-fi
-log_success "Project structure verified"
+# Certificate management (optional)
+validate_certificate
 
-# Certificate management
-if [[ "$CERT_ONLY" == "true" ]]; then
-    # Certificate-only mode
-    validate_certificate
-    log_header "Certificate Management Completed"
-    log_info "To continue with deployment, run: $0 $ENVIRONMENT"
-    exit 0
-else
-    # Regular deployment
-    validate_certificate
-fi
+# Execute deployment mode
+case "$MODE" in
+    clean)
+        deploy_clean
+        ;;
+    update-with-data)
+        deploy_update_with_data
+        ;;
+    update-only)
+        deploy_update_only
+        ;;
+esac
 
-# Deployment steps
-create_backup
-update_repo
-build_docker
-deploy_containers
-run_migrations
-update_nginx
-run_health_check
+# Health checks
+run_health_checks
 
-# Summary
+# Success summary
 log_header "Deployment Completed Successfully"
+
 log_success "Environment: $ENVIRONMENT"
+log_success "Mode: $MODE"
 log_success "Frontend: $FRONTEND_URL"
 log_success "Backend: $BACKEND_URL"
-log_success "Certificate: $CERT_DIR/$CERT_NAME/fullchain.pem"
 log_success "Status: All systems operational"
+
 log_info "Next steps:"
-log_info "  1. Test: curl -v $FRONTEND_URL"
-log_info "  2. Check logs: tail -f $LOG_FILE"
-log_info "  3. View containers: docker-compose ps"
+log_info "  1. Test: curl -v $BACKEND_URL/health/"
+log_info "  2. Logs: docker-compose logs -f"
+log_info "  3. Status: docker-compose ps"
+log_info "  4. Database: docker-compose exec django python manage.py shell"
 
 log_success "✓ Deployment ready!"

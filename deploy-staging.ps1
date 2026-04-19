@@ -1,20 +1,20 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    KMSetjen DPD RI - Unified Deployment Script for Windows
+    KMSetjen DPD RI - Enhanced Deployment Script for Staging (Windows to Linux)
     
 .DESCRIPTION
-    This script consolidates multiple deployment scripts into one unified interface.
-    Handles deployment to staging and production environments.
-    
-    CONSOLIDATES:
-    - deploy-helper.ps1 (old staging trigger)
-    - deploy_fix.ps1 (old hotfix script)
-    - DEPLOY_STAGING_NOW.ps1 (old quick deploy)
-    - DEPLOY_STAGING_FIX.ps1 (old fix deploy)
+    Comprehensive deployment script with 3 deployment modes:
+    1. CLEAN - Fresh build with no data (dev/testing)
+    2. UPDATE-WITH-DATA - Sync local DB and media to remote (staging)
+    3. UPDATE-ONLY - Update code only, keep existing data (production-safe)
     
 .PARAMETER Environment
     Target environment: staging or production
+    
+.PARAMETER Mode
+    Deployment mode: clean, update-with-data, update-only
+    Default: update-only
     
 .PARAMETER Verbose
     Enable verbose output
@@ -23,20 +23,24 @@
     Show what would happen without making changes
     
 .EXAMPLE
-    .\deploy-staging.ps1
-    .\deploy-staging.ps1 -Verbose
-    .\deploy-staging.ps1 -DryRun
+    .\deploy-staging.ps1 -Mode clean
+    .\deploy-staging.ps1 -Mode update-with-data -Verbose
+    .\deploy-staging.ps1 -Mode update-only
     
 .NOTES
     Requires:
     - SSH key configured (c:\Users\khair\khaz or c:\Users\khair\.ssh\id_rsa)
     - .env.staging file in project root
+    - pg_dump and psql available in PATH (PostgreSQL client tools)
     - SSH access to remote server
 #>
 
 param(
     [ValidateSet('staging', 'production')]
     [string]$Environment = 'staging',
+    
+    [ValidateSet('clean', 'update-with-data', 'update-only')]
+    [string]$Mode = 'update-only',
     
     [switch]$Verbose,
     [switch]$DryRun,
