@@ -1,29 +1,44 @@
 #!/bin/bash
 
 ################################################################################
-# KMSetjen DPD RI - Enhanced Master Deployment Script (Bash v3.0)
+# KMSetjen DPD RI - Enhanced Master Deployment Script (Bash v3.0+Remote)
 # ============================================================================
 # Comprehensive server-side deployment with 3 flexible modes:
 # 1. CLEAN - Fresh build with no data (for testing/development)
 # 2. UPDATE-WITH-DATA - Import data from backup/previous deployment
 # 3. UPDATE-ONLY - Code update only, keep existing data (production-safe)
 #
+# PLUS: Remote Staging Sync Capability
+# - Sync database & media from remote staging server to production
+# - Use --remote-source flag with update-with-data mode
+# - Requires SSH key access to staging server
+#
 # Features:
 # - SSL certificate management (auto-renewal)
-# - Database migration and backup
-# - Media file management
+# - Database migration and backup (local or remote)
+# - Media file management (local or remote)
 # - Health checks and validation
 # - Comprehensive logging
 #
 # Usage:
-#   sudo bash deploy-master.sh staging [--mode=clean|update-with-data|update-only]
+#   # Local backup (from production's previous backup)
+#   sudo bash deploy-master.sh production --mode=update-with-data
+#
+#   # Remote sync (from staging server to production)
+#   sudo bash deploy-master.sh production --mode=update-with-data --remote-source \
+#     --staging-ip=165.245.191.216 --staging-key=/root/.ssh/khaz
+#
+#   # Clean build
+#   sudo bash deploy-master.sh production --mode=clean
+#
+#   # Code only update (safest for production)
 #   sudo bash deploy-master.sh production --mode=update-only
-#   sudo bash deploy-master.sh staging --mode=update-with-data --verbose
 #
 # Requirements:
 #   - Run as root (sudo)
 #   - Docker & Docker Compose installed
 #   - PostgreSQL client tools (psql, pg_dump)
+#   - SSH key access to staging server (if using --remote-source)
 #   - Certbot for SSL (optional but recommended)
 #
 ################################################################################
@@ -46,13 +61,16 @@ HEALTH_CHECK=${HEALTH_CHECK:-true}
 shift 2>/dev/null || true
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --mode=*)           MODE="${1#*=}" ;;
-        --verbose)          VERBOSE=true ;;
-        --dry-run)          DRY_RUN=true ;;
-        --skip-backup)      SKIP_BACKUP=true ;;
-        --skip-cert)        SKIP_CERT=true ;;
-        --no-health-check)  HEALTH_CHECK=false ;;
-        *)                  log_warn "Unknown option: $1" ;;
+        --mode=*)               MODE="${1#*=}" ;;
+        --verbose)              VERBOSE=true ;;
+        --dry-run)              DRY_RUN=true ;;
+        --skip-backup)          SKIP_BACKUP=true ;;
+        --skip-cert)            SKIP_CERT=true ;;
+        --no-health-check)      HEALTH_CHECK=false ;;
+        --remote-source)        REMOTE_MODE=true ;;
+        --staging-ip=*)         STAGING_SERVER_IP="${1#*=}" ;;
+        --staging-key=*)        STAGING_SSH_KEY_PATH="${1#*=}" ;;
+        *)                      log_warn "Unknown option: $1" ;;
     esac
     shift
 done
@@ -84,6 +102,15 @@ DB_DUMP_FILE="$BACKUP_DIR/db_backup_${TIMESTAMP}.sql"
 # Media configuration
 MEDIA_PATH="$DEPLOY_PATH/media"
 MEDIA_BACKUP_PATH="$BACKUP_DIR/media_backup_${TIMESTAMP}"
+
+# =============================================================================
+# REMOTE STAGING SERVER CONFIGURATION (for data migration)
+# =============================================================================
+STAGING_SERVER_IP="${STAGING_SERVER_IP:-165.245.191.216}"
+STAGING_SERVER_USER="${STAGING_SERVER_USER:-root}"
+STAGING_SSH_KEY_PATH="${STAGING_SSH_KEY_PATH:-/root/.ssh/khaz}"
+STAGING_PROJECT_PATH="${STAGING_PROJECT_PATH:-/var/www/html/kms}"
+REMOTE_MODE="${REMOTE_MODE:-false}"
 
 # Certbot configuration
 CERT_DIR="/etc/letsencrypt/live"
@@ -238,6 +265,101 @@ create_media_backup() {
     mkdir -p "$MEDIA_BACKUP_PATH"
     cp -r "$MEDIA_PATH"/* "$MEDIA_BACKUP_PATH/" 2>/dev/null || true
     log_success "Media backed up"
+}
+
+# =============================================================================
+# REMOTE STAGING SERVER BACKUP FUNCTIONS
+# =============================================================================
+
+backup_database_from_remote() {
+    if [[ "$SKIP_BACKUP" == "true" ]]; then
+        log_warn "Remote database backup SKIPPED"
+        return
+    fi
+    
+    log_info "Backing up database from remote staging server..."
+    log_info "  Remote server: $STAGING_SERVER_IP"
+    log_info "  SSH key: $STAGING_SSH_KEY_PATH"
+    
+    if [[ ! -f "$STAGING_SSH_KEY_PATH" ]]; then
+        log_error "SSH key not found: $STAGING_SSH_KEY_PATH"
+    fi
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry_run "Would backup database from staging via SSH"
+        return
+    fi
+    
+    # Test SSH connection first
+    log_info "Testing SSH connection to $STAGING_SERVER_IP..."
+    if ! ssh -i "$STAGING_SSH_KEY_PATH" -o ConnectTimeout=5 "$STAGING_SERVER_USER@$STAGING_SERVER_IP" "echo OK" &>/dev/null; then
+        log_error "Cannot connect to staging server at $STAGING_SERVER_IP using key $STAGING_SSH_KEY_PATH"
+    fi
+    
+    log_info "Connected successfully. Exporting database from staging..."
+    
+    # Execute database export on remote server and pipe to local file
+    # The staging database runs in Docker container, so we use docker exec
+    if ssh -i "$STAGING_SSH_KEY_PATH" "$STAGING_SERVER_USER@$STAGING_SERVER_IP" \
+        "cd $STAGING_PROJECT_PATH && docker exec -T kms_django pg_dump -U postgres -h localhost kmsdb" \
+        > "$DB_DUMP_FILE" 2>/dev/null; then
+        
+        local size=$(du -h "$DB_DUMP_FILE" | cut -f1)
+        log_success "Remote database backed up from staging ($size)"
+    else
+        log_error "Failed to backup database from staging server"
+    fi
+}
+
+sync_media_from_remote() {
+    log_info "Syncing media files from remote staging server..."
+    log_info "  Remote server: $STAGING_SERVER_IP"
+    log_info "  Media path: /var/lib/docker/volumes/kms_kms_django_media/_data"
+    
+    if [[ ! -f "$STAGING_SSH_KEY_PATH" ]]; then
+        log_error "SSH key not found: $STAGING_SSH_KEY_PATH"
+    fi
+    
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log_dry_run "Would sync media files from staging via SSH"
+        return
+    fi
+    
+    # Create temporary tar archive on staging server
+    local remote_tar="/tmp/media_${TIMESTAMP}.tar.gz"
+    log_info "Creating media archive on staging..."
+    
+    if ! ssh -i "$STAGING_SSH_KEY_PATH" "$STAGING_SERVER_USER@$STAGING_SERVER_IP" \
+        "tar -czf $remote_tar -C /var/lib/docker/volumes/kms_kms_django_media/_data . 2>/dev/null || true"; then
+        log_warn "Could not create tar archive (media may not exist on staging)"
+        return
+    fi
+    
+    # Copy tar file from staging to production
+    log_info "Downloading media archive from staging..."
+    local local_tar="/tmp/media_${TIMESTAMP}.tar.gz"
+    
+    if ! scp -i "$STAGING_SSH_KEY_PATH" \
+        "$STAGING_SERVER_USER@$STAGING_SERVER_IP:$remote_tar" \
+        "$local_tar" 2>/dev/null; then
+        log_warn "Failed to download media archive"
+        return
+    fi
+    
+    # Extract to local media path
+    log_info "Extracting media files..."
+    mkdir -p "$MEDIA_PATH"
+    
+    if tar -xzf "$local_tar" -C "$MEDIA_PATH" 2>/dev/null; then
+        local count=$(find "$MEDIA_PATH" -type f | wc -l)
+        log_success "Media synced from staging ($count files)"
+    else
+        log_warn "Failed to extract media files"
+    fi
+    
+    # Cleanup
+    rm -f "$local_tar"
+    ssh -i "$STAGING_SSH_KEY_PATH" "$STAGING_SERVER_USER@$STAGING_SERVER_IP" "rm -f $remote_tar" 2>/dev/null || true
 }
 
 # =============================================================================
@@ -402,10 +524,16 @@ deploy_clean() {
 
 deploy_update_with_data() {
     log_header "DEPLOYMENT MODE: UPDATE WITH DATA MIGRATION"
-    log_info "Syncing local database (from backup/staging)"
+    
+    if [[ "$REMOTE_MODE" == "true" ]]; then
+        log_info "Syncing from REMOTE staging server ($STAGING_SERVER_IP)"
+    else
+        log_info "Syncing from LOCAL backup"
+    fi
     
     check_project_structure
     
+    # Backup existing production data for safety
     create_database_backup
     
     create_media_backup
@@ -414,7 +542,13 @@ deploy_update_with_data() {
     
     stop_containers
     
-    # Import from latest backup if available
+    # Get data from remote staging or local backup
+    if [[ "$REMOTE_MODE" == "true" ]]; then
+        backup_database_from_remote
+        sync_media_from_remote
+    fi
+    
+    # Import from backup if available
     if [[ -f "$DB_DUMP_FILE" ]]; then
         import_database "$DB_DUMP_FILE"
     fi
@@ -514,6 +648,12 @@ log_info "Domain: $DOMAIN"
 log_info "Deploy Path: $DEPLOY_PATH"
 log_info "Log File: $LOG_FILE"
 
+if [[ "$REMOTE_MODE" == "true" ]]; then
+    log_warn "REMOTE MODE: Will sync from staging server ($STAGING_SERVER_IP)"
+    log_info "  SSH Key: $STAGING_SSH_KEY_PATH"
+    log_info "  Project Path: $STAGING_PROJECT_PATH"
+fi
+
 [[ "$DRY_RUN" == "true" ]] && log_warn "[DRY RUN] No changes will be made"
 [[ "$SKIP_CERT" == "true" ]] && log_warn "[SKIP CERT] Certificate validation disabled"
 [[ "$VERBOSE" == "true" ]] && log_warn "[VERBOSE] Detailed logging enabled"
@@ -547,6 +687,9 @@ log_header "Deployment Completed Successfully"
 
 log_success "Environment: $ENVIRONMENT"
 log_success "Mode: $MODE"
+if [[ "$REMOTE_MODE" == "true" ]]; then
+    log_success "Data Source: Remote Staging ($STAGING_SERVER_IP)"
+fi
 log_success "Frontend: $FRONTEND_URL"
 log_success "Backend: $BACKEND_URL"
 log_success "Status: All systems operational"
