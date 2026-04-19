@@ -405,27 +405,33 @@ function Sync-MediaFiles {
     }
     
     if ($DryRun) {
-        Write-DryRun "Would sync $mediaCount media files to remote server"
+        Write-DryRun "Would sync $mediaCount media files to remote Docker volume"
     } else {
-        Write-Info "Syncing $mediaCount media files with SCP..."
+        Write-Info "Syncing $mediaCount media files to Docker volume..."
+        
+        # Get the Docker volume path from the container
+        $dockerVolumePath = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "docker volume inspect kms_kms_django_media --format='{{ .Mountpoint }}' 2>/dev/null || echo '/var/lib/docker/volumes/kms_kms_django_media/_data'"
+        $remoteMediaPath = $dockerVolumePath.Trim()
+        
+        Write-Info "  Docker volume path: $remoteMediaPath"
         
         # Use SCP to sync media files (rsync may not be available on Windows)
         Get-ChildItem -Path $LocalMediaPath -Recurse -File | ForEach-Object {
             $relativePath = $_.FullName.Substring($LocalMediaPath.Length + 1)
-            $remoteDir = Split-Path -Parent "$ServerProjectPath/media/$relativePath"
+            $remoteDir = Split-Path -Parent "$remoteMediaPath/$relativePath"
             
             # Create remote directory if needed
             & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "mkdir -p '$remoteDir'" 2>&1 | Out-Null
             
-            # Transfer file via SCP
-            $result = & scp -i "$SSHKeyPath" "$($_.FullName)" "$ServerUser@$($ServerIP)`:$ServerProjectPath/media/$relativePath" 2>&1
+            # Transfer file via SCP to Docker volume
+            $result = & scp -i "$SSHKeyPath" "$($_.FullName)" "$ServerUser@$($ServerIP)`:$remoteMediaPath/$relativePath" 2>&1
             
             if ($LASTEXITCODE -ne 0) {
                 Write-Warning-Custom "Failed to sync: $($_.Name) - $result"
             }
         }
         
-        Write-Success "Media files synced ($mediaCount files)"
+        Write-Success "Media files synced ($mediaCount files) to Docker volume"
     }
 }
 
