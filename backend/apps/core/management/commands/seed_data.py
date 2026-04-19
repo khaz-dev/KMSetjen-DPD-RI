@@ -152,16 +152,16 @@ class Command(BaseCommand):
         
         users_data = [
             {
-                'username': 'admin',
-                'email': 'admin@kms.local',
-                'first_name': 'Admin',
-                'last_name': 'System',
+                'username': 'sdmadmin',
+                'email': 'sdm@dpd.go.id',
+                'first_name': 'SDM',
+                'last_name': 'Admin',
                 'nip': '199001011990010001',
-                'department': 'IT Division',
+                'department': 'SDM Division',
                 'is_staff': True,
                 'is_superuser': True,
                 'role_code': 'admin',
-                'password': 'admin123'
+                'password': 'sdmselaludihati!'
             },
             {
                 'username': 'editor1',
@@ -592,16 +592,16 @@ class Command(BaseCommand):
         
         users_data = [
             {
-                'username': 'admin',
-                'email': 'admin@kms.local',
-                'first_name': 'Admin',
-                'last_name': 'System',
+                'username': 'sdmadmin',
+                'email': 'sdm@dpd.go.id',
+                'first_name': 'SDM',
+                'last_name': 'Admin',
                 'nip': '199001011990010001',
-                'department': 'IT Division',
+                'department': 'SDM Division',
                 'is_staff': True,
                 'is_superuser': True,
                 'role_code': 'admin',
-                'password': 'admin123'
+                'password': 'sdmselaludihati!'
             },
             {
                 'username': 'editor1',
