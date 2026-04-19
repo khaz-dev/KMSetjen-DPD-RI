@@ -308,6 +308,12 @@ function Import-RemoteDatabase {
     } else {
         Write-Info "Importing database on remote server..."
         
+        # First, verify the file exists on remote server
+        $fileCheck = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "ls -la $remoteDumpFile 2>&1" 2>&1
+        if (-not ($fileCheck -match "sql")) {
+            Write-Error-Custom "Database dump file not found on remote server: $remoteDumpFile"
+        }
+        
         $remoteCmd = @"
             set -e
             cd $ServerProjectPath
@@ -316,19 +322,21 @@ function Import-RemoteDatabase {
             echo 'Dropping existing database...'
             psql -h localhost -U postgres -c 'DROP DATABASE IF EXISTS kmsdb;' || true
             
+            sleep 1
+            
             echo 'Creating new database...'
             psql -h localhost -U postgres -c 'CREATE DATABASE kmsdb;'
             
             echo 'Importing data...'
-            psql -h localhost -U postgres kmsdb < $remoteDumpFile
+            cat "$remoteDumpFile" | psql -h localhost -U postgres kmsdb
             
             echo 'Cleaning up dump file...'
-            rm -f $remoteDumpFile
+            rm -f "$remoteDumpFile"
             
             echo 'Database import completed successfully'
 "@
         
-        $result = & ssh -i $SSHKeyPath "$ServerUser@$ServerIP" ($remoteCmd -replace "`r`n", "`n") 2>&1
+        $result = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" ($remoteCmd -replace "`r`n", "`n") 2>&1
         
         if ($LASTEXITCODE -ne 0) {
             Write-Error-Custom "Database import failed: $result"
