@@ -243,7 +243,7 @@ function Test-Prerequisites {
     
     # Test SSH connection
     Write-Info "Testing server connectivity..."
-    $sshTest = & ssh -i $SSHKeyPath -o ConnectTimeout=5 "$ServerUser@$ServerIP" "echo OK" 2>&1
+    $sshTest = & ssh -i "$SSHKeyPath" -o ConnectTimeout=5 "$ServerUser@$ServerIP" "echo OK" 2>&1
     if ($LASTEXITCODE -ne 0) {
         Write-Error-Custom "Cannot connect to $($ServerIP): $sshTest"
     }
@@ -286,12 +286,14 @@ function Transfer-DatabaseDump {
         Write-DryRun "Would SCP: $LocalDBDumpFile to $ServerUser@$($ServerIP):$ServerProjectPath/"
     } else {
         Write-Info "Uploading database dump..."
-        $result = & scp -i $SSHKeyPath $LocalDBDumpFile "$ServerUser@$($ServerIP):$ServerProjectPath/" 2>&1
+        # Quote the local path properly for Windows paths with spaces
+        $result = & scp -i "$SSHKeyPath" "$LocalDBDumpFile" "$ServerUser@$($ServerIP):$ServerProjectPath/" 2>&1
         
         if ($LASTEXITCODE -ne 0) {
-            Write-Error-Custom "Failed to upload database: $result"
+            Write-Error-Custom "Failed to upload database dump: $result"
+        } else {
+            Write-Success "Database dump uploaded"
         }
-        Write-Success "Database dump uploaded"
     }
 }
 
@@ -360,7 +362,7 @@ function Sync-MediaFiles {
         Write-Info "Syncing $mediaCount media files..."
         
         # Use rsync via SSH for efficient file sync
-        $rsyncCmd = "rsync -avz -e 'ssh -i $SSHKeyPath' `"$LocalMediaPath`" `"$ServerUser@$($ServerIP):$ServerProjectPath/`""
+        $rsyncCmd = "rsync -avz -e 'ssh -i `\"$SSHKeyPath`\"' `"$LocalMediaPath`" `"$ServerUser@$($ServerIP):$ServerProjectPath/`""
         
         $result = Invoke-Expression $rsyncCmd 2>&1
         
@@ -373,8 +375,8 @@ function Sync-MediaFiles {
                 $relativePath = $_.FullName.Substring($LocalMediaPath.Length + 1)
                 $remoteDir = Split-Path -Parent "$ServerProjectPath/media/$relativePath"
                 
-                & ssh -i $SSHKeyPath "$ServerUser@$ServerIP" "mkdir -p '$remoteDir'" 2>&1 | Out-Null
-                & scp -i $SSHKeyPath $_.FullName "$ServerUser@$ServerIP`:$ServerProjectPath/media/$relativePath" 2>&1 | Out-Null
+                & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "mkdir -p '$remoteDir'" 2>&1 | Out-Null
+                & scp -i "$SSHKeyPath" "$($_.FullName)" "$ServerUser@$($ServerIP)`:$ServerProjectPath/media/$relativePath" 2>&1 | Out-Null
             }
         }
         
@@ -486,14 +488,14 @@ function Copy-EnvFile {
         Write-DryRun "Would copy: $LocalEnvFile to $ServerUser@$($ServerIP):$ServerProjectPath/.env"
     } else {
         Write-Info "Copying environment file..."
-        $result = & scp -i $SSHKeyPath $LocalEnvFile "$ServerUser@$($ServerIP):$ServerProjectPath/.env" 2>&1
+        $result = & scp -i "$SSHKeyPath" "$LocalEnvFile" "$ServerUser@$($ServerIP):$ServerProjectPath/.env" 2>&1
         
         if ($LASTEXITCODE -ne 0) {
             Write-Error-Custom "Failed to copy .env file: $result"
         }
         
         # Set secure permissions
-        $result = & ssh -i $SSHKeyPath "$ServerUser@$ServerIP" "chmod 600 $ServerProjectPath/.env" 2>&1
+        $result = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "chmod 600 $ServerProjectPath/.env" 2>&1
         
         Write-Success ".env file copied and secured"
     }
@@ -648,11 +650,11 @@ function Verify-Deployment {
     Write-Header "DEPLOYMENT VERIFICATION"
     
     Write-Info "Checking containers status..."
-    $result = & ssh -i $SSHKeyPath "$ServerUser@$ServerIP" "cd $ServerProjectPath && docker-compose ps" 2>&1
+    $result = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "cd $ServerProjectPath && docker-compose ps" 2>&1
     Write-Host $result
     
     Write-Info "Testing API endpoint..."
-    $apiTest = & ssh -i $SSHKeyPath "$ServerUser@$ServerIP" "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8002/health/" 2>&1
+    $apiTest = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8002/health/" 2>&1
     
     if ($apiTest -eq "200") {
         Write-Success "API responding with HTTP 200"
