@@ -16,11 +16,20 @@ export function ArticleCountProvider({ children }) {
   // Fetch pending review count and rejected articles once on mount
   const fetchCounts = async () => {
     try {
+      // Only fetch if user is authenticated (token exists)
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) {
+        setPendingReviewCount(0);
+        setRejectedArticleCount(0);
+        return;
+      }
+
       setLoading(true);
+      
       // Fetch pending review count
       const pendingResponse = await axios.get(
         `${import.meta.env.VITE_API_URL}/api/v1/internal/articles/?status=review&page=1&page_size=1`,
-        { headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` } }
+        { headers: { Authorization: `Bearer ${accessToken}` } }
       );
       setPendingReviewCount(pendingResponse.data.count || 0);
       console.log('[ArticleCountContext] Pending count fetched:', pendingResponse.data.count);
@@ -28,12 +37,19 @@ export function ArticleCountProvider({ children }) {
       // Fetch rejected articles count
       const rejectedResponse = await axios.get(
         `${import.meta.env.VITE_API_URL}/api/v1/internal/articles/?status=rejected&page=1&page_size=1`,
-        { headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` } }
+        { headers: { Authorization: `Bearer ${accessToken}` } }
       );
       setRejectedArticleCount(rejectedResponse.data.count || 0);
       console.log('[ArticleCountContext] Rejected count fetched:', rejectedResponse.data.count);
     } catch (err) {
-      console.debug('[ArticleCountContext] Failed to fetch counts:', err.message);
+      // Handle auth errors gracefully
+      if (err.response?.status === 401) {
+        console.debug('[ArticleCountContext] User not authenticated, counts reset to 0');
+        setPendingReviewCount(0);
+        setRejectedArticleCount(0);
+      } else {
+        console.debug('[ArticleCountContext] Failed to fetch counts:', err.message);
+      }
     } finally {
       setLoading(false);
     }

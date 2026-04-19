@@ -88,9 +88,6 @@ MIDDLEWARE = [
     # ScriptNameMiddleware MUST be first to set SCRIPT_NAME from proxy header
     # This is critical for correct URL generation when behind a reverse proxy with /kms prefix
     'shared.middleware.proxy_middleware.ScriptNameMiddleware',
-    # SecurityMiddleware causes unwanted HTTPS redirect even with SECURE_SSL_REDIRECT=False  
-    # Only enable in production
-    'shared.middleware.debug_middleware.DebugSettingsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -201,7 +198,6 @@ REST_FRAMEWORK = {
         'anon': '5000/hour',  # 5000 requests/hour for anonymous users (~1.4 req/sec average)
         'user': '10000/hour',  # 10000 requests/hour for authenticated users
     },
-    'EXCEPTION_HANDLER': 'shared.exceptions.custom_exception_handler',
 }
 
 # ============================================================================
