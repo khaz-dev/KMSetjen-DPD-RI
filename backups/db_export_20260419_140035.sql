@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict Orsn5pzewANbrDekhAtogafNmyo4HvfVtYMxUZbURa4fAly8b3auccYfcQeMwhk
+\restrict BsdwHYFZGwW5I493KUfD026cetk2l9Q5INpIvCHO8JaMuKKdI7dTTUoNuq7jg6X
 
 -- Dumped from database version 17.7
 -- Dumped by pg_dump version 17.7
 
--- Started on 2026-04-19 13:14:39
+-- Started on 2026-04-19 14:00:37
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1334,6 +1334,7 @@ COPY public.auth_role (id, code, name_id, name_en, description_id, description_e
 --
 
 COPY public.auth_user (id, password, last_login, is_superuser, username, first_name, last_name, email, is_staff, is_active, date_joined, nip, department, phone, avatar, is_sso_user, last_sso_login, preferred_language, theme_mode, is_verified, created_at, updated_at, jabatan, jenis_jabatan, unit_organisasi) FROM stdin;
+3	pbkdf2_sha256$600000$Z33YkcmNBjMBrv48ddpLoN$ji5TQfdGhq9zwxPNlCEl5ILxRvL2Ca3dSECQV7Lc8G4=	2026-04-19 13:29:14.825178+07	t	admin	Admin	System	admin@kms.local	t	t	2026-02-02 01:41:57.384069+07	199001011990010001	IT Division			f	\N	id	light	f	2026-02-02 01:41:57.384069+07	2026-02-02 01:41:57.543742+07			
 809	pbkdf2_sha256$600000$DuzFLaz8DmqBoIVhvAxkvm$QSEHsi6YPtmhdsthV8s5RxS7BCcar5ttCzs31yhCCJs=	\N	f	robertparker13183@gmail.com	Robert	Parker	robertparker13183@gmail.com	f	t	2026-02-09 09:32:09.498465+07	\N				f	\N	id	light	f	2026-02-09 09:32:09.706127+07	2026-02-09 09:32:09.706127+07			
 4	pbkdf2_sha256$600000$bvsQKLQH7dUI2U75xmz57y$F3piijc8VC2cJPM5SPWG+fzUTcUxL6bu53JkJuOb99s=	\N	f	editor1	Budi	Prasetyo	editor1@kms.local	t	t	2026-02-02 01:41:57.555461+07	199505151995051501	Content Division			f	\N	id	light	f	2026-02-02 01:41:57.555461+07	2026-02-02 01:41:57.702836+07			
 810		\N	f	testuser	Test	User	test@example.com	f	t	2026-04-05 06:07:54.527973+07	\N				f	\N	id	light	f	2026-04-05 06:07:54.527973+07	2026-04-05 06:07:54.527973+07			
@@ -1348,7 +1349,6 @@ COPY public.auth_user (id, password, last_login, is_superuser, username, first_n
 17		\N	f	adeginoga@yahoo.com	Ade Darmawan	Ginoga, S.T., ST	adeginoga@yahoo.com	t	t	2026-02-04 07:42:37.400916+07	197209261999031008				f	\N	id	light	f	2026-02-04 07:42:37.402495+07	2026-03-30 20:14:07.933608+07	Kepala Bagian Pengamanan Dalam	Struktural	Bagian Pengamanan Dalam
 18		\N	f	ade_shb@yahoo.com	Ade Farida,	SE	ade_shb@yahoo.com	t	t	2026-02-04 07:42:37.571866+07	197504052006042002				f	\N	id	light	f	2026-02-04 07:42:37.571866+07	2026-03-30 20:14:07.936614+07	Penelaah Teknis Kebijakan	Pelaksana	Subbagian Tata Usaha Sekretariat Badan Akuntabilitas Publik
 19		\N	f	jessieade10@gmail.com	Ade Tantrie	Puspita, S.Sos	jessieade10@gmail.com	t	t	2026-02-04 07:42:37.766909+07	198109122009122006				f	\N	id	light	f	2026-02-04 07:42:37.766909+07	2026-03-30 20:14:07.939713+07	Kepala Subbagian Hubungan Masyarakat	Struktural	Subbagian Hubungan Masyarakat
-3	pbkdf2_sha256$600000$Z33YkcmNBjMBrv48ddpLoN$ji5TQfdGhq9zwxPNlCEl5ILxRvL2Ca3dSECQV7Lc8G4=	2026-04-18 18:00:11.001666+07	t	admin	Admin	System	admin@kms.local	t	t	2026-02-02 01:41:57.384069+07	199001011990010001	IT Division			f	\N	id	light	f	2026-02-02 01:41:57.384069+07	2026-02-02 01:41:57.543742+07			
 806	pbkdf2_sha256$600000$j6XzYPlda7M3OlfJ89cs1h$baUiBB83bdXYI5CTLw9Xwb7WpHcudf+A9Y5m+sGZLoc=	\N	f	contributor1	Siti	Nurhaliza	contributor1@kms.local	f	t	2026-02-06 15:32:32.328085+07	199403201994032001	Public Relations			f	\N	id	light	f	2026-02-06 15:32:32.328085+07	2026-02-06 15:32:32.49786+07			
 807	pbkdf2_sha256$600000$Qxsswvo0UFadChr9k3z8xh$SNGqqq/3AFTIxHVYAFE+hfxwqqBPlDUVC2yt+MY9+VE=	\N	f	reader1	Dedi	Gunawan	reader1@kms.local	f	t	2026-02-06 15:32:32.51066+07	199201101992011001	HR Division			f	\N	id	light	f	2026-02-06 15:32:32.51066+07	2026-02-06 15:32:32.661059+07			
 808	pbkdf2_sha256$600000$Hj7vqtzCx8o1i9q0RfCNe4$2DoFo0rOXIC1gW/538XoMMCrMFBrfjhXH6FlMfDQXBc=	\N	f	reader2	Rini	Wijaya	reader2@kms.local	f	t	2026-02-06 15:32:32.670645+07	199306151993061501	Finance Division			f	\N	id	light	f	2026-02-06 15:32:32.670645+07	2026-02-06 15:32:32.814676+07			
@@ -4119,6 +4119,7 @@ ghm61vvgwnq9gxczurm11aege36l9w30	.eJxVjDsOwjAQBe_iGlk26y8lPWew1rsODiBHipMKcXdkKQ
 d228033su089p63hf2rp8wi7myc1167n	.eJxVjDsOwjAQBe_iGlk26y8lPWew1rsODiBHipMKcXdkKQW0b2beWyTct5r2XtY0s7gIEKffLSM9SxuAH9jui6Slbeuc5VDkQbu8LVxe18P9O6jY66gjWOcIoycGhnPIk1IOddbKekXeODSRyQTMOke2ZgIPDqwKgTG4KD5f2O83TA:1wCsvH:4YAiFSPuAUcCBdpSycIMvtbNzzBNEejntP6IAOlZHX4	2026-04-29 12:36:23.115092+07
 mg1k2rytujizjd25a490zi2dz40uihzk	.eJxVjDsOwjAQBe_iGlk26y8lPWew1rsODiBHipMKcXdkKQW0b2beWyTct5r2XtY0s7gIEKffLSM9SxuAH9jui6Slbeuc5VDkQbu8LVxe18P9O6jY66gjWOcIoycGhnPIk1IOddbKekXeODSRyQTMOke2ZgIPDqwKgTG4KD5f2O83TA:1wDi6M:OmH-dyGkefKFUELVlvtVpoX5PAPJsbS7QDkFmXS5XkM	2026-05-01 19:15:14.711586+07
 w0u0ti7omblurv92begpn2uimm61albq	.eJxVjDsOwjAQBe_iGlk26y8lPWew1rsODiBHipMKcXdkKQW0b2beWyTct5r2XtY0s7gIEKffLSM9SxuAH9jui6Slbeuc5VDkQbu8LVxe18P9O6jY66gjWOcIoycGhnPIk1IOddbKekXeODSRyQTMOke2ZgIPDqwKgTG4KD5f2O83TA:1wE3PH:wN1q9bRG2mqGoUZ9nqhxrcFO91zPzsOHjRLFMyjPipE	2026-05-02 18:00:11.003209+07
+jdzhn02lpg0h9eg2iwwf3e0m4fmalzj6	.eJxVjDsOwjAQBe_iGlk26y8lPWew1rsODiBHipMKcXdkKQW0b2beWyTct5r2XtY0s7gIEKffLSM9SxuAH9jui6Slbeuc5VDkQbu8LVxe18P9O6jY66gjWOcIoycGhnPIk1IOddbKekXeODSRyQTMOke2ZgIPDqwKgTG4KD5f2O83TA:1wELec:uyX6vYPN8j1RGtWSL0K1JnuNbwLU5tTtj86Y3D3tnRc	2026-05-03 13:29:14.827554+07
 \.
 
 
@@ -5692,11 +5693,11 @@ ALTER TABLE ONLY public.django_admin_log
     ADD CONSTRAINT django_admin_log_user_id_c564eba6_fk_auth_user_id FOREIGN KEY (user_id) REFERENCES public.auth_user(id) DEFERRABLE INITIALLY DEFERRED;
 
 
--- Completed on 2026-04-19 13:14:39
+-- Completed on 2026-04-19 14:00:37
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Orsn5pzewANbrDekhAtogafNmyo4HvfVtYMxUZbURa4fAly8b3auccYfcQeMwhk
+\unrestrict BsdwHYFZGwW5I493KUfD026cetk2l9Q5INpIvCHO8JaMuKKdI7dTTUoNuq7jg6X
 

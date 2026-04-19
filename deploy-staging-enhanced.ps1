@@ -311,8 +311,9 @@ function Transfer-DatabaseDump {
         Write-Info "Transfer completed. Verifying file on remote server..."
         Start-Sleep -Seconds 1
         
-        # Verify file exists using test command
-        $verifyOutput = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "test -f '$remoteDumpFile' && echo 'FOUND' || echo 'MISSING'" 2>&1
+        # Verify file exists using test command (use double quotes so PowerShell expands variable)
+        Write-Info "Verification command: ssh ... test -f \"$remoteDumpFile\""
+        $verifyOutput = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "test -f ""$remoteDumpFile"" && echo 'FOUND' || echo 'MISSING'" 2>&1
         $verifyExitCode = $LASTEXITCODE
         
         if ($verifyOutput -ne "FOUND") {
@@ -338,7 +339,8 @@ function Import-RemoteDatabase {
         
         # First, verify the file exists on remote server
         Write-Info "Verifying dump file on remote server: $remoteDumpFile"
-        $fileCheck = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "test -f '$remoteDumpFile' && echo 'EXISTS' || echo 'MISSING'" 2>&1
+        Write-Info "Verification command: ssh ... test -f \"$remoteDumpFile\""
+        $fileCheck = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "test -f ""$remoteDumpFile"" && echo 'EXISTS' || echo 'MISSING'" 2>&1
         
         if ($fileCheck -ne "EXISTS") {
             Write-Error-Custom "Database dump file not found on remote server: $remoteDumpFile"
