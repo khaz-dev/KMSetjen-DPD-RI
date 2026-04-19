@@ -339,40 +339,41 @@ function Import-RemoteDatabase {
     
     if ($DryRun) {
         Write-DryRun "Would import database on remote server by piping dump directly"
-    } else {
-        Write-Info "Importing database by streaming dump directly to remote..."
-        
-        try {
-            $dumpContent = Get-Content $LocalDBDumpFile -Raw -ErrorAction Stop
-            $dumpSize = [math]::Round((Get-Item $LocalDBDumpFile).Length / 1MB, 2)
-            Write-Info "Streaming $dumpSize MB database dump through SSH..."
-            
-            # Step 1: Prepare database on remote
-            Write-Info "[1] Preparing database on remote..."
-            $setupCmd = @"
+        return
+    }
+    
+    Write-Info "Importing database by streaming dump directly to remote..."
+    
+    $dumpContent = Get-Content $LocalDBDumpFile -Raw
+    $dumpSize = [math]::Round((Get-Item $LocalDBDumpFile).Length / 1MB, 2)
+    Write-Info "Streaming $dumpSize MB database dump through SSH..."
+    
+    # Step 1: Prepare database on remote
+    Write-Info "[1] Preparing database on remote..."
+    $setupCmd = @"
 export PGPASSWORD='Okkdpdri@2026'
 sudo -E -u postgres psql -h localhost -c 'DROP DATABASE IF EXISTS kmsdb;' 2>/dev/null || true
 sleep 1
 sudo -E -u postgres psql -h localhost -c 'CREATE DATABASE kmsdb;' 2>/dev/null
 "@
-            $setupCmd = $setupCmd -replace "`r`n", "`n"
-            $setupResult = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" $setupCmd
-            if ($LASTEXITCODE -ne 0) {
-                Write-Error-Custom "Failed to prepare remote database"
-            }
-            
-            # Step 2: Stream dump directly to psql
-            Write-Info "[2] Streaming data to remote database..."
-            $importCmd = "export PGPASSWORD='Okkdpdri@2026'; sudo -E -u postgres psql -h localhost kmsdb 2>/dev/null"
-            $importResult = $dumpContent | & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" $importCmd
-            if ($LASTEXITCODE -ne 0) {
-                Write-Error-Custom "Database import failed with exit code $LASTEXITCODE"
-            }
-            Write-Info "Dump streamed successfully"
-            
-            # Step 3: Verify import
-            Write-Info "[3] Verifying import..."
-            $verifyCmd = @"
+    $setupCmd = $setupCmd -replace "`r`n", "`n"
+    & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" $setupCmd
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error-Custom "Failed to prepare remote database"
+    }
+    
+    # Step 2: Stream dump directly to psql
+    Write-Info "[2] Streaming data to remote database..."
+    $importCmd = "export PGPASSWORD='Okkdpdri@2026'; sudo -E -u postgres psql -h localhost kmsdb 2>/dev/null"
+    $dumpContent | & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" $importCmd
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error-Custom "Database import failed with exit code $LASTEXITCODE"
+    }
+    Write-Info "Dump streamed successfully"
+    
+    # Step 3: Verify import
+    Write-Info "[3] Verifying import..."
+    $verifyCmd = @"
 export PGPASSWORD='Okkdpdri@2026'
 ARTICLE_COUNT=\$(sudo -E -u postgres psql -h localhost kmsdb -t -c 'SELECT COUNT(*) FROM content_article;' 2>/dev/null)
 CATEGORY_COUNT=\$(sudo -E -u postgres psql -h localhost kmsdb -t -c 'SELECT COUNT(*) FROM content_category;' 2>/dev/null)
@@ -383,21 +384,17 @@ if [ "\$ARTICLE_COUNT" -eq 0 ]; then
   exit 1
 fi
 "@
-            $verifyCmd = $verifyCmd -replace "`r`n", "`n"
-            $verifyResult = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" $verifyCmd
-            
-            Write-Info "Verification output:"
-            $verifyResult | ForEach-Object { Write-Info "  $_" }
-            
-            if ($LASTEXITCODE -ne 0 -or $verifyResult -match "ERROR") {
-                Write-Error-Custom "Import verification failed"
-            }
-            
-            Write-Success "Database imported successfully"
-        } catch {
-            Write-Error-Custom "Error during database import: $_"
-        }
+    $verifyCmd = $verifyCmd -replace "`r`n", "`n"
+    $verifyResult = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" $verifyCmd
+    
+    Write-Info "Verification output:"
+    $verifyResult | ForEach-Object { Write-Info "  $_" }
+    
+    if ($LASTEXITCODE -ne 0 -or $verifyResult -match "ERROR") {
+        Write-Error-Custom "Import verification failed"
     }
+    
+    Write-Success "Database imported successfully"
 }
 
 # ============================================================================
