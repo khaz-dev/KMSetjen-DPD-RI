@@ -285,15 +285,38 @@ function Transfer-DatabaseDump {
     if ($DryRun) {
         Write-DryRun "Would SCP: $LocalDBDumpFile to $ServerUser@$($ServerIP):$ServerProjectPath/"
     } else {
-        Write-Info "Uploading database dump..."
-        # Quote the local path properly for Windows paths with spaces
-        $result = & scp -i "$SSHKeyPath" "$LocalDBDumpFile" "$ServerUser@$($ServerIP):$ServerProjectPath/" 2>&1
+        Write-Info "Uploading database dump (~0.63 MB)..."
+        
+        # Verify file exists locally first
+        if (-not (Test-Path $LocalDBDumpFile)) {
+            Write-Error-Custom "Local dump file not found: $LocalDBDumpFile"
+        }
+        
+        $dumpFileName = Split-Path -Leaf $LocalDBDumpFile
+        $remoteDumpFile = "$ServerProjectPath/$dumpFileName"
+        
+        Write-Info "Local file: $LocalDBDumpFile"
+        Write-Info "Remote destination: $ServerUser@$($ServerIP):$remoteDumpFile"
+        
+        # Transfer with verbose output
+        Write-Info "Executing: scp -i `"$SSHKeyPath`" `"$LocalDBDumpFile`" `"$ServerUser@$($ServerIP):$remoteDumpFile`""
+        $result = & scp -i "$SSHKeyPath" "$LocalDBDumpFile" "$ServerUser@$($ServerIP):$remoteDumpFile" 2>&1
         
         if ($LASTEXITCODE -ne 0) {
-            Write-Error-Custom "Failed to upload database dump: $result"
-        } else {
-            Write-Success "Database dump uploaded"
+            Write-Error-Custom "Failed to upload database dump. Exit code: $LASTEXITCODE. Output: $result"
         }
+        
+        Write-Info "SCP transfer completed, verifying file on remote..."
+        
+        # Verify file exists on remote server
+        $verifyCmd = "ls -lh '$remoteDumpFile' 2>&1"
+        $remoteVerify = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" $verifyCmd 2>&1
+        
+        if ($LASTEXITCODE -ne 0 -or -not ($remoteVerify -match $dumpFileName)) {
+            Write-Error-Custom "File verification failed on remote server. File may not have uploaded. Output: $remoteVerify"
+        }
+        
+        Write-Success "Database dump uploaded and verified on remote server"
     }
 }
 
@@ -309,34 +332,46 @@ function Import-RemoteDatabase {
         Write-Info "Importing database on remote server..."
         
         # First, verify the file exists on remote server
-        $fileCheck = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "ls -la '$remoteDumpFile' 2>&1" 2>&1
-        if (-not ($fileCheck -match "sql")) {
+        Write-Info "Verifying dump file on remote server: $remoteDumpFile"
+        $fileCheck = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "test -f '$remoteDumpFile' && echo 'EXISTS' || echo 'MISSING'" 2>&1
+        
+        if ($fileCheck -ne "EXISTS") {
             Write-Error-Custom "Database dump file not found on remote server: $remoteDumpFile"
         }
         
+        Write-Info "Dump file verified. Starting database import..."
+        
         # Database import with proper error handling and verification
-        # CRITICAL FIX: Use 'sudo -E' to PRESERVE environment variables (PGPASSWORD)
+        # CRITICAL: Use 'sudo -E' to preserve PGPASSWORD environment variable
         $remoteCmd = @"
 set -e
 cd '$ServerProjectPath'
 export PGPASSWORD='Okkdpdri@2026'
 
-echo '[1] Dropping existing database...'
+echo '[1] Verifying dump file exists'
+if [ ! -f '$remoteDumpFile' ]; then
+  echo 'ERROR: Dump file not found: $remoteDumpFile'
+  ls -la . | head -20
+  exit 1
+fi
+ls -lh '$remoteDumpFile'
+
+echo '[2] Dropping existing database...'
 sudo -E -u postgres psql -h localhost -c 'DROP DATABASE IF EXISTS kmsdb;' 2>/dev/null || true
 
 sleep 1
 
-echo '[2] Creating new database...'
+echo '[3] Creating new database...'
 sudo -E -u postgres psql -h localhost -c 'CREATE DATABASE kmsdb;' 2>/dev/null
 if [ `$? -ne 0 ]; then echo 'ERROR: Failed to create database'; exit 1; fi
 
-echo '[3] Importing data from dump file...'
+echo '[4] Importing data from dump file...'
 if ! sudo -E -u postgres psql -h localhost kmsdb < '$remoteDumpFile' 2>/dev/null; then
   echo 'ERROR: Database import failed'
   exit 1
 fi
 
-echo '[4] Verifying import success...'
+echo '[5] Verifying import success...'
 ARTICLE_COUNT=\`sudo -E -u postgres psql -h localhost kmsdb -t -c 'SELECT COUNT(*) FROM content_article;' 2>/dev/null\`
 if [ -z "\$ARTICLE_COUNT" ]; then
   echo 'ERROR: Could not verify article count'
@@ -348,11 +383,11 @@ if [ "\$ARTICLE_COUNT" -eq 0 ]; then
   exit 1
 fi
 
-echo '[5] Verifying categories...'
+echo '[6] Verifying categories...'
 CATEGORY_COUNT=\`sudo -E -u postgres psql -h localhost kmsdb -t -c 'SELECT COUNT(*) FROM content_category;' 2>/dev/null\`
 echo "Imported categories: \$CATEGORY_COUNT"
 
-echo '[6] Cleaning up dump file...'
+echo '[7] Cleaning up dump file...'
 rm -f '$remoteDumpFile'
 
 echo 'Database import completed successfully'
@@ -364,12 +399,12 @@ echo 'Database import completed successfully'
         Write-Info ($result | Out-String)
         
         if ($LASTEXITCODE -ne 0) {
-            Write-Error-Custom "Database import failed with exit code $LASTEXITCODE. Output: $result"
+            Write-Error-Custom "Database import failed with exit code $LASTEXITCODE"
         }
         
         # Verify data actually made it
         if ($result -match "Imported articles: 0|ERROR") {
-            Write-Error-Custom "Database import verification failed: $result"
+            Write-Error-Custom "Database import verification failed"
         }
         
         Write-Success "Database imported on remote server"
