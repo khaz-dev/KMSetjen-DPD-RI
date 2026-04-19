@@ -313,13 +313,15 @@ function Transfer-DatabaseDump {
         
         # Verify file exists using test command (use double quotes so PowerShell expands variable)
         Write-Info "Verification command: ssh ... test -f \"$remoteDumpFile\""
-        $verifyOutput = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "test -f ""$remoteDumpFile"" && echo 'FOUND' || echo 'MISSING'" 2>&1
-        $verifyExitCode = $LASTEXITCODE
+        $verifyRaw = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "test -f ""$remoteDumpFile"" && echo 'FOUND' || echo 'MISSING'" 2>&1
+        $verifyOutput = ([String]$verifyRaw).Trim()
+        
+        Write-Info "DEBUG: Raw verify output: [$verifyOutput]"
         
         if ($verifyOutput -ne "FOUND") {
             # Debug: show what files are in the directory
-            $dirList = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "ls -lah '$ServerProjectPath/' | head -10" 2>&1
-            Write-Error-Custom "File verification failed. Remote directory listing: $dirList"
+            $dirList = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "ls -lah $ServerProjectPath/" 2>&1
+            Write-Error-Custom "File verification failed. Verification returned: [$verifyOutput]. Remote directory:`n$dirList"
         }
         
         Write-Success "Database dump uploaded and verified ($dumpFileName)"
@@ -336,11 +338,17 @@ function Import-RemoteDatabase {
         Write-DryRun "Would import database on remote server using: $remoteDumpFile"
     } else {
         Write-Info "Importing database on remote server..."
+        Write-Info "DEBUG: LocalDBDumpFile = $LocalDBDumpFile"
+        Write-Info "DEBUG: dumpFileName = $dumpFileName"
+        Write-Info "DEBUG: ServerProjectPath = $ServerProjectPath"
+        Write-Info "DEBUG: remoteDumpFile = $remoteDumpFile"
         
         # First, verify the file exists on remote server
         Write-Info "Verifying dump file on remote server: $remoteDumpFile"
-        Write-Info "Verification command: ssh ... test -f \"$remoteDumpFile\""
-        $fileCheck = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "test -f ""$remoteDumpFile"" && echo 'EXISTS' || echo 'MISSING'" 2>&1
+        Write-Info "DEBUG: Running: ssh ... test -f \"$remoteDumpFile\" && echo EXISTS"
+        $fileCheckRaw = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "test -f ""$remoteDumpFile"" && echo 'EXISTS' || echo 'MISSING'" 2>&1
+        $fileCheck = ([String]$fileCheckRaw).Trim()
+        Write-Info "DEBUG: File check result: [$fileCheck]"
         
         if ($fileCheck -ne "EXISTS") {
             Write-Error-Custom "Database dump file not found on remote server: $remoteDumpFile"
