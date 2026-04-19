@@ -353,9 +353,9 @@ function Import-RemoteDatabase {
         # CRITICAL: Use 'sudo -E' to preserve PGPASSWORD environment variable
         $remoteCmd = @"
 set -e
-cd '$ServerProjectPath'
+cd $ServerProjectPath
 export PGPASSWORD='Okkdpdri@2026'
-export DUMP_FILE='$remoteDumpFile'
+export DUMP_FILE=$remoteDumpFile
 
 echo '[0] Environment check'
 echo "DUMP_FILE=\$DUMP_FILE"
