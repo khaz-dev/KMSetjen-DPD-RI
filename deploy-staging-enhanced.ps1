@@ -309,38 +309,68 @@ function Import-RemoteDatabase {
         Write-Info "Importing database on remote server..."
         
         # First, verify the file exists on remote server
-        $fileCheck = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "ls -la $remoteDumpFile 2>&1" 2>&1
+        $fileCheck = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "ls -la '$remoteDumpFile' 2>&1" 2>&1
         if (-not ($fileCheck -match "sql")) {
             Write-Error-Custom "Database dump file not found on remote server: $remoteDumpFile"
         }
         
+        # Database import with proper error handling and verification
         $remoteCmd = @"
-            set -e
-            cd $ServerProjectPath
-            export PGPASSWORD='Okkdpdri@2026'
-            
-            echo 'Dropping existing database...'
-            psql -h localhost -U postgres -c 'DROP DATABASE IF EXISTS kmsdb;' || true
-            
-            sleep 1
-            
-            echo 'Creating new database...'
-            psql -h localhost -U postgres -c 'CREATE DATABASE kmsdb;'
-            
-            echo 'Importing data...'
-            cat "$remoteDumpFile" | psql -h localhost -U postgres kmsdb
-            
-            echo 'Cleaning up dump file...'
-            rm -f "$remoteDumpFile"
-            
-            echo 'Database import completed successfully'
+set -e
+cd '$ServerProjectPath'
+export PGPASSWORD='Okkdpdri@2026'
+
+echo '[1] Dropping existing database...'
+sudo -u postgres psql -h localhost -c 'DROP DATABASE IF EXISTS kmsdb;' 2>/dev/null || true
+
+sleep 1
+
+echo '[2] Creating new database...'
+sudo -u postgres psql -h localhost -c 'CREATE DATABASE kmsdb;' 2>/dev/null
+if [ `$? -ne 0 ]; then echo 'ERROR: Failed to create database'; exit 1; fi
+
+echo '[3] Importing data from dump file...'
+if ! sudo -u postgres psql -h localhost kmsdb < '$remoteDumpFile' 2>/dev/null; then
+  echo 'ERROR: Database import failed'
+  exit 1
+fi
+
+echo '[4] Verifying import success...'
+ARTICLE_COUNT=\`sudo -u postgres psql -h localhost kmsdb -t -c 'SELECT COUNT(*) FROM content_article;' 2>/dev/null\`
+if [ -z "\$ARTICLE_COUNT" ]; then
+  echo 'ERROR: Could not verify article count'
+  exit 1
+fi
+echo "Imported articles: \$ARTICLE_COUNT"
+if [ "\$ARTICLE_COUNT" -eq 0 ]; then
+  echo 'ERROR: No articles found after import'
+  exit 1
+fi
+
+echo '[5] Verifying categories...'
+CATEGORY_COUNT=\`sudo -u postgres psql -h localhost kmsdb -t -c 'SELECT COUNT(*) FROM content_category;' 2>/dev/null\`
+echo "Imported categories: \$CATEGORY_COUNT"
+
+echo '[6] Cleaning up dump file...'
+rm -f '$remoteDumpFile'
+
+echo 'Database import completed successfully'
 "@
         
         $result = & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" ($remoteCmd -replace "`r`n", "`n") 2>&1
         
+        Write-Info "Import output:"
+        Write-Info ($result | Out-String)
+        
         if ($LASTEXITCODE -ne 0) {
-            Write-Error-Custom "Database import failed: $result"
+            Write-Error-Custom "Database import failed with exit code $LASTEXITCODE. Output: $result"
         }
+        
+        # Verify data actually made it
+        if ($result -match "Imported articles: 0|ERROR") {
+            Write-Error-Custom "Database import verification failed: $result"
+        }
+        
         Write-Success "Database imported on remote server"
     }
 }
