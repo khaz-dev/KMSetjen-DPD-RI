@@ -1,6 +1,6 @@
 import React from "react";
 import { Container, Row, Col } from "react-bootstrap";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../contexts/ThemeContext";
 import { getDefaultImages } from "../utils/imageUtils";
@@ -8,13 +8,22 @@ import "./Footer.css";
 
 /**
  * Footer Component
- * Footer with links and copyright information
+ * Footer with links and copyright information - with active page indicators
  */
 const Footer = () => {
+  const location = useLocation();
   const { t } = useTranslation();
   const { isDarkMode } = useTheme();
   const currentYear = new Date().getFullYear();
   const images = getDefaultImages();
+
+  // Helper function to determine if a link is active
+  const isActive = (path) => {
+    if (path === "/") {
+      return location.pathname === "/";
+    }
+    return location.pathname.startsWith(path) && location.pathname !== "/";
+  };
 
   return (
     <footer
@@ -42,16 +51,24 @@ const Footer = () => {
             <h5>{t("footer.quick_links")}</h5>
             <ul className="list-unstyled">
               <li>
-                <Link to="/">{t("nav.home")}</Link>
+                <Link to="/" className={isActive("/") ? "footer-link-active" : ""}>
+                  {t("nav.home")}
+                </Link>
               </li>
               <li>
-                <Link to="/knowledges">{t("nav.articles")}</Link>
+                <Link to="/knowledges" className={isActive("/knowledges") ? "footer-link-active" : ""}>
+                  {t("nav.articles")}
+                </Link>
               </li>
               <li>
-                <Link to="/about">{t("footer.about")}</Link>
+                <Link to="/about" className={isActive("/about") ? "footer-link-active" : ""}>
+                  {t("footer.about")}
+                </Link>
               </li>
               <li>
-                <Link to="/contact">{t("footer.contact")}</Link>
+                <Link to="/contact" className={isActive("/contact") ? "footer-link-active" : ""}>
+                  {t("footer.contact")}
+                </Link>
               </li>
             </ul>
           </Col>
@@ -60,13 +77,19 @@ const Footer = () => {
             <h5>{t("footer.information")}</h5>
             <ul className="list-unstyled">
               <li>
-                <Link to="/privacy">{t("footer.privacy_policy")}</Link>
+                <Link to="/privacy" className={isActive("/privacy") ? "footer-link-active" : ""}>
+                  {t("footer.privacy_policy")}
+                </Link>
               </li>
               <li>
-                <Link to="/terms">{t("footer.terms_of_service")}</Link>
+                <Link to="/terms" className={isActive("/terms") ? "footer-link-active" : ""}>
+                  {t("footer.terms_of_service")}
+                </Link>
               </li>
               <li>
-                <Link to="/contact">{t("footer.email_us")}</Link>
+                <Link to="/contact" className={isActive("/contact") ? "footer-link-active" : ""}>
+                  {t("footer.email_us")}
+                </Link>
               </li>
               <li>
                 <a
@@ -80,8 +103,6 @@ const Footer = () => {
             </ul>
           </Col>
         </Row>
-
-        <hr className="my-4" />
 
         <Row>
           <Col md={6}>

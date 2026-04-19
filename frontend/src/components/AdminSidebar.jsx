@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Nav, NavLink } from 'react-bootstrap';
+import { Nav, NavLink, Badge } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
+import { useArticleCount } from '../contexts/ArticleCountContext';
 import {
   FiHome, FiUsers, FiLayers, FiFolder, FiFileText,
   FiActivity, FiMenu, FiX, FiLogOut, FiTag
@@ -13,12 +14,16 @@ import './AdminSidebar.css';
  * AdminSidebar Component
  * Navigation sidebar for admin panel with menu items
  */
-function AdminSidebar({ onLogout }) {
+function AdminSidebar({ onLogout, pendingReviewCount = 0 }) {
   const { t } = useTranslation();
   const { isDarkMode } = useTheme();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { pendingReviewCount: contextPendingCount } = useArticleCount();
+
+  // Use context count, fall back to prop if not available
+  const displayCount = contextPendingCount || pendingReviewCount;
 
   const menuItems = [
     { path: '/admin', icon: FiHome, label: t('sidebar.dashboard') || 'Dashboard', exact: true },
@@ -26,7 +31,12 @@ function AdminSidebar({ onLogout }) {
     { path: '/admin/roles', icon: FiLayers, label: t('sidebar.roles') || 'Roles & Permissions' },
     { path: '/admin/categories', icon: FiFolder, label: t('sidebar.categories') || 'Categories' },
     { path: '/admin/tags', icon: FiTag, label: t('sidebar.tags') || 'Tags' },
-    { path: '/admin/articles', icon: FiFileText, label: t('sidebar.articles') || 'Knowledge Moderation' },
+    { 
+      path: '/admin/articles', 
+      icon: FiFileText, 
+      label: t('sidebar.articles') || 'Knowledge Moderation',
+      badge: displayCount > 0 ? displayCount : null
+    },
     { path: '/admin/audit-logs', icon: FiActivity, label: t('sidebar.audit_log') || 'Audit Logs' },
   ];
 
@@ -67,7 +77,12 @@ function AdminSidebar({ onLogout }) {
             title={isCollapsed ? item.label : ''}
           >
             <item.icon className="nav-icon" />
-            {!isCollapsed && <span className="nav-label">{item.label}</span>}
+            {!isCollapsed && (
+              <span className="nav-label">
+                {item.label}
+                {item.badge && <Badge bg="danger" className="ms-auto">{item.badge}</Badge>}
+              </span>
+            )}
           </NavLink>
         ))}
       </Nav>

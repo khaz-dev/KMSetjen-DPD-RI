@@ -224,7 +224,7 @@ a {
 
 a:hover {
   color: #0d9488;
-  text-decoration: underline;
+  text-decoration: none !important;
 }
 
 .policy-page.dark-mode a,

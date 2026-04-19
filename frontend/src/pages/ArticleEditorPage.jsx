@@ -9,6 +9,9 @@ import { useAuth } from '../contexts/AuthContext';
 import RichTextEditor from '../components/RichTextEditor';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
+import EditorTagFilter from '../components/EditorTagFilter';
+import PptxViewer from '../components/PptxViewer';
+import PptxGallery from '../components/PptxGallery';
 import { publicAPI, internalAPI } from '../services/api';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTheme } from '../hooks/useTheme';
@@ -69,6 +72,9 @@ const ArticleEditor = () => {
   const [activeLanguageTab, setActiveLanguageTab] = useState('id'); // 'id' or 'en'
   const [initialFormData, setInitialFormData] = useState(null); // Track initial state for change detection
   const [initialSelectedTags, setInitialSelectedTags] = useState([]); // Track initial tags for change detection
+  const [imageSource, setImageSource] = useState(null); // Track whether image is from 'upload' or 'url'
+  const [isDraggingImage, setIsDraggingImage] = useState(false); // Track drag state for featured image upload
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false); // Track drag state for file upload area
 
   const [formData, setFormData] = useState({
     id: null,
@@ -93,18 +99,19 @@ const ArticleEditor = () => {
   const loadArticle = useCallback(async () => {
     try {
       setLoading(true);
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002/api';
-      const response = await fetch(`${apiBaseUrl}/v1/internal/articles/${id}/`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load article');
+      // Use internalAPI instead of native fetch to benefit from token refresh interceptor
+      const response = await internalAPI.getArticle(id);
+      const data = response.data || response;
+      
+      // Determine image source: 'upload' if image field exists, 'url' if image_url exists
+      let source = null;
+      if (data.image) {
+        source = 'upload'; // Has uploaded file
+      } else if (data.image_url) {
+        source = 'url'; // Has URL only
       }
-
-      const data = await response.json();
+      setImageSource(source);
+      
       setFormData({
         id: data.id || null,
         // Indonesian fields
@@ -206,156 +213,77 @@ const ArticleEditor = () => {
         throw new Error('slug_validation_failed');
       }
 
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002/api';
-      
-      // If there's a featured image file, use FormData for multipart upload
-      // Otherwise, use JSON
-      let requestBody;
-      let contentTypeHeader = 'application/json';
+      // Prepare payload with all fields
+      // CRITICAL: Use internalAPI instead of fetch() to get token refresh on 401
+      const payload = formData.featured_image_file ? new FormData() : {};
       
       if (formData.featured_image_file) {
         // Use FormData for file upload
-        const formDataObj = new FormData();
-        formDataObj.append('title_id', formData.title_id);
-        formDataObj.append('title_en', formData.title_en);
-        formDataObj.append('content_id', formData.content_id);
-        formDataObj.append('content_en', formData.content_en);
-        formDataObj.append('summary_id', formData.description_id);
-        formDataObj.append('summary_en', formData.description_en);
-        formDataObj.append('category', formData.category_id);
-        formDataObj.append('access_level', formData.access_level);
-        formDataObj.append('status', formData.status || 'draft');
-        formDataObj.append('slug', formData.slug || '');
-        formDataObj.append('image', formData.featured_image_file);
+        payload.append('title_id', formData.title_id);
+        payload.append('title_en', formData.title_en);
+        payload.append('content_id', formData.content_id);
+        payload.append('content_en', formData.content_en);
+        payload.append('summary_id', formData.description_id);
+        payload.append('summary_en', formData.description_en);
+        payload.append('category', formData.category_id);
+        payload.append('access_level', formData.access_level);
+        payload.append('status', formData.status || 'draft');
+        payload.append('slug', formData.slug || '');
+        payload.append('image', formData.featured_image_file);
         
         // Add tags
-        selectedTags.forEach((tagId, index) => {
-          formDataObj.append(`tags`, tagId);
+        selectedTags.forEach((tagId) => {
+          payload.append('tags', tagId);
         });
-        
-        requestBody = formDataObj;
-        contentTypeHeader = null; // Let browser set it with boundary
       } else {
         // Use JSON for text-only updates
-        const payload = {
-          title_id: formData.title_id,
-          title_en: formData.title_en,
-          content_id: formData.content_id,
-          content_en: formData.content_en,
-          summary_id: formData.description_id,
-          summary_en: formData.description_en,
-          tags: selectedTags,
-          status: formData.status || 'draft',
-          category: formData.category_id,
-          access_level: formData.access_level,
-          slug: formData.slug
-        };
+        payload.title_id = formData.title_id;
+        payload.title_en = formData.title_en;
+        payload.content_id = formData.content_id;
+        payload.content_en = formData.content_en;
+        payload.summary_id = formData.description_id;
+        payload.summary_en = formData.description_en;
+        payload.tags = selectedTags;
+        payload.status = formData.status || 'draft';
+        payload.category = formData.category_id;
+        payload.access_level = formData.access_level;
+        payload.slug = formData.slug;
         
         // DEBUG: Log the exact values being sent
         console.log('[SAVE_DRAFT_DEBUG] Payload being sent:');
         console.log(`  - status: ${JSON.stringify(payload.status)} (type: ${typeof payload.status})`);
         console.log(`  - access_level: ${JSON.stringify(payload.access_level)} (type: ${typeof payload.access_level})`);
         console.log(`  - formData.status: ${JSON.stringify(formData.status)} (type: ${typeof formData.status})`);
-        console.log(`  - formData.access_level: ${JSON.stringify(payload.access_level)} (type: ${typeof payload.access_level})`);
+        console.log(`  - formData.access_level: ${JSON.stringify(formData.access_level)} (type: ${typeof formData.access_level})`);
         console.log('[SAVE_DRAFT_DEBUG] Full payload:', payload);
         
         // ALWAYS send image_url (even if empty) to allow clearing the featured image
-        // This is critical: when user deletes image, featured_image_url becomes '' (empty string)
-        // If we don't send it, backend won't know to clear the field
         payload.image_url = formData.featured_image_url || null;
         
         // CRITICAL FIX: Send image: null when featured_image is cleared
-        // This explicitly tells backend to clear the image field, which triggers:
-        // 1. Model update (instance.image = None/null)
-        // 2. pre_save signal detects change (old_image != new_image)
-        // 3. old_image file is deleted from disk via cleanup_old_image_on_update()
-        // Without this, backend never receives 'image' field, so never modifies it, signals never fire
         if (formData.featured_image === null || formData.featured_image === '') {
           payload.image = null;
           console.log('[SAVE_DRAFT_DEBUG] Image being cleared - sending image: null to backend');
         }
-        
-        requestBody = JSON.stringify(payload);
       }
 
-      const headers = {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-      };
+      // Use internalAPI which has token refresh interceptor
+      let data;
+      if (id) {
+        // Existing article - use PATCH for partial update
+        const response = await internalAPI.updateArticle(id, payload);
+        data = response.data;
+      } else {
+        // New article - use POST
+        const response = await internalAPI.createArticle(payload);
+        data = response.data;
+      }
       
-      if (contentTypeHeader) {
-        headers['Content-Type'] = contentTypeHeader;
+      // Handle successful response
+      if (!data) {
+        throw new Error('No response data from server');
       }
 
-      const response = await fetch(
-        id ? `${apiBaseUrl}/v1/internal/articles/${id}/` : `${apiBaseUrl}/v1/internal/articles/`,
-        {
-          method: id ? 'PUT' : 'POST',
-          headers,
-          body: requestBody
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('=== BACKEND VALIDATION ERROR ===');
-        console.error('Status Code:', response.status);
-        console.error('Error Response:', JSON.stringify(errorData, null, 2));
-        
-        // Special logging for slug errors
-        if (errorData.detail && typeof errorData.detail === 'object' && errorData.detail.slug) {
-          console.error('[SLUG_ERROR_DETECTED]', errorData.detail.slug);
-        }
-        if (errorData.slug) {
-          console.error('[SLUG_ERROR_DETECTED]', errorData.slug);
-        }
-        
-        console.error('Payload Sent:', {
-          title_id: formData.title_id,
-          title_en: formData.title_en,
-          content_id: formData.content_id,
-          content_en: formData.content_en,
-          summary_id: formData.description_id,
-          summary_en: formData.description_en,
-          category: formData.category_id,
-          tags: selectedTags,
-          status: 'draft',
-          slug: formData.slug
-        });
-        console.error('=== END ERROR ===');
-        
-        // Extract user-friendly error message (with bilingual support)
-        let errorMessage = t('errors.failed_save_draft');
-        
-        // Try bilingual detail_id (Indonesian) first
-        if (errorData.detail_id) {
-          errorMessage = errorData.detail_id;
-        } 
-        // Fall back to detail (if it's a string, not object)
-        else if (errorData.detail && typeof errorData.detail === 'string') {
-          errorMessage = errorData.detail;
-        } 
-        // For field-specific errors (validation errors)
-        else if (errorData.detail && typeof errorData.detail === 'object') {
-          const fieldErrors = Object.entries(errorData.detail)
-            .map(([field, msgs]) => {
-              const fieldLabel = field;
-              const errorMsg = Array.isArray(msgs) ? msgs[0] : msgs;
-              return `${fieldLabel}: ${errorMsg}`;
-            })
-            .join('\n');
-          errorMessage = fieldErrors || t('errors.failed_save_draft');
-        } 
-        // Fall back to generic error message
-        else if (errorData.error) {
-          errorMessage = errorData.error;
-        }
-        
-        setError(errorMessage);
-        showError(errorMessage);
-        throw new Error('save_draft_failed');
-      }
-
-      const data = await response.json();
       console.log('[SAVE_DRAFT] Save successful! Response data:', {
         id: data.id,
         slug: data.slug,
@@ -424,9 +352,81 @@ const ArticleEditor = () => {
 
       return data;
     } catch (err) {
+      console.error('=== BACKEND VALIDATION ERROR ===');
       console.error('Save draft error:', err);
-      showError(t('errors.failed_save_draft'));
-      setError('t:errors.failed_save_draft');
+      
+      // Extract error information from the response
+      const errorData = err.response?.data || {};
+      const status = err.response?.status;
+      
+      if (status) {
+        console.error('Status Code:', status);
+      }
+      if (Object.keys(errorData).length > 0) {
+        console.error('Error Response:', JSON.stringify(errorData, null, 2));
+      }
+      console.error('Payload Sent:', {
+        title_id: formData.title_id,
+        title_en: formData.title_en,
+        content_id: formData.content_id,
+        content_en: formData.content_en,
+        summary_id: formData.description_id,
+        summary_en: formData.description_en,
+        category: formData.category_id,
+        tags: selectedTags,
+        status: formData.status || 'draft',
+        slug: formData.slug
+      });
+      console.error('=== END ERROR ===');
+      
+      // Extract user-friendly error message (with bilingual support)
+      let errorMessage = t('errors.failed_save_draft');
+      
+      // Try bilingual detail_id (Indonesian) first
+      if (errorData.detail_id) {
+        errorMessage = errorData.detail_id;
+      }
+      // Fall back to detail (if it's a string, not object)
+      else if (errorData.detail && typeof errorData.detail === 'string') {
+        errorMessage = errorData.detail;
+      }
+      // Special handling for token errors and nested object errors
+      else if (errorData.detail && typeof errorData.detail === 'object') {
+        if (errorData.detail.code === 'token_not_valid' || errorData.detail.message === 'Token is expired') {
+          errorMessage = 'Authorization failed. Please refresh the page and try again.';
+          console.warn('[SAVE_DRAFT] Token validation error - token is expired');
+        } else {
+          // For other field-specific errors (validation errors)
+          try {
+            const fieldErrors = Object.entries(errorData.detail)
+              .map(([field, msgs]) => {
+                const fieldLabel = field;
+                let errorMsg = 'Unknown error';
+                if (Array.isArray(msgs)) {
+                  errorMsg = msgs[0];
+                } else if (typeof msgs === 'string') {
+                  errorMsg = msgs;
+                } else if (msgs && typeof msgs === 'object' && msgs.message) {
+                  errorMsg = msgs.message;
+                }
+                return `${fieldLabel}: ${errorMsg}`;
+              })
+              .join('\n');
+            if (fieldErrors) {
+              errorMessage = fieldErrors;
+            }
+          } catch (e) {
+            console.warn('[SAVE_DRAFT] Could not extract field errors:', e);
+          }
+        }
+      }
+      // Fall back to generic error message
+      else if (errorData.error) {
+        errorMessage = errorData.error;
+      }
+      
+      setError(errorMessage);
+      showError(errorMessage);
     }
   }, [id, formData, selectedTags, slugValidation, t, success, showError]);
 
@@ -601,7 +601,8 @@ const ArticleEditor = () => {
 
   const loadTags = async () => {
     try {
-      const response = await publicAPI.getTags();
+      // Request all tags without pagination limit to ensure all tags are available
+      const response = await publicAPI.getTags({ limit: 9999 });
       const data = response.data || response;
       setTags(Array.isArray(data) ? data : (data.results || []));
     } catch (err) {
@@ -651,6 +652,7 @@ const ArticleEditor = () => {
           featured_image: reader.result,
           featured_image_file: file
         }));
+        setImageSource('upload'); // Mark as uploaded file
       };
       reader.readAsDataURL(file);
     }
@@ -659,6 +661,7 @@ const ArticleEditor = () => {
   const handleImageDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    setIsDraggingImage(false); // Clear dragging state
     const file = e.dataTransfer?.files?.[0];
     if (file) {
       handleImageUpload({ target: { files: [file] } });
@@ -670,6 +673,21 @@ const ArticleEditor = () => {
     e.stopPropagation();
   };
 
+  const handleImageDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingImage(true); // Show dragging visual feedback
+  };
+
+  const handleImageDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only clear dragging state if we're leaving the upload area itself
+    if (e.target.classList.contains('featured-image-upload-area')) {
+      setIsDraggingImage(false);
+    }
+  };
+
   const handleImageRemove = () => {
     setFormData(prev => ({
       ...prev,
@@ -677,6 +695,7 @@ const ArticleEditor = () => {
       featured_image_file: null,
       featured_image_url: ''
     }));
+    setImageSource(null); // Clear image source
   };
 
   const handleFileUpload = async (e) => {
@@ -727,6 +746,36 @@ const ArticleEditor = () => {
       setFileUploading(false);
       // Reset file input
       e.target.value = '';
+    }
+  };
+
+  const handleFileDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFiles(false); // Clear dragging state
+    const file = e.dataTransfer?.files?.[0];
+    if (file) {
+      handleFileUpload({ target: { files: [file] } });
+    }
+  };
+
+  const handleFileDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleFileDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFiles(true); // Show dragging visual feedback
+  };
+
+  const handleFileDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only clear dragging state if we're leaving the upload area itself
+    if (e.target.classList.contains('file-upload-section')) {
+      setIsDraggingFiles(false);
     }
   };
 
@@ -868,6 +917,8 @@ const ArticleEditor = () => {
     if (mimeType.includes('video')) return true;
     // Audio
     if (mimeType.includes('audio')) return true;
+    // Presentations (PPTX, PPT, ODP, etc.)
+    if (mimeType.includes('presentation') || mimeType.includes('powerpoint') || mimeType.includes('openxmlformats-officedocument.presentationml')) return true;
     return false;
   };
 
@@ -877,6 +928,7 @@ const ArticleEditor = () => {
     if (mimeType.includes('pdf')) return 'pdf';
     if (mimeType.includes('video')) return 'video';
     if (mimeType.includes('audio')) return 'audio';
+    if (mimeType.includes('presentation') || mimeType.includes('powerpoint') || mimeType.includes('openxmlformats-officedocument.presentationml')) return 'presentation';
     return null;
   };
 
@@ -1037,198 +1089,221 @@ const ArticleEditor = () => {
       )}
 
       <Form onSubmit={handleSaveDraft}>
-        {/* Language Tabs */}
-        <div className="language-tabs mb-4">
-          <div className="btn-group" role="tablist">
+        {/* Language Tabs - Enhanced Modern Design */}
+        <div className="mb-4">
+          <div className="language-tabs">
             <button
               type="button"
-              className={`btn btn-sm ${activeLanguageTab === 'id' ? 'btn-primary' : 'btn-outline-primary'}`}
+              className={`language-tab ${activeLanguageTab === 'id' ? 'active' : ''}`}
               onClick={() => setActiveLanguageTab('id')}
+              aria-pressed={activeLanguageTab === 'id'}
             >
-              🇮🇩 Bahasa Indonesia
+              <span>🇮🇩</span> Bahasa Indonesia
             </button>
             <button
               type="button"
-              className={`btn btn-sm ${activeLanguageTab === 'en' ? 'btn-primary' : 'btn-outline-primary'}`}
+              className={`language-tab ${activeLanguageTab === 'en' ? 'active' : ''}`}
               onClick={() => setActiveLanguageTab('en')}
+              aria-pressed={activeLanguageTab === 'en'}
             >
-              🇬🇧 English
+              <span>🇬🇧</span> English
             </button>
           </div>
         </div>
 
-        {/* Title */}
-        <Form.Group className="mb-4">
-          <Form.Label>
-            {activeLanguageTab === 'id' ? t('editor.article_title') : 'Knowledge Title (English)'} *
-          </Form.Label>
-          <Form.Control
-            type="text"
-            value={activeLanguageTab === 'id' ? formData.title_id : formData.title_en}
-            onChange={handleTitleChange}
-            placeholder={activeLanguageTab === 'id' ? t('editor.article_title_placeholder') : 'Enter knowledge title in English'}
-            required={activeLanguageTab === 'id'} 
-            maxLength={200}
-          />
-          <Form.Text className="text-muted">
-            {(activeLanguageTab === 'id' ? formData.title_id : formData.title_en).length}/200 {t('editor.characters')}
-          </Form.Text>
-        </Form.Group>
+        {/* METADATA SECTION */}
+        <div className="form-section">
+          <div className="form-section-title">
+            <i className="bi bi-file-earmark-text"></i>
+            <h3>{t('editor.metadata_section') || 'Metadata & SEO'}</h3>
+          </div>
 
-        {/* Category */}
-        <Form.Group className="mb-4">
-          <Form.Label>{t('editor.category')} *</Form.Label>
-          <Form.Select
-            name="category_id"
-            value={formData.category_id}
-            onChange={handleChange}
-            required
-          >
-            <option value="">{t('editor.select_category')}</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{isIndonesian ? cat.name_id : cat.name_en}</option>
-            ))}
-          </Form.Select>
-        </Form.Group>
-
-        {/* Access Level (Tingkat Akses) - Only show if user has permission to create articles */}
-        {availableAccessLevels.length > 0 && (
+          {/* Title */}
           <Form.Group className="mb-4">
-            <Form.Label>{t('editor.access_level') || 'Tingkat Akses'}</Form.Label>
-            <Form.Select
-              name="access_level"
-              value={formData.access_level}
-              onChange={handleChange}
-            >
-              {availableAccessLevels.includes(ACCESS_LEVELS.PUBLIC) && (
-                <option value={ACCESS_LEVELS.PUBLIC}>{t('editor.access_public') || ACCESS_LEVEL_DEFAULTS[ACCESS_LEVELS.PUBLIC]}</option>
-              )}
-              {availableAccessLevels.includes(ACCESS_LEVELS.INTERNAL) && (
-                <option value={ACCESS_LEVELS.INTERNAL}>{t('editor.access_internal') || ACCESS_LEVEL_DEFAULTS[ACCESS_LEVELS.INTERNAL]}</option>
-              )}
-              {availableAccessLevels.includes(ACCESS_LEVELS.ROLE_BASED) && (
-                <option value={ACCESS_LEVELS.ROLE_BASED}>{t('editor.access_role_based') || ACCESS_LEVEL_DEFAULTS[ACCESS_LEVELS.ROLE_BASED]}</option>
-              )}
-            </Form.Select>
+            <Form.Label>
+              {activeLanguageTab === 'id' ? t('editor.article_title') : 'Knowledge Title (English)'} <strong style={{color: '#ff6b6b'}}>*</strong>
+            </Form.Label>
+            <Form.Control
+              type="text"
+              value={activeLanguageTab === 'id' ? formData.title_id : formData.title_en}
+              onChange={handleTitleChange}
+              placeholder={activeLanguageTab === 'id' ? t('editor.article_title_placeholder') : 'Enter knowledge title in English'}
+              required={activeLanguageTab === 'id'} 
+              maxLength={200}
+            />
             <Form.Text className="text-muted">
-              {t('editor.access_level_help') || 'Pilih siapa yang dapat melihat artikel ini'}
+              {(activeLanguageTab === 'id' ? formData.title_id : formData.title_en).length}/200 {t('editor.characters')}
             </Form.Text>
           </Form.Group>
-        )}
 
-        {/* Slug */}
-        <Form.Group className="mb-4">
-          <Form.Label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {t('editor.slug')}
-            {formData.id && formData.status !== 'draft' && (
-              <span className="slug-locked-badge"> (Locked)</span>
-            )}
-            {slugValidation.isChecking && (
-              <span className="slug-checking-badge">
-                <i className="bi bi-hourglass-split"></i> {t('editor.checking') || 'Checking...'}
-              </span>
-            )}
-            {formData.slug && slugValidation.isAvailable === true && !slugValidation.isChecking && (
-              <span className="slug-valid-badge">
-                <i className="bi bi-check-circle-fill"></i> {t('editor.slug_valid') || 'Valid'}
-              </span>
-            )}
-          </Form.Label>
-          <Form.Control
-            type="text"
-            name="slug"
-            value={formData.slug}
-            onChange={handleSlugChange}
-            placeholder={t('editor.slug_placeholder')}
-            disabled={formData.id && formData.status !== 'draft'}
-            className={`slug-field ${
-              !formData.slug ? '' : 
-              slugValidation.isAvailable === true ? 'is-valid' :
-              slugValidation.isAvailable === false ? 'is-invalid' :
-              ''
-            }`}
-          />
-          {formData.id && formData.status !== 'draft' ? (
-            <Form.Text className="text-warning slug-locked-warning">
-              <i className="bi bi-lock-fill"></i> {t('editor.slug_locked_message')}
+          {/* Description */}
+          <Form.Group className="mb-4">
+            <Form.Label>
+              {activeLanguageTab === 'id' ? t('editor.description') : 'Description (English)'}
+            </Form.Label>
+            <Form.Control
+              type="text"
+              value={activeLanguageTab === 'id' ? formData.description_id : formData.description_en}
+              onChange={(e) => {
+                const fieldName = activeLanguageTab === 'id' ? 'description_id' : 'description_en';
+                setFormData(prev => ({
+                  ...prev,
+                  [fieldName]: e.target.value
+                }));
+              }}
+              placeholder={activeLanguageTab === 'id' ? t('editor.description_placeholder') : 'Enter description in English'}
+              maxLength={160}
+              as="textarea"
+              rows={2}
+            />
+            <Form.Text className="text-muted">
+              {(activeLanguageTab === 'id' ? formData.description_id : formData.description_en).length}/160 {t('editor.characters')}
             </Form.Text>
-          ) : (
-            <>
-              <Form.Text className="text-muted">
-                {t('editor.slug_hint')}
-              </Form.Text>
-              {formData.slug && slugValidation.isAvailable === false && (
-                <div className="slug-validation-message text-danger">
-                  <i className="bi bi-exclamation-circle"></i> {slugValidation.messageKey ? t(slugValidation.messageKey) : slugValidation.message}
-                </div>
+          </Form.Group>
+
+          {/* Slug */}
+          <Form.Group>
+            <Form.Label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {t('editor.slug')}
+              {formData.id && formData.status !== 'draft' && (
+                <span className="slug-locked-badge"> (Locked)</span>
               )}
-            </>
-          )}
-        </Form.Group>
+              {slugValidation.isChecking && (
+                <span className="slug-checking-badge">
+                  <i className="bi bi-hourglass-split"></i> {t('editor.checking') || 'Checking...'}
+                </span>
+              )}
+              {formData.slug && slugValidation.isAvailable === true && !slugValidation.isChecking && (
+                <span className="slug-valid-badge">
+                  <i className="bi bi-check-circle-fill"></i> {t('editor.slug_valid') || 'Valid'}
+                </span>
+              )}
+            </Form.Label>
+            <Form.Control
+              type="text"
+              name="slug"
+              value={formData.slug}
+              onChange={handleSlugChange}
+              placeholder={t('editor.slug_placeholder')}
+              disabled={formData.id && formData.status !== 'draft'}
+              className={`slug-field ${
+                !formData.slug ? '' : 
+                slugValidation.isAvailable === true ? 'is-valid' :
+                slugValidation.isAvailable === false ? 'is-invalid' :
+                ''
+              }`}
+            />
+            {formData.id && formData.status !== 'draft' ? (
+              <Form.Text className="text-warning slug-locked-warning">
+                <i className="bi bi-lock-fill"></i> {t('editor.slug_locked_message')}
+              </Form.Text>
+            ) : (
+              <>
+                <Form.Text className="text-muted">
+                  {t('editor.slug_hint')}
+                </Form.Text>
+                {formData.slug && slugValidation.isAvailable === false && (
+                  <div className="slug-validation-message text-danger">
+                    <i className="bi bi-exclamation-circle"></i> {slugValidation.messageKey ? t(slugValidation.messageKey) : slugValidation.message}
+                  </div>
+                )}
+              </>
+            )}
+          </Form.Group>
+        </div>
 
-        {/* Description */}
-        <Form.Group className="mb-4">
-          <Form.Label>
-            {activeLanguageTab === 'id' ? t('editor.description') : 'Description (English)'}
-          </Form.Label>
-          <Form.Control
-            type="text"
-            value={activeLanguageTab === 'id' ? formData.description_id : formData.description_en}
-            onChange={(e) => {
-              const fieldName = activeLanguageTab === 'id' ? 'description_id' : 'description_en';
-              setFormData(prev => ({
-                ...prev,
-                [fieldName]: e.target.value
-              }));
-            }}
-            placeholder={activeLanguageTab === 'id' ? t('editor.description_placeholder') : 'Enter description in English'}
-            maxLength={160}
-            as="textarea"
-            rows={2}
-          />
-          <Form.Text className="text-muted">
-            {(activeLanguageTab === 'id' ? formData.description_id : formData.description_en).length}/160 {t('editor.characters')}
-          </Form.Text>
-        </Form.Group>
+        {/* CATEGORY & ORGANIZATION SECTION */}
+        <div className="form-section">
+          <div className="form-section-title">
+            <i className="bi bi-tag"></i>
+            <h3>{t('editor.organization_section') || 'Organization & Access'}</h3>
+          </div>
 
-        {/* Featured Image */}
-        <Form.Group className="mb-4">
-          <Form.Label>{t('editor.featured_image')}</Form.Label>
-          
-          {/* Upload options */}
-          <div className="featured-image-upload-container">
-            {/* File Upload with drag-and-drop */}
-            <div 
-              className={`featured-image-upload-area ${formData.featured_image_file ? 'has-file' : ''}`}
-              onDrop={handleImageDrop}
-              onDragOver={handleImageDragOver}
-              onDragLeave={(e) => e.preventDefault()}
+          {/* Category */}
+          <Form.Group className="mb-4">
+            <Form.Label>{t('editor.category')} <strong style={{color: '#ff6b6b'}}>*</strong></Form.Label>
+            <Form.Select
+              name="category_id"
+              value={formData.category_id}
+              onChange={handleChange}
+              required
             >
-              <input
-                type="file"
-                id="image-upload"
-                accept="image/*"
-                onChange={handleImageUpload}
-                style={{ display: 'none' }}
-              />
-              <label htmlFor="image-upload" className="upload-label">
-                <div className="upload-content">
-                  <i className="bi bi-cloud-upload"></i>
-                  <p>{t('editor.drag_drop_image') || 'Drag & drop image here or click to browse'}</p>
-                  <small>{t('editor.image_size_hint') || 'Max 5MB, PNG/JPG/GIF'}</small>
-                  {formData.featured_image_file && (
-                    <div className="upload-file-info">
-                      <i className="bi bi-check-circle-fill text-success"></i>
-                      <span>{formData.featured_image_file.name}</span>
-                    </div>
-                  )}
-                </div>
-              </label>
-            </div>
+              <option value="">{t('editor.select_category')}</option>
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.id}>{isIndonesian ? cat.name_id : cat.name_en}</option>
+              ))}
+            </Form.Select>
+          </Form.Group>
 
-            {/* URL Input */}
-            <div className="featured-image-url-section">
-              <Form.Control
+          {/* Access Level */}
+          {availableAccessLevels.length > 0 && (
+            <Form.Group className="mb-4">
+              <Form.Label>{t('editor.access_level') || 'Tingkat Akses'}</Form.Label>
+              <Form.Select
+                name="access_level"
+                value={formData.access_level}
+                onChange={handleChange}
+              >
+                {availableAccessLevels.includes(ACCESS_LEVELS.PUBLIC) && (
+                  <option value={ACCESS_LEVELS.PUBLIC}>{t('editor.access_public') || ACCESS_LEVEL_DEFAULTS[ACCESS_LEVELS.PUBLIC]}</option>
+                )}
+                {availableAccessLevels.includes(ACCESS_LEVELS.INTERNAL) && (
+                  <option value={ACCESS_LEVELS.INTERNAL}>{t('editor.access_internal') || ACCESS_LEVEL_DEFAULTS[ACCESS_LEVELS.INTERNAL]}</option>
+                )}
+              </Form.Select>
+              <Form.Text className="text-muted">
+                {t('editor.access_level_help') || 'Pilih siapa yang dapat melihat artikel ini'}
+              </Form.Text>
+            </Form.Group>
+          )}
+        </div>
+
+        {/* FEATURED IMAGE SECTION */}
+        <div className="form-section">
+          <div className="form-section-title">
+            <i className="bi bi-image"></i>
+            <h3>{t('editor.featured_image_section') || 'Featured Image'}</h3>
+          </div>
+
+          <Form.Group className="mb-4">
+            <Form.Label>{t('editor.featured_image')}</Form.Label>
+            
+            {/* Upload options */}
+            <div className="featured-image-upload-container">
+              {/* File Upload with drag-and-drop */}
+              <div 
+                className={`featured-image-upload-area ${formData.featured_image_file ? 'has-file' : ''} ${isDraggingImage ? 'dragging' : ''}`}
+                onDrop={handleImageDrop}
+                onDragOver={handleImageDragOver}
+                onDragEnter={handleImageDragEnter}
+                onDragLeave={handleImageDragLeave}
+                onClick={() => document.getElementById('image-upload').click()}
+              >
+                <input
+                  type="file"
+                  id="image-upload"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  style={{ display: 'none' }}
+                />
+                <label htmlFor="image-upload" className="upload-label">
+                  <div className="upload-content">
+                    <i className="bi bi-cloud-upload"></i>
+                    <p>{t('editor.drag_drop_image') || 'Drag & drop image here or click to browse'}</p>
+                    <small>{t('editor.image_size_hint') || 'Max 5MB, PNG/JPG/GIF'}</small>
+                    {formData.featured_image_file && (
+                      <div className="upload-file-info">
+                        <i className="bi bi-check-circle-fill text-success"></i>
+                        <span>{formData.featured_image_file.name}</span>
+                      </div>
+                    )}
+                  </div>
+                </label>
+              </div>
+
+              {/* URL Input */}
+              <div className="featured-image-url-section">
+                <Form.Control
                 type="url"
                 placeholder={t('editor.featured_image_placeholder')}
                 value={formData.featured_image_url || ''}
@@ -1240,6 +1315,12 @@ const ArticleEditor = () => {
                     // Only update featured_image if no file is uploaded
                     featured_image: prev.featured_image_file ? prev.featured_image : url
                   }));
+                  // Set image source to 'url' when user enters a URL
+                  if (url && !formData.featured_image_file) {
+                    setImageSource('url');
+                  } else if (!url && imageSource === 'url') {
+                    setImageSource(null);
+                  }
                 }}
                 disabled={!!formData.featured_image_file}
               />
@@ -1265,7 +1346,7 @@ const ArticleEditor = () => {
                   }}
                 />
                 <div className="image-source-badge">
-                  {formData.featured_image_file ? (
+                  {imageSource === 'upload' ? (
                     <>
                       <i className="bi bi-upload"></i> {t('editor.source_upload') || 'Uploaded'}
                     </>
@@ -1305,25 +1386,38 @@ const ArticleEditor = () => {
             </div>
           )}
 
-          {/* Info text about priority */}
-          <Alert variant="info" className="mt-3 py-2">
-            <small>
-              <i className="bi bi-info-circle"></i> {t('editor.image_priority_hint') || 'File upload takes priority over URL. Upload a file to override URL image.'}
-            </small>
-          </Alert>
-        </Form.Group>
+            {/* Info text about priority */}
+            <Alert variant="info" className="mt-3 py-2">
+              <small>
+                <i className="bi bi-info-circle"></i> {t('editor.image_priority_hint') || 'File upload takes priority over URL. Upload a file to override URL image.'}
+              </small>
+            </Alert>
+          </Form.Group>
+        </div>
 
-        {/* File Manager */}
-        {(
-          <Form.Group className="mb-4">
-            <Form.Label>{t('editor.file_attachments')}</Form.Label>
-            
-            {/* File Upload */}
-            <div className="file-upload-section mb-3">
-              <input
-                type="file"
-                id="file-upload"
-                onChange={handleFileUpload}
+        {/* FILE ATTACHMENTS SECTION */}
+        <div className="form-section">
+          <div className="form-section-title">
+            <i className="bi bi-paperclip"></i>
+            <h3>{t('editor.attachments_section') || 'Attachments & Files'}</h3>
+          </div>
+          {(
+            <Form.Group className="mb-4">
+              <Form.Label>{t('editor.file_attachments')}</Form.Label>
+              
+              {/* File Upload */}
+              <div 
+                className={`file-upload-section mb-3 ${isDraggingFiles ? 'dragging' : ''}`}
+                onDrop={handleFileDrop}
+                onDragOver={handleFileDragOver}
+                onDragEnter={handleFileDragEnter}
+                onDragLeave={handleFileDragLeave}
+                onClick={() => document.getElementById('file-upload').click()}
+              >
+                <input
+                  type="file"
+                  id="file-upload"
+                  onChange={handleFileUpload}
                 disabled={fileUploading}
                 accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.7z,.jpg,.jpeg,.png,.gif,.mp4,.avi,.mov,.mkv"
               />
@@ -1384,18 +1478,25 @@ const ArticleEditor = () => {
                       {showPreview && fileHasPreview && previewUrl && (
                         <div className="file-preview-container">
                           {previewType === 'image' && (
-                            <img 
-                              src={previewUrl} 
-                              alt={file.original_filename}
-                              className="file-preview-image"
-                              onError={(e) => {
-                                console.error('[FilePreview] Image failed to load:', previewUrl);
-                                e.target.style.display = 'none';
-                                if (e.target.nextElementSibling) {
-                                  e.target.nextElementSibling.style.display = 'flex';
-                                }
-                              }}
-                            />
+                            <>
+                              <img 
+                                src={previewUrl} 
+                                alt={file.original_filename}
+                                className="file-preview-image"
+                                onError={(e) => {
+                                  console.error('[FilePreview] Image failed to load:', previewUrl);
+                                  e.target.style.display = 'none';
+                                  const fallback = e.target.parentElement?.querySelector('.file-preview-fallback');
+                                  if (fallback) {
+                                    fallback.style.display = 'flex';
+                                  }
+                                }}
+                              />
+                              <div className="file-preview-fallback" style={{ display: 'none' }}>
+                                <i className="bi bi-image"></i>
+                                <p>Image preview not available</p>
+                              </div>
+                            </>
                           )}
                           {previewType === 'pdf' && previewUrl && (
                             <iframe
@@ -1424,10 +1525,23 @@ const ArticleEditor = () => {
                               Your browser does not support the audio tag.
                             </audio>
                           )}
-                          <div className="file-preview-fallback" style={{ display: 'none' }}>
-                            <i className="bi bi-image"></i>
-                            <p>Preview not available</p>
-                          </div>
+                          {previewType === 'presentation' && previewUrl && (
+                            formData?.id && file?.id ? (
+                              <PptxGallery 
+                                fileUrl={previewUrl}
+                                fileId={file.id}
+                                articleId={formData.id}
+                                fileName={file.original_filename}
+                                onError={(err) => console.error('[FilePreview] PptxGallery error:', err)}
+                              />
+                            ) : (
+                              <PptxViewer 
+                                fileUrl={previewUrl}
+                                fileName={file.original_filename}
+                                onError={(err) => console.error('[FilePreview] PptxViewer error:', err)}
+                              />
+                            )
+                          )}
                         </div>
                       )}
                     </div>
@@ -1440,62 +1554,65 @@ const ArticleEditor = () => {
                 <p>{t('editor.no_files_uploaded')}</p>
               </div>
             )}
+            </Form.Group>
+          )}
+        </div>
+
+        {/* CONTENT SECTION */}
+        <div className="form-section">
+          <div className="form-section-title">
+            <i className="bi bi-pencil-square"></i>
+            <h3>{t('editor.content_section') || 'Content'}</h3>
+          </div>
+
+          {/* Tags */}
+          <Form.Group className="mb-4">
+            <Form.Label>
+              <i className="bi bi-bookmark"></i> {t('editor.tags')}
+            </Form.Label>
+            <EditorTagFilter
+              selectedTags={selectedTags}
+              onTagsChange={setSelectedTags}
+              tags={tags}
+            />
           </Form.Group>
-        )}
 
-        {/* Tags */}
-        <Form.Group className="mb-4">
-          <Form.Label>{t('editor.tags')}</Form.Label>
-          <div className="tags-selection">
-            {tags.map(tag => (
-              <Form.Check
-                key={tag.id}
-                type="checkbox"
-                id={`tag-${tag.id}`}
-                label={isIndonesian ? tag.name_id : tag.name_en}
-                checked={selectedTags.includes(tag.id)}
-                onChange={() => handleTagChange(tag.id)}
-                className="tag-checkbox"
-              />
-            ))}
-          </div>
-        </Form.Group>
-
-        {/* Content Editor */}
-        <Form.Group className="mb-4">
-          <Form.Label>
-            {activeLanguageTab === 'id' ? t('editor.content') : 'Content (English)'} *
-          </Form.Label>
-          <RichTextEditor
-            value={activeLanguageTab === 'id' ? formData.content_id : formData.content_en}
-            onChange={handleContentChange}
-            placeholder={activeLanguageTab === 'id' ? t('editor.write_article_content') : 'Write knowledge content in English'}
-            height="400px"
-          />
-          <Form.Text className="text-muted d-block mb-3">
-            {t('editor.markdown_supported')}
-          </Form.Text>
-          <div className="markdown-guide alert alert-info">
-            <div className="d-flex justify-content-between align-items-center mb-2">
-              <strong>
-                <i className="bi bi-info-circle me-2"></i>
-                {t('editor.content_guide')}
-              </strong>
-            </div>
-            <small className="text-muted d-block mb-2">
-              {t('editor.content_helper_text')}
-            </small>
-            <pre className="mb-0 small bg-white p-2 rounded" style={{ 
-              fontSize: '0.85rem', 
-              maxHeight: '200px', 
-              overflowY: 'auto',
-              whiteSpace: 'pre-wrap',
-              wordWrap: 'break-word'
-            }}>
+          {/* Content Editor */}
+          <Form.Group>
+            <Form.Label>
+              {activeLanguageTab === 'id' ? t('editor.content') : 'Content (English)'} <strong style={{color: '#ff6b6b'}}>*</strong>
+            </Form.Label>
+            <RichTextEditor
+              value={activeLanguageTab === 'id' ? formData.content_id : formData.content_en}
+              onChange={handleContentChange}
+              placeholder={activeLanguageTab === 'id' ? t('editor.write_article_content') : 'Write knowledge content in English'}
+              height="400px"
+            />
+            <Form.Text className="text-muted d-block mb-3">
+              {t('editor.markdown_supported')}
+            </Form.Text>
+            <div className="markdown-guide alert alert-info">
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <strong>
+                  <i className="bi bi-info-circle me-2"></i>
+                  {t('editor.content_guide')}
+                </strong>
+              </div>
+              <small className="text-muted d-block mb-2">
+                {t('editor.content_helper_text')}
+              </small>
+              <pre className="mb-0 small bg-white p-2 rounded" style={{ 
+                fontSize: '0.85rem', 
+                maxHeight: '200px', 
+                overflowY: 'auto',
+                whiteSpace: 'pre-wrap',
+                wordWrap: 'break-word'
+              }}>
 {t('editor.content_guide_text').split('\\n').join('\n')}
-            </pre>
-          </div>
-        </Form.Group>
+              </pre>
+            </div>
+          </Form.Group>
+        </div>
 
         {/* Action Buttons */}
         <div className="editor-actions">

@@ -10,6 +10,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale, enUS } from 'date-fns/locale';
 import { FiShare2, FiPrinter, FiCheck, FiFacebook, FiTwitter, FiMail, FiEye, FiHeart } from 'react-icons/fi';
 import ImageWithFallback from '../components/ImageWithFallback';
+import PptxViewer from '../components/PptxViewer';
+import PptxGallery from '../components/PptxGallery';
 import './ArticleDetailPage.css';
 
 /**
@@ -45,6 +47,7 @@ const ArticleDetailPage = () => {
     if (mimeType === 'application/pdf') return 'pdf';
     if (mimeType.startsWith('video/')) return 'video';
     if (mimeType.startsWith('audio/')) return 'audio';
+    if (mimeType.includes('presentation') || mimeType.includes('powerpoint') || mimeType.includes('openxmlformats-officedocument.presentationml')) return 'presentation';
     return null;
   };
 
@@ -55,6 +58,7 @@ const ArticleDetailPage = () => {
     if (mimeType === 'application/pdf') return 'bi-file-pdf';
     if (mimeType.startsWith('video/')) return 'bi-film';
     if (mimeType.startsWith('audio/')) return 'bi-music-note';
+    if (mimeType.includes('presentation') || mimeType.includes('powerpoint') || mimeType.includes('openxmlformats-officedocument.presentationml')) return 'bi-file-earmark-ppt';
     if (mimeType.includes('word') || mimeType.includes('document')) return 'bi-file-word';
     if (mimeType.includes('sheet') || mimeType.includes('excel')) return 'bi-file-spreadsheet';
     return 'bi-file';
@@ -412,9 +416,19 @@ const ArticleDetailPage = () => {
           
           {/* Title and Excerpt Center with flex-grow-1 */}
           <div className="flex-grow-1">
-            <h6 className="mb-2 article-list-item-title">{artTitle}</h6>
+            <h6 
+              className="mb-2 article-list-item-title"
+              title={artTitle}
+            >
+              {artTitle}
+            </h6>
             {excerpt && (
-              <p className="mb-0 article-list-item-excerpt">{excerpt}</p>
+              <p 
+                className="mb-0 article-list-item-excerpt"
+                title={excerpt}
+              >
+                {excerpt}
+              </p>
             )}
           </div>
         </div>
@@ -437,19 +451,78 @@ const ArticleDetailPage = () => {
         <Row>
           <Col lg={8}>
             <article ref={articleRef}>
-              <header className="article-header mb-5">
-                <h1 className="display-5 fw-bold mb-3">{title}</h1>
+              <div className="article-featured-image">
+                <ImageWithFallback 
+                  src={article.image || article.image_url} 
+                  alt={title}
+                  className="img-fluid rounded"
+                  style={{ maxHeight: '400px', objectFit: 'cover', width: '100%' }}
+                  type="article"
+                />
+              </div>
+
+              <header className="article-header">
+                <h1 className="display-7 fw-bold">{title}</h1>
                 
                 <div className="article-meta mb-3">
-                  <Badge bg="primary" className="me-2">
-                    {categoryName || t('common.no_results')}
-                  </Badge>
+                  {/* Category Badge - Custom Styled Span */}
+                  {(() => {
+                    const catColor = article.category?.color;
+                    console.log('[ArticleDetail] Category color from API:', { 
+                      category: article.category?.name_id,
+                      color: catColor,
+                      fallback: '#0d6efd',
+                      applied: catColor || '#0d6efd'
+                    });
+                    return (
+                      <span 
+                        className="article-badge-custom me-2"
+                        style={{ 
+                          backgroundColor: catColor || '#0d6efd',
+                          borderColor: catColor || '#0d6efd',
+                          color: '#ffffff',
+                          padding: '0.35rem 0.65rem',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          display: 'inline-block',
+                          border: '1px solid'
+                        }}
+                      >
+                        {categoryName || t('common.no_results')}
+                      </span>
+                    );
+                  })()}
                   
-                  {article.tags?.map((tag) => (
-                    <Badge key={tag.id} bg="secondary" className="me-2">
-                      {isIndonesian ? tag.name_id : tag.name_en}
-                    </Badge>
-                  ))}
+                  {/* Tag Badges - Custom Styled Spans */}
+                  {article.tags?.map((tag) => {
+                    const tagColor = tag.color;
+                    console.log('[ArticleDetail] Tag color from API:', { 
+                      tag: tag.name_id,
+                      color: tagColor,
+                      fallback: '#6c757d',
+                      applied: tagColor || '#6c757d'
+                    });
+                    return (
+                      <span 
+                        key={tag.id}
+                        className="article-badge-custom me-2"
+                        style={{ 
+                          backgroundColor: tagColor || '#6c757d',
+                          borderColor: tagColor || '#6c757d',
+                          color: '#ffffff',
+                          padding: '0.35rem 0.65rem',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          display: 'inline-block',
+                          border: '1px solid'
+                        }}
+                      >
+                        {isIndonesian ? tag.name_id : tag.name_en}
+                      </span>
+                    );
+                  })}
                 </div>
 
                 <div className="article-detail-info text-muted small mb-3">
@@ -472,19 +545,15 @@ const ArticleDetailPage = () => {
                 
               </header>
 
-              <div className="article-featured-image mb-5">
-                <ImageWithFallback 
-                  src={article.image || article.image_url} 
-                  alt={title}
-                  className="img-fluid rounded"
-                  style={{ maxHeight: '400px', objectFit: 'cover', width: '100%' }}
-                  type="article"
-                />
-              </div>
+              {summary && (
+                <div className="article-summary bg-light p-4 mb-4 rounded">
+                  <p className="text-muted fst-italic mb-0">{summary}</p>
+                </div>
+              )}
 
               {/* File Attachments */}
               {article.files && article.files.length > 0 && (
-                <div className="article-attachments mt-5 pt-5 border-top">
+                <div className="article-attachments">
                   <h5 className="mb-4">{t('articles.file_attachments') || 'File Attachments'}</h5>
                   <div className="attachments-list">
                     {article.files.map((file) => {
@@ -498,7 +567,12 @@ const ArticleDetailPage = () => {
                               <i className={`bi ${getFileIcon(file.mime_type)}`}></i>
                             </div>
                             <div className="attachment-info">
-                              <div className="attachment-name">{file.original_filename}</div>
+                              <div 
+                                className="attachment-name"
+                                title={file.original_filename}
+                              >
+                                {file.original_filename}
+                              </div>
                               <small className="attachment-meta">
                                 {file.file_size_display} • {new Date(file.created_at).toLocaleDateString(isIndonesian ? 'id-ID' : 'en-US')}
                               </small>
@@ -578,6 +652,23 @@ const ArticleDetailPage = () => {
                                   Your browser does not support the audio tag.
                                 </audio>
                               )}
+                              {previewType === 'presentation' && (
+                                article?.id && file?.id ? (
+                                  <PptxGallery 
+                                    fileUrl={file.file}
+                                    fileId={file.id}
+                                    articleId={article.id}
+                                    fileName={file.original_filename}
+                                    onError={(err) => console.error('[FilePreview] PptxGallery error:', err)}
+                                  />
+                                ) : (
+                                  <PptxViewer 
+                                    fileUrl={file.file}
+                                    fileName={file.original_filename}
+                                    onError={(err) => console.error('[FilePreview] PptxViewer error:', err)}
+                                  />
+                                )
+                              )}
                             </div>
                           )}
                         </div>
@@ -587,11 +678,7 @@ const ArticleDetailPage = () => {
                 </div>
               )}
 
-              {summary && (
-                <div className="article-summary bg-light p-4 mb-4 rounded">
-                  <p className="text-muted fst-italic mb-0">{summary}</p>
-                </div>
-              )}
+
 
               <div className="article-content">
                 {/* Render HTML/Markdown content from backend */}
@@ -606,8 +693,6 @@ const ArticleDetailPage = () => {
                 </div>
               )}
             </article>
-
-            <div className="my-5" />
 
             <div className="article-actions">
               <Button

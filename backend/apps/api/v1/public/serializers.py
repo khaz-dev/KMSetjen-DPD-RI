@@ -12,11 +12,60 @@ class CategorySimpleSerializer(serializers.ModelSerializer):
 
 
 class TagSerializer(serializers.ModelSerializer):
-    """Serializer for Tag model."""
+    """Serializer for Tag model.
+    
+    IMPORTANT: For public API, usage_count is calculated dynamically to only show
+    counts of published articles that the current user can access.
+    """
+    
+    usage_count = serializers.SerializerMethodField()
+    
     class Meta:
         model = Tag
         fields = ['id', 'name_id', 'name_en', 'slug', 'color', 'usage_count']
         read_only_fields = ['id', 'usage_count']
+    
+    def get_usage_count(self, obj):
+        """Count published articles with this tag that user can access.
+        
+        CRITICAL: Only count published version records (version_type='published')
+        to avoid duplicates from draft articles. Filter by access level based on user role.
+        """
+        from apps.content.models import Article
+        
+        # Get the request from context to check user access level
+        request = self.context.get('request')
+        user = request.user if request else None
+        
+        # Base queryset - published articles only
+        queryset = obj.articles.filter(
+            is_published=True,
+            status='published',
+            version_type=Article.VERSION_PUBLISHED
+        )
+        
+        # Apply access level filtering based on user role (same as ArticleViewSet.get_queryset)
+        from django.db.models import Q
+        from apps.core.models import Role
+        
+        if user and user.is_authenticated:
+            primary_role = user.get_primary_role()
+            
+            if primary_role and primary_role.code == Role.PUBLIC:
+                # PUBLIC role users can only see 'public' articles
+                queryset = queryset.filter(access_level='public')
+            else:
+                # Other authenticated users can see public, internal, and role-based articles
+                queryset = queryset.filter(
+                    Q(access_level='public') |
+                    Q(access_level='internal') |
+                    Q(access_level='role_based', allowed_roles__in=user.roles.all())
+                )
+        else:
+            # Anonymous users only see public articles
+            queryset = queryset.filter(access_level='public')
+        
+        return queryset.count()
 
 
 class CategoryDetailSerializer(serializers.ModelSerializer):
@@ -201,8 +250,8 @@ class CategoryListSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Category
-        fields = ['id', 'name_id', 'name_en', 'slug', 'icon', 'color', 'image',
-                  'order_index', 'article_count']
+        fields = ['id', 'name_id', 'name_en', 'slug', 'description_id', 'description_en',
+                  'icon', 'color', 'image', 'order_index', 'article_count']
     
     def get_article_count(self, obj):
         """Count published articles based on user role and access level.

@@ -1,7 +1,8 @@
-import React from "react";
-import { Navbar, Nav, Container, Dropdown, Button } from "react-bootstrap";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { Navbar, Nav, Container, Dropdown, Button, Badge } from "react-bootstrap";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { useArticleCount } from "../contexts/ArticleCountContext";
 import { useLanguage } from "../hooks/useLanguage";
 import { useTheme } from "../hooks/useTheme";
 import { getAbsoluteMediaUrl } from "../services/api";
@@ -18,17 +19,29 @@ import "./Header.css";
 
 /**
  * Header Component
- * Navigation header with user menu
+ * Navigation header with user menu and active page indicators
  */
 const Header = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
   const { language, changeLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
+  const { pendingReviewCount, rejectedArticleCount } = useArticleCount();
   
   // Get default images (including correct logo path) from imageUtils
   // This ensures logo works correctly on all routes with proper subpath handling
   const images = getDefaultImages();
+
+  // Helper function to determine if a link is active
+  const isActive = (path) => {
+    if (path === "/") {
+      // Only match exactly "/" for home
+      return location.pathname === "/";
+    }
+    // For other paths, check if pathname starts with the path
+    return location.pathname.startsWith(path) && location.pathname !== "/";
+  };
 
   return (
     <Navbar bg="light" expand="lg" sticky="top" className="navbar-custom">
@@ -46,23 +59,45 @@ const Header = () => {
 
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="ms-auto align-items-center">
-            <Nav.Link as={Link} to="/">
+            <Nav.Link 
+              as={Link} 
+              to="/" 
+              className={isActive("/") ? "nav-link-active" : ""}
+            >
               {t("nav.home")}
             </Nav.Link>
 
-            <Nav.Link as={Link} to="/knowledges">
+            <Nav.Link 
+              as={Link} 
+              to="/knowledges" 
+              className={isActive("/knowledges") ? "nav-link-active" : ""}
+            >
               {t("nav.articles")}
             </Nav.Link>
 
             {isAuthenticated && (
               <>
-                <Nav.Link as={Link} to="/dashboard">
+                <Nav.Link 
+                  as={Link} 
+                  to="/dashboard" 
+                  className={isActive("/dashboard") ? "nav-link-active" : ""}
+                >
                   {t("nav.dashboard")}
+                  {rejectedArticleCount > 0 && (
+                    <span className="navbar-dashboard-indicator" title={`${rejectedArticleCount} rejected articles`}></span>
+                  )}
                 </Nav.Link>
 
                 {(user?.is_admin || user?.is_editor) && (
-                  <Nav.Link as={Link} to="/admin">
+                  <Nav.Link 
+                    as={Link} 
+                    to="/admin" 
+                    className={isActive("/admin") ? "nav-link-active" : ""}
+                  >
                     {t("nav.admin")}
+                    {pendingReviewCount > 0 && (
+                      <span className="navbar-admin-indicator" title={`${pendingReviewCount} pending reviews`}></span>
+                    )}
                   </Nav.Link>
                 )}
               </>

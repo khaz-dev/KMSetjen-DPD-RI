@@ -24,6 +24,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
       key="prev"
       disabled={currentPage === 1}
       onClick={() => onPageChange(currentPage - 1)}
+      title={t('pagination.previous')}
     />
   );
 
@@ -73,6 +74,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
       key="next"
       disabled={currentPage === totalPages}
       onClick={() => onPageChange(currentPage + 1)}
+      title={t('pagination.next')}
     />
   );
 

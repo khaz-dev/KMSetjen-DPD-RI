@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { Container, Table, Button, Modal, Form, Spinner, Alert, Card, Badge, Pagination } from 'react-bootstrap';
+import { Container, Table, Button, Modal, Form, Spinner, Alert, Card, Badge, Pagination, Row, Col } from 'react-bootstrap';
 import { 
   FiEdit2, FiTrash2, FiPlus, FiFileText, FiBell, FiBook, 
   FiBarChart2, FiRss, FiFolder, FiTag, FiHome, FiUsers,
@@ -41,6 +41,29 @@ function CategoryManagementPage({ onLogout }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteCategoryId, setDeleteCategoryId] = useState(null);
   const [deleteCategoryName, setDeleteCategoryName] = useState('');
+  const [sortBy, setSortBy] = useState('name_id'); // Sort field
+  const [sortOrder, setSortOrder] = useState('asc'); // Sort order: 'asc' or 'desc'
+
+  // Handle hex color input with validation
+  const handleColorChange = (e) => {
+    let value = e.target.value.trim();
+    
+    // Allow only hex color format
+    if (value === '') {
+      setFormData(prev => ({ ...prev, color: '#007bff' }));
+      return;
+    }
+
+    // Add # if not present
+    if (!value.startsWith('#')) {
+      value = '#' + value;
+    }
+
+    // Validate hex color - 6 digits
+    if (/^#[0-9A-F]{6}$/i.test(value)) {
+      setFormData(prev => ({ ...prev, color: value }));
+    }
+  };
 
   // Map icon names to React icon components
   const getIconComponent = (iconName) => {
@@ -96,9 +119,21 @@ function CategoryManagementPage({ onLogout }) {
     try {
       setLoading(true);
       setError(null);
+      const params = {
+        page: currentPage,
+      };
+
+      // Add sorting
+      if (sortBy) {
+        params.ordering = sortOrder === 'desc' ? `-${sortBy}` : sortBy;
+      }
+
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/v1/admin/categories/?page=${currentPage}`,
-        { headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` } }
+        `${import.meta.env.VITE_API_URL}/api/v1/admin/categories/`,
+        { 
+          params,
+          headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` } 
+        }
       );
       setItems(response.data.results || []);
       setTotalPages(Math.ceil((response.data.count || 0) / 20));
@@ -107,11 +142,28 @@ function CategoryManagementPage({ onLogout }) {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, t]);
+  }, [currentPage, t, sortBy, sortOrder]);
 
   useEffect(() => {
     loadItems();
   }, [loadItems]);
+
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      // Toggle sort order if clicking same field
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new sort field with ascending order
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+    setCurrentPage(1);
+  };
+
+  const getSortIcon = (field) => {
+    if (sortBy !== field) return ' ↕';
+    return sortOrder === 'asc' ? ' ↑' : ' ↓';
+  };
 
   const handleOpenModal = (item = null) => {
     if (item) {
@@ -368,39 +420,45 @@ function CategoryManagementPage({ onLogout }) {
                   <Table hover className="mb-0">
                     <thead className="table-header">
                       <tr>
-                        <th style={{ width: '8%' }}>{t('categories.icon') || 'Icon'}</th>
-                        <th>{t('categories.name_en')}</th>
-                        <th>{t('categories.name_id')}</th>
+                        <th style={{ width: '50px', textAlign: 'center' }}>No.</th>
+                        <th style={{cursor:'pointer'}} onClick={() => handleSort('name_id')}>
+                          {t('categories.name_id')}{getSortIcon('name_id')}
+                        </th>
+                        <th style={{cursor:'pointer'}} onClick={() => handleSort('name_en')}>
+                          {t('categories.name_en')}{getSortIcon('name_en')}
+                        </th>
                         <th>{t('categories.description')}</th>
                         <th style={{ width: '8%', textAlign: 'center' }}>{t('categories.articles')}</th>
                         <th>{t('common.actions')}</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {items.map((item) => (
+                      {items.map((item, index) => (
                         <tr key={item.id}>
-                          <td style={{ textAlign: 'center', fontSize: '20px', paddingTop: '14px' }}>
-                            {renderCategoryIcon(item.icon)}
+                          <td style={{textAlign:'center',fontWeight:'bold'}}>
+                            {(currentPage - 1) * 20 + index + 1}
                           </td>
                           <td>
-                            <strong>{item.name_en}</strong>
-                            {item.color && item.color !== '#007bff' && (
-                              <div 
-                                style={{
-                                  display: 'inline-block',
-                                  width: '12px',
-                                  height: '12px',
-                                  backgroundColor: item.color,
-                                  borderRadius: '3px',
-                                  marginLeft: '8px',
-                                  border: '1px solid #ddd',
-                                  verticalAlign: 'middle'
-                                }}
-                                title={`Color: ${item.color}`}
-                              ></div>
-                            )}
+                            <strong>{item.name_id || '-'}</strong>
                           </td>
-                          <td>{item.name_id || '-'}</td>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <strong>{item.name_en}</strong>
+                              {item.color && (
+                                <div
+                                  style={{
+                                    display: 'inline-block',
+                                    width: '12px',
+                                    height: '12px',
+                                    backgroundColor: item.color,
+                                    borderRadius: '3px',
+                                    border: '1px solid #ddd'
+                                  }}
+                                  title={`Color: ${item.color}`}
+                                />
+                              )}
+                            </div>
+                          </td>
                           <td>
                             {(() => {
                               const description = item.description_id || item.description_en || '';
@@ -448,68 +506,103 @@ function CategoryManagementPage({ onLogout }) {
         </Container>
       </div>
 
-      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" className={isDarkMode ? 'dark-mode' : ''}>
+      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered className={isDarkMode ? 'dark-mode' : ''}>
         <Modal.Header closeButton>
           <Modal.Title>{modalMode === 'create' ? t('categories.add_category') : t('categories.edit_category')}</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="category-modal-body">
           {error && <Alert variant="danger" onClose={() => setError(null)} dismissible>{error}</Alert>}
           <Form onSubmit={handleSubmitForm}>
-            {/* Row 1: Names Section - Nama Inggris and Nama Indonesia */}
-            <div className="row">
-              <div className="col-md-6">
-                <Form.Group className="mb-3">
-                  <Form.Label>{t('categories.name_en')} *</Form.Label>
-                  <Form.Control 
-                    type="text" 
-                    value={formData.name_en} 
-                    onChange={(e) => setFormData({ ...formData, name_en: e.target.value })} 
-                    required 
-                  />
-                </Form.Group>
-              </div>
-              
-              <div className="col-md-6">
-                <Form.Group className="mb-3">
-                  <Form.Label>{t('categories.name_id')}</Form.Label>
-                  <Form.Control 
-                    type="text" 
-                    value={formData.name_id} 
-                    onChange={(e) => setFormData({ ...formData, name_id: e.target.value })} 
-                  />
-                </Form.Group>
-              </div>
-            </div>
+            {/* Two Column Layout - Indonesian and English */}
+            <Row className="g-4 mb-4">
+              {/* Column 1: Indonesian Fields */}
+              <Col lg={6}>
+                <div className="form-column">
+                  <h6 className="column-title" style={{ marginBottom: '1.5rem', fontWeight: '600', color: isDarkMode ? '#e0e0e0' : '#2c3e50' }}>
+                    {t('categories.indonesian_info') || 'Informasi Bahasa Indonesia'}
+                  </h6>
+                  
+                  {/* Nama Indonesia */}
+                  <Form.Group className="mb-4">
+                    <Form.Label className="required-label">
+                      {t('categories.name_id') || 'Nama (Indonesia)'} <span style={{ color: '#e74c3c', fontWeight: 'bold' }}>*</span>
+                    </Form.Label>
+                    <Form.Control 
+                      type="text" 
+                      value={formData.name_id} 
+                      onChange={(e) => setFormData({ ...formData, name_id: e.target.value })} 
+                      required 
+                      placeholder={t('categories.placeholder_name_id') || 'Masukkan nama kategori'}
+                    />
+                    <Form.Text className="text-muted d-block mt-1">
+                      {t('categories.name_id_help') || 'Nama unik untuk kategori'}
+                    </Form.Text>
+                  </Form.Group>
 
-            {/* Row 2: Descriptions Section - Deskripsi Inggris and Deskripsi Indonesia */}
-            <div className="row">
-              <div className="col-md-6">
-                <Form.Group className="mb-3">
-                  <Form.Label>{t('categories.description_en')}</Form.Label>
-                  <Form.Control 
-                    as="textarea" 
-                    rows={2} 
-                    value={formData.description_en} 
-                    onChange={(e) => setFormData({ ...formData, description_en: e.target.value })} 
-                  />
-                </Form.Group>
-              </div>
+                  {/* Deskripsi Indonesia */}
+                  <Form.Group className="mb-0">
+                    <Form.Label>
+                      {t('categories.description_id') || 'Deskripsi (Indonesia)'}
+                    </Form.Label>
+                    <Form.Control 
+                      as="textarea" 
+                      rows={2} 
+                      value={formData.description_id} 
+                      onChange={(e) => setFormData({ ...formData, description_id: e.target.value })} 
+                      placeholder={t('categories.placeholder_description_id') || 'Deskripsi kategori ini'}
+                    />
+                    <Form.Text className="text-muted d-block mt-1">
+                      {t('categories.description_help') || 'Deskripsi jelas membantu pengguna memahami kategori ini'}
+                    </Form.Text>
+                  </Form.Group>
+                </div>
+              </Col>
 
-              <div className="col-md-6">
-                <Form.Group className="mb-3">
-                  <Form.Label>{t('categories.description_id')}</Form.Label>
-                  <Form.Control 
-                    as="textarea" 
-                    rows={2} 
-                    value={formData.description_id} 
-                    onChange={(e) => setFormData({ ...formData, description_id: e.target.value })} 
-                  />
-                </Form.Group>
-              </div>
-            </div>
+              {/* Column 2: English Fields */}
+              <Col lg={6}>
+                <div className="form-column">
+                  <h6 className="column-title" style={{ marginBottom: '1.5rem', fontWeight: '600', color: isDarkMode ? '#e0e0e0' : '#2c3e50' }}>
+                    {t('categories.english_info') || 'Informasi Bahasa Inggris'}
+                  </h6>
+                  
+                  {/* Nama Inggris */}
+                  <Form.Group className="mb-4">
+                    <Form.Label>
+                      {t('categories.name_en') || 'Nama (Inggris)'}
+                    </Form.Label>
+                    <Form.Control 
+                      type="text" 
+                      value={formData.name_en} 
+                      onChange={(e) => setFormData({ ...formData, name_en: e.target.value })} 
+                      placeholder={t('categories.placeholder_name_en') || 'Enter category name in English'}
+                    />
+                    <Form.Text className="text-muted d-block mt-1">
+                      {t('categories.name_en_help') || 'English name for this category'}
+                    </Form.Text>
+                  </Form.Group>
+
+                  {/* Deskripsi Inggris */}
+                  <Form.Group className="mb-0">
+                    <Form.Label>
+                      {t('categories.description_en') || 'Deskripsi (Inggris)'}
+                    </Form.Label>
+                    <Form.Control 
+                      as="textarea" 
+                      rows={2} 
+                      value={formData.description_en} 
+                      onChange={(e) => setFormData({ ...formData, description_en: e.target.value })} 
+                      placeholder={t('categories.placeholder_description_en') || 'Description in English'}
+                    />
+                    <Form.Text className="text-muted d-block mt-1">
+                      {t('categories.description_en_help') || 'English description for clarity'}
+                    </Form.Text>
+                  </Form.Group>
+                </div>
+              </Col>
+            </Row>
 
             {/* Image Upload Section */}
-            <Form.Group className="mb-3">
+            <Form.Group className="mb-4">
               <Form.Label>{t('categories.image_label')}</Form.Label>
               <div style={{ 
                 border: '2px dashed #ccc', 
@@ -569,12 +662,15 @@ function CategoryManagementPage({ onLogout }) {
               <div className="col-md-6">
                 <Form.Group className="mb-3">
                   <Form.Label>{t('categories.color')} <small className="text-muted">({t('common.optional')})</small></Form.Label>
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  
+                  {/* Color Picker Section */}
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '15px' }}>
                     <Form.Control 
                       type="color" 
                       value={formData.color} 
                       onChange={(e) => setFormData({ ...formData, color: e.target.value })}
                       style={{ width: '60px', height: '40px', padding: '4px', cursor: 'pointer' }}
+                      title={t('categories.select_color') || 'Select category color'}
                     />
                     <div
                       style={{
@@ -593,10 +689,27 @@ function CategoryManagementPage({ onLogout }) {
                     >
                       {formData.icon}
                     </div>
-                    <span style={{ fontSize: '12px', color: '#666' }}>{formData.color}</span>
+                    <span style={{ fontSize: '12px', color: '#666', fontWeight: '500' }}>{formData.color}</span>
                   </div>
-                  <Form.Text className="text-muted small">
+                  
+                  <Form.Text className="text-muted d-block mb-2">
                     {t('categories.color_help')}
+                  </Form.Text>
+
+                  {/* Hex Color Input */}
+                  <Form.Label className="mt-3 mb-2"><small>{t('categories.hex_color_input') || 'Or enter hex color'}</small></Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="#007bff"
+                    value={formData.color}
+                    onChange={handleColorChange}
+                    maxLength={7}
+                    className="hex-color-input"
+                    pattern="^#[0-9A-Fa-f]{6}$"
+                    title="Format: #RRGGBB"
+                  />
+                  <Form.Text className="text-muted d-block mt-1">
+                    {t('categories.hex_color_help') || 'Format: #RRGGBB (e.g., #007bff)'}
                   </Form.Text>
                 </Form.Group>
               </div>

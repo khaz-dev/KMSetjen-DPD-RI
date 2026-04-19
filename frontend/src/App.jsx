@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ArticleCountProvider } from './contexts/ArticleCountContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import Header from './components/Header';
@@ -15,6 +16,7 @@ import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
+import UserGuidePage from './pages/UserGuidePage';
 import LoginPage from './pages/LoginPage';
 import SSOCallbackPage from './pages/SSOCallbackPage';
 import SSOTokenPage from './pages/SSOTokenPage';
@@ -59,6 +61,7 @@ function AppContent() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
+          <Route path="/guide" element={<UserGuidePage />} />
           
           {/* Auth Routes */}
           <Route path="/login" element={<LoginPage />} />
@@ -212,8 +215,10 @@ function App() {
           }}
         >
           <AuthProvider>
-            <AppContent />
-            <ToastContainer />
+            <ArticleCountProvider>
+              <AppContent />
+              <ToastContainer />
+            </ArticleCountProvider>
           </AuthProvider>
         </Router>
       </NotificationProvider>

@@ -20,6 +20,8 @@ function AuditLogPage({ onLogout }) {
   const [filterType, setFilterType] = useState('');
   const [selectedLog, setSelectedLog] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [sortBy, setSortBy] = useState('timestamp'); // Sort field
+  const [sortOrder, setSortOrder] = useState('desc'); // Sort order: 'asc' or 'desc' - desc by default for logs
 
   const loadLogs = useCallback(async () => {
     try {
@@ -28,6 +30,12 @@ function AuditLogPage({ onLogout }) {
       let url = `${import.meta.env.VITE_API_URL}/api/v1/admin/audit-logs/?page=${currentPage}`;
       if (filterAction) url += `&action=${filterAction}`;
       if (filterType) url += `&resource_type=${filterType}`;
+      
+      // Add sorting
+      if (sortBy) {
+        const orderingValue = sortOrder === 'desc' ? `-${sortBy}` : sortBy;
+        url += `&ordering=${orderingValue}`;
+      }
       
       const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` }
@@ -39,7 +47,7 @@ function AuditLogPage({ onLogout }) {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, filterAction, filterType]);
+  }, [currentPage, filterAction, filterType, sortBy, sortOrder]);
 
   useEffect(() => {
     loadLogs();
@@ -94,6 +102,23 @@ function AuditLogPage({ onLogout }) {
     };
     return labels[type] || type;
   }, [t]);
+
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      // Toggle sort order if clicking same field
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new sort field with ascending order
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+    setCurrentPage(1);
+  };
+
+  const getSortIcon = (field) => {
+    if (sortBy !== field) return ' ↕';
+    return sortOrder === 'asc' ? ' ↑' : ' ↓';
+  };
 
   return (
     <div className={`admin-wrapper ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
@@ -153,10 +178,18 @@ function AuditLogPage({ onLogout }) {
                   <Table hover className="mb-0">
                     <thead className="table-header">
                       <tr>
-                        <th>{t('audit.timestamp')}</th>
-                        <th>{t('audit.user')}</th>
-                        <th>{t('audit.action')}</th>
-                        <th>{t('audit.resource_type')}</th>
+                        <th style={{cursor:'pointer'}} onClick={() => handleSort('timestamp')}>
+                          {t('audit.timestamp')}{getSortIcon('timestamp')}
+                        </th>
+                        <th style={{cursor:'pointer'}} onClick={() => handleSort('user_name')}>
+                          {t('audit.user')}{getSortIcon('user_name')}
+                        </th>
+                        <th style={{cursor:'pointer'}} onClick={() => handleSort('action')}>
+                          {t('audit.action')}{getSortIcon('action')}
+                        </th>
+                        <th style={{cursor:'pointer'}} onClick={() => handleSort('resource_type')}>
+                          {t('audit.resource_type')}{getSortIcon('resource_type')}
+                        </th>
                         <th>{t('audit.object_id')}</th>
                         <th>{t('audit.ip_address')}</th>
                         <th>{t('common.actions')}</th>

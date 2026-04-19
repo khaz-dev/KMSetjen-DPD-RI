@@ -305,8 +305,18 @@ class TagSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'slug', 'usage_count', 'created_at', 'updated_at']
     
     def get_article_count(self, obj):
-        """Count articles with this tag."""
-        return obj.articles.count()
+        """Count published articles with this tag.
+        
+        CRITICAL: Only count published version records (version_type='published')
+        to avoid duplicates from the draft article that gets marked as published.
+        """
+        from apps.content.models import Article
+        
+        return obj.articles.filter(
+            is_published=True,
+            status='published',
+            version_type=Article.VERSION_PUBLISHED
+        ).count()
 
 
 class TagCreateUpdateSerializer(serializers.ModelSerializer):

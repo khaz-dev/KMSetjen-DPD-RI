@@ -47,6 +47,27 @@ const apiClient = axios.create({
   validateStatus: (status) => status >= 200 && status < 300,
 });
 
+// Custom params serializer for django-filter compatibility
+// Converts array params to repeated params: tags=1&tags=2&tags=3 instead of tags=1,2,3
+const customParamsSerializer = (params) => {
+  const parts = [];
+  
+  Object.keys(params).forEach(key => {
+    const value = params[key];
+    
+    // Handle array parameters - repeat the key for each value
+    if (Array.isArray(value)) {
+      value.forEach(item => {
+        parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(item)}`);
+      });
+    } else if (value !== null && value !== undefined && value !== '') {
+      parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+    }
+  });
+  
+  return parts.join('&');
+};
+
 // Create axios instance for PUBLIC requests (no JWT token)
 const publicClient = axios.create({
   baseURL: API_BASE_URL,
@@ -54,6 +75,7 @@ const publicClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  paramsSerializer: customParamsSerializer,
 });
 
 // Add request interceptor to handle token and suppress 404 logging for internal articles

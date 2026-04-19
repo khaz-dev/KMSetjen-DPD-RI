@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Container, Row, Col, Card, Button, Form, Spinner } from 'react-bootstrap';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,7 +10,7 @@ import { useLanguage } from '../hooks/useLanguage';
 import { 
   FiEye, FiHeart, FiFileText, FiBell, FiBook, 
   FiBarChart2, FiRss, FiFolder, FiTag, FiHome, FiUsers,
-  FiLayers, FiActivity, FiTrendingUp, FiExternalLink
+  FiLayers, FiActivity, FiTrendingUp, FiExternalLink, FiChevronLeft, FiChevronRight
 } from 'react-icons/fi';
 import ImageWithFallback from '../components/ImageWithFallback';
 import { getDefaultImages, getAssetPath } from '../utils/imageUtils';
@@ -32,6 +32,35 @@ const formatSafeDate = (dateValue, isIndonesian) => {
   } catch (error) {
     return 'N/A';
   }
+};
+
+/**
+ * Calculate perceived luminance of a color
+ * Returns a value between 0 (dark) and 1 (light)
+ */
+const getLuminance = (hexColor) => {
+  try {
+    // Remove # if present
+    const hex = hexColor.replace('#', '');
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    
+    // Calculate perceived luminance using standard formula
+    // https://www.w3.org/TR/AERT/#color-contrast
+    return (r * 299 + g * 587 + b * 114) / 1000 / 255;
+  } catch (e) {
+    return 0.5; // Default to middle gray on error
+  }
+};
+
+/**
+ * Determine if text should be light or dark based on background color
+ */
+const getContrastColor = (hexColor) => {
+  const luminance = getLuminance(hexColor);
+  // If background is light (luminance > 0.5), use dark text; otherwise use light text
+  return luminance > 0.5 ? '#000000' : '#FFFFFF';
 };
 
 /**
@@ -68,20 +97,20 @@ const getIconComponent = (iconName) => {
 /**
  * Render category icon with proper styling
  */
-const renderCategoryIcon = (iconName) => {
+const renderCategoryIcon = (iconName, size = 28) => {
   if (!iconName) {
     return null;
   }
   
   // Check if it's an emoji
   if (/\p{Emoji}/u.test(iconName)) {
-    return <span title={iconName} style={{ fontSize: '28px', display: 'flex', alignItems: 'center' }}>{iconName}</span>;
+    return <span title={iconName} style={{ fontSize: `${size}px`, display: 'flex', alignItems: 'center' }}>{iconName}</span>;
   }
   
   // Try to get the icon component
   const IconComponent = getIconComponent(iconName);
   if (IconComponent) {
-    return <IconComponent title={iconName} size={28} style={{ minWidth: '28px', minHeight: '28px' }} />;
+    return <IconComponent title={iconName} size={size} style={{ minWidth: `${size}px`, minHeight: `${size}px` }} />;
   }
   
   // Fallback: don't render anything if icon not found
@@ -103,13 +132,20 @@ const HomePage = () => {
   const [articlesLoading, setArticlesLoading] = useState(false);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentArticleIndex, setCurrentArticleIndex] = useState(0);
+  const [isCarouselHovering, setIsCarouselHovering] = useState(false);
+  const abortControllerRef = useRef(null);
+  const hoverTimeoutRef = useRef(null);
 
   useEffect(() => {
     // Wait for auth context to finish loading before fetching data
-    // This ensures any token refresh/validation completes first
     if (authLoading) {
       return;
     }
+
+    // Create abort controller for canceling requests on unmount
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
 
     const loadContent = async () => {
       try {
@@ -118,24 +154,113 @@ const HomePage = () => {
         
         // Load featured/popular articles
         const articlesRes = await publicAPI.getPopularArticles();
-        setFeaturedArticles(articlesRes.data.results?.slice(0, 6) || []);
-        setArticlesLoading(false);
+        
+        // Only update state if the request wasn't aborted
+        if (!abortController.signal.aborted) {
+          setFeaturedArticles(articlesRes.data.results?.slice(0, 6) || []);
+          setArticlesLoading(false);
+        }
         
         // Load categories
         const categoriesRes = await publicAPI.getCategories({ page_size: 6 });
-        setCategories(categoriesRes.data.results || []);
-        setCategoriesLoading(false);
+        
+        if (!abortController.signal.aborted) {
+          setCategories(categoriesRes.data.results || []);
+          setCategoriesLoading(false);
+        }
       } catch (error) {
-        console.error('Error loading homepage content:', error);
-        setArticlesLoading(false);
-        setCategoriesLoading(false);
+        // Don't log errors if the request was aborted (component unmounted)
+        if (!abortController.signal.aborted) {
+          console.error('Error loading homepage content:', error);
+          setArticlesLoading(false);
+          setCategoriesLoading(false);
+        }
       } finally {
-        setInitialLoading(false);
+        if (!abortController.signal.aborted) {
+          setInitialLoading(false);
+        }
       }
     };
 
     loadContent();
-  }, [user, authLoading]);
+
+    // Cleanup: abort any in-flight requests when component unmounts
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, [authLoading]);
+
+  // Auto-scroll carousel every 5 seconds (paused when hovering)
+  useEffect(() => {
+    if (featuredArticles.length === 0 || isCarouselHovering) return;
+
+    const autoScrollInterval = setInterval(() => {
+      setCurrentArticleIndex((prev) => {
+        return (prev + 1) % featuredArticles.length;
+      });
+    }, 5000); // Auto-scroll every 5 seconds
+
+    return () => clearInterval(autoScrollInterval);
+  }, [featuredArticles.length, isCarouselHovering]);
+
+  // Cleanup hover timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Button-controlled carousel navigation
+  const handlePrevArticle = () => {
+    setCurrentArticleIndex((prev) => {
+      if (featuredArticles.length === 0) return 0;
+      // Infinite loop: go to last item if at first
+      return prev === 0 ? featuredArticles.length - 1 : prev - 1;
+    });
+  };
+
+  const handleNextArticle = () => {
+    setCurrentArticleIndex((prev) => {
+      if (featuredArticles.length === 0) return 0;
+      // Infinite loop: go to first item if at last
+      return (prev + 1) % featuredArticles.length;
+    });
+  };
+
+  // Handle dot pagination click
+  const handleDotClick = (index) => {
+    setCurrentArticleIndex(index);
+  };
+
+  // Handle carousel mouse enter - pause auto-scroll
+  const handleCarouselMouseEnter = () => {
+    setIsCarouselHovering(true);
+    // Clear any pending timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+  };
+
+  // Handle carousel mouse leave - resume auto-scroll after 1 second of no movement
+  const handleCarouselMouseLeave = () => {
+    // Set a timeout to resume scrolling after 1 second
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsCarouselHovering(false);
+    }, 1000);
+  };
+
+  // Handle carousel mouse move - reset the hover timeout
+  const handleCarouselMouseMove = () => {
+    // If already hovering, reset the timeout for resuming
+    if (isCarouselHovering && hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = setTimeout(() => {
+        setIsCarouselHovering(false);
+      }, 1000);
+    }
+  };
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -181,6 +306,14 @@ const HomePage = () => {
                   </Button>
                 </Form.Group>
               </Form>
+              <div className="mt-4 d-flex flex-wrap gap-3 align-items-center">
+                <Link to="/guide" className="guide-button">
+                  📖 {t('userguide.title', 'User Guide')}
+                </Link>
+                <p className="text-white small mb-0 opacity-75">
+                  {t('home.learn_how_to_use', 'Learn how to use the system')}
+                </p>
+              </div>
             </Col>
             <Col md={6}>
               <div className="hero-image">
@@ -201,10 +334,16 @@ const HomePage = () => {
       </section>
 
       {/* Featured Articles */}
-      <section className="py-5">
+      <section className="py-5 articles-section-light">
         <Container>
-          <h2 className="mb-4">{t('home.popular_articles')}</h2>
-          <div className="articles-scroll-container" style={{ opacity: articlesLoading ? 0.6 : 1, transition: 'opacity 0.3s ease', position: 'relative' }}>
+          <h2>{t('home.popular_articles')}</h2>
+          <div 
+            className="articles-scroll-container" 
+            style={{ opacity: articlesLoading ? 0.6 : 1, transition: 'opacity 0.3s ease', position: 'relative' }}
+            onMouseEnter={handleCarouselMouseEnter}
+            onMouseLeave={handleCarouselMouseLeave}
+            onMouseMove={handleCarouselMouseMove}
+          >
             {articlesLoading && (
               <div className="section-loading">
                 <Spinner animation="border" size="sm" role="status">
@@ -213,61 +352,140 @@ const HomePage = () => {
               </div>
             )}
             {featuredArticles.length > 0 ? (
-              <div className="articles-scroll">
-                {featuredArticles.map((article) => (
-                  <div key={article.id} className="article-scroll-item">
-                    <Card className="article-card h-100 shadow-sm">
-                    <div className="article-image-container">
-                      <ImageWithFallback 
-                        src={article.image} 
-                        alt={isIndonesian ? article.title_id : article.title_en}
-                        className="article-image"
-                        type="article"
-                      />
-                      <div className="article-image-overlay"></div>
-                    </div>
-                    <Card.Body className="d-flex flex-column">
-                      <h5 className="card-title">{isIndonesian ? article.title_id : article.title_en}</h5>
-                      <p className="text-muted small mb-2">
-                        {isIndonesian ? (article.category?.name_id || article.category?.name_en) : (article.category?.name_en || article.category?.name_id)}
-                      </p>
-                      <p className="card-text article-summary flex-grow-1">{isIndonesian ? article.summary_id : article.summary_en}</p>
-                      
-                      {/* Article Meta Information */}
-                      <div className="article-meta mt-3 mb-3">
-                        <div className="meta-row mb-2">
-                          <small className="text-muted">
-                            {formatSafeDate(article.published_at || article.updated_at, isIndonesian)}
-                          </small>
-                          <span className="meta-separator">•</span>
-                          <small className="text-muted d-flex align-items-center gap-1">
-                            <FiEye size={14} />
-                            {article.view_count} {t('articles.views')}
-                          </small>
-                          <span className="meta-separator">•</span>
-                          <small className="text-muted d-flex align-items-center gap-1">
-                            <FiHeart size={14} />
-                            {article.like_count} {t('articles.likes')}
-                          </small>
+              <>
+                {/* Left Navigation Button */}
+                <button 
+                  className="carousel-nav-btn carousel-nav-left"
+                  onClick={handlePrevArticle}
+                  aria-label={t('buttons.previous') || 'Previous'}
+                  title={t('buttons.previous') || 'Previous'}
+                >
+                  <FiChevronLeft size={24} />
+                </button>
+
+                {/* Articles Carousel */}
+                <div className="articles-scroll">
+                  <div 
+                    className="articles-scroll-wrapper"
+                    style={{
+                      transform: `translateX(calc(-${0 * (360 + 32)}px))`,
+                      transition: 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                    }}
+                  >
+                  {(() => {
+                    // Show 3 items: previous, current, next (infinite loop)
+                    const total = featuredArticles.length;
+                    if (total === 0) return null;
+                    
+                    const itemsToShow = [];
+                    
+                    // Previous item (with infinite loop)
+                    const prevIndex = (currentArticleIndex - 1 + total) % total;
+                    itemsToShow.push({ article: featuredArticles[prevIndex], position: 'prev' });
+                    
+                    // Current item (center)
+                    itemsToShow.push({ article: featuredArticles[currentArticleIndex], position: 'current' });
+                    
+                    // Next item (with infinite loop)
+                    const nextIndex = (currentArticleIndex + 1) % total;
+                    itemsToShow.push({ article: featuredArticles[nextIndex], position: 'next' });
+                    
+                    return itemsToShow.map(({ article, position }) => (
+                      <div key={`${article.id}-${position}`} className={`article-scroll-item ${position}`}>
+                        <Card className="article-card h-100 shadow-sm">
+                        <div className="article-image-container">
+                          <ImageWithFallback 
+                            src={article.image} 
+                            alt={isIndonesian ? article.title_id : article.title_en}
+                            className="article-image"
+                            type="article"
+                          />
+                          {/* Category Badge on Image Overlay */}
+                          {article.category && (
+                            <div 
+                              className="article-category-badge"
+                              style={{
+                                backgroundColor: article.category.color || '#0d9488',
+                                color: getContrastColor(article.category.color || '#0d9488')
+                              }}
+                              title={isIndonesian ? (article.category?.name_id || article.category?.name_en) : (article.category?.name_en || article.category?.name_id)}
+                            >
+                              {article.category.icon && (
+                                <span className="badge-icon">
+                                  {renderCategoryIcon(article.category.icon, 16)}
+                                </span>
+                              )}
+                              <span className="badge-text">
+                                {isIndonesian ? (article.category?.name_id || article.category?.name_en) : (article.category?.name_en || article.category?.name_id)}
+                              </span>
+                            </div>
+                          )}
                         </div>
-                        {article.author_name && (
-                          <div className="meta-row">
-                            <small className="text-secondary">
-                              {t('articles.by', { name: article.author_name })}
-                            </small>
+                        <Card.Body className="d-flex flex-column">
+                          <h5 className="card-title" title={isIndonesian ? article.title_id : article.title_en}>{isIndonesian ? article.title_id : article.title_en}</h5>
+                          <p className="card-text article-summary flex-grow-1" title={isIndonesian ? article.summary_id : article.summary_en}>{isIndonesian ? article.summary_id : article.summary_en}</p>
+                          
+                          {/* Article Meta Information */}
+                          <div className="article-meta mt-3" style={{ transition: 'none' }}>
+                            <div className="meta-row mb-2">
+                              <small className="text-muted">
+                                {formatSafeDate(article.published_at || article.updated_at, isIndonesian)}
+                              </small>
+                              <span className="meta-separator">•</span>
+                              <small className="text-muted d-flex align-items-center gap-1">
+                                <FiEye size={14} />
+                                {article.view_count} {t('articles.views')}
+                              </small>
+                              <span className="meta-separator">•</span>
+                              <small className="text-muted d-flex align-items-center gap-1">
+                                <FiHeart size={14} />
+                                {article.like_count} {t('articles.likes')}
+                              </small>
+                            </div>
+                            {article.author_name && (
+                              <div className="meta-row">
+                                <small className="text-secondary">
+                                  {t('articles.by', { name: article.author_name })}
+                                </small>
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </Card.Body>
+                        <Card.Footer className="bg-transparent d-flex justify-content-end">
+                          <Link to={getArticleUrl(article)} className="btn btn-sm btn-primary">
+                            {t('buttons.read_more')}
+                          </Link>
+                        </Card.Footer>
+                      </Card>
                       </div>
-                    </Card.Body>
-                    <Card.Footer className="bg-transparent d-flex justify-content-end">
-                      <Link to={getArticleUrl(article)} className="btn btn-sm btn-primary">
-                        {t('buttons.read_more')}
-                      </Link>
-                    </Card.Footer>
-                  </Card>
+                    ));
+                  })()}
                   </div>
-                ))}
-              </div>
+                </div>
+
+                {/* Right Navigation Button */}
+                <button 
+                  className="carousel-nav-btn carousel-nav-right"
+                  onClick={handleNextArticle}
+                  aria-label={t('buttons.next') || 'Next'}
+                  title={t('buttons.next') || 'Next'}
+                >
+                  <FiChevronRight size={24} />
+                </button>
+
+                {/* Dot Pagination */}
+                <div className="carousel-dots">
+                  {featuredArticles.map((_, index) => (
+                    <button
+                      key={`dot-${index}`}
+                      className={`carousel-dot ${index === currentArticleIndex ? 'active' : ''}`}
+                      onClick={() => handleDotClick(index)}
+                      aria-label={`Go to article ${index + 1}`}
+                      aria-current={index === currentArticleIndex ? 'true' : 'false'}
+                    />
+                  ))}
+                </div>
+              </>
             ) : (
               <div className="text-center py-5">
                 <p className="text-muted">{t('home.no_articles')}</p>
@@ -280,7 +498,7 @@ const HomePage = () => {
       {/* Categories */}
       <section className="py-5 categories-section-light">
         <Container>
-          <h2 className="mb-4">{t('home.browse_categories')}</h2>
+          <h2>{t('home.browse_categories')}</h2>
           <Row style={{ opacity: categoriesLoading ? 0.6 : 1, transition: 'opacity 0.3s ease', position: 'relative' }}>
             {categoriesLoading && (
               <div className="section-loading">
@@ -291,7 +509,7 @@ const HomePage = () => {
             )}
             {categories.length > 0 ? (
               categories.map((category) => (
-                <Col md={4} key={category.id} className="mb-3">
+                <Col md={4} key={category.id} className="mb-4">
                   <Link
                     to={`/knowledges?category=${category.id}`}
                     className="category-link"
@@ -302,7 +520,10 @@ const HomePage = () => {
                     }}>
                       <div className="category-image-container" style={{ position: 'relative' }}>
                         {category.icon && (
-                          <div className="category-icon-container">
+                          <div className="category-icon-badge" style={{
+                            backgroundColor: category.color || '#14b8a6',
+                            color: 'white'
+                          }}>
                             {renderCategoryIcon(category.icon)}
                           </div>
                         )}
@@ -313,12 +534,26 @@ const HomePage = () => {
                           type="category"
                         />
                         <div className="category-image-overlay"></div>
+                        
+                        {/* Article Count Badge */}
+                        <div className="category-article-badge">
+                          <span className="badge-number">{category.article_count || 0}</span>
+                          <span className="badge-label">{t('home.articles_count')}</span>
+                        </div>
                       </div>
-                      <Card.Body>
-                        <h5>{isIndonesian ? category.name_id : category.name_en}</h5>
-                        <p className="text-muted mb-0">
-                          {category.article_count || 0} {t('home.articles_count')}
-                        </p>
+                      
+                      <Card.Body className="d-flex flex-column">
+                        <h5 className="category-title">{isIndonesian ? category.name_id : category.name_en}</h5>
+                        
+                        {/* Category Description */}
+                        {(isIndonesian ? category.description_id : category.description_en) && (
+                          <p className="category-description text-muted flex-grow-1 small">
+                            {(() => {
+                              const desc = isIndonesian ? category.description_id : category.description_en;
+                              return desc.length > 100 ? desc.substring(0, 100) + '...' : desc;
+                            })()}
+                          </p>
+                        )}
                       </Card.Body>
                     </Card>
                   </Link>
@@ -341,7 +576,7 @@ const HomePage = () => {
           <Row>
             {/* Perpustakaan DPD RI */}
             <Col md={4} className="mb-3">
-              <Card className="repository-card h-100">
+              <Card className="repository-card h-100" style={{ borderLeft: '4px solid #f39c12' }}>
                 <div className="repository-image-container">
                   <ImageWithFallback 
                     src={getAssetPath('perpustakaan.jpg')} 
@@ -350,6 +585,9 @@ const HomePage = () => {
                     type="repository"
                   />
                   <div className="repository-image-overlay"></div>
+                  <div className="repository-icon-badge" style={{ backgroundColor: '#f39c12' }}>
+                    <FiBook size={20} color="white" />
+                  </div>
                   <div className="repository-status-badge">
                     <span className="badge bg-warning text-dark">
                       {t('home.perpustakaan_status')}
@@ -370,7 +608,7 @@ const HomePage = () => {
 
             {/* JDIH DPD RI */}
             <Col md={4} className="mb-3">
-              <Card className="repository-card h-100">
+              <Card className="repository-card h-100" style={{ borderLeft: '4px solid #3498db' }}>
                 <div className="repository-image-container">
                   <ImageWithFallback 
                     src={getAssetPath('jdih.png')} 
@@ -379,6 +617,9 @@ const HomePage = () => {
                     type="repository"
                   />
                   <div className="repository-image-overlay"></div>
+                  <div className="repository-icon-badge" style={{ backgroundColor: '#3498db' }}>
+                    <FiFileText size={20} color="white" />
+                  </div>
                 </div>
                 <Card.Body className="d-flex flex-column">
                   <h5 className="mb-2">{t('home.jdih_title')}</h5>
@@ -400,7 +641,7 @@ const HomePage = () => {
 
             {/* PPID DPD RI */}
             <Col md={4} className="mb-3">
-              <Card className="repository-card h-100">
+              <Card className="repository-card h-100" style={{ borderLeft: '4px solid #e74c3c' }}>
                 <div className="repository-image-container">
                   <ImageWithFallback 
                     src={getAssetPath('ppid.jpg')} 
@@ -409,6 +650,9 @@ const HomePage = () => {
                     type="repository"
                   />
                   <div className="repository-image-overlay"></div>
+                  <div className="repository-icon-badge" style={{ backgroundColor: '#e74c3c' }}>
+                    <FiUsers size={20} color="white" />
+                  </div>
                 </div>
                 <Card.Body className="d-flex flex-column">
                   <h5 className="mb-2">{t('home.ppid_title')}</h5>

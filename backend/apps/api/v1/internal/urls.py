@@ -23,6 +23,10 @@ File endpoints:
 - PATCH /api/v1/internal/articles/{article_id}/files/{id}/ - Update file
 - DELETE /api/v1/internal/articles/{article_id}/files/{id}/ - Delete file
 - POST /api/v1/internal/articles/{article_id}/files/reorder/ - Reorder files
+- GET /api/v1/internal/articles/{article_id}/files/{id}/pptx_info/ - Get presentation info (PPTX only)
+- GET /api/v1/internal/articles/{article_id}/files/{id}/thumbnails_all/ - Get all slide thumbnails
+- GET /api/v1/internal/articles/{article_id}/files/{id}/thumbnail/ - Get single slide thumbnail
+- POST /api/v1/internal/articles/{article_id}/files/{id}/convert_pdf/ - Convert presentation to PDF
 """
 from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
@@ -53,5 +57,26 @@ urlpatterns = [
         r'^articles/(?P<article_id>\d+)/files/reorder/$',
         FileViewSet.as_view({'post': 'reorder'}),
         name='article-files-reorder'
+    ),
+    # PPTX-specific action endpoints
+    re_path(
+        r'^articles/(?P<article_id>\d+)/files/(?P<pk>\d+)/pptx_info/$',
+        FileViewSet.as_view({'get': 'pptx_info'}),
+        name='article-file-pptx-info'
+    ),
+    re_path(
+        r'^articles/(?P<article_id>\d+)/files/(?P<pk>\d+)/thumbnails_all/$',
+        FileViewSet.as_view({'get': 'thumbnails_all'}),
+        name='article-file-thumbnails-all'
+    ),
+    re_path(
+        r'^articles/(?P<article_id>\d+)/files/(?P<pk>\d+)/thumbnail/$',
+        FileViewSet.as_view({'get': 'thumbnail'}),
+        name='article-file-thumbnail'
+    ),
+    re_path(
+        r'^articles/(?P<article_id>\d+)/files/(?P<pk>\d+)/convert_pdf/$',
+        FileViewSet.as_view({'post': 'convert_pdf'}),
+        name='article-file-convert-pdf'
     ),
 ]

@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Card, Button, Modal } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Modal, Form, InputGroup } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
-import { internalAPI, getArticleUrl } from '../services/api';
+import { internalAPI, publicAPI, getArticleUrl } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../hooks/useLanguage';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
 import ImageWithFallback from '../components/ImageWithFallback';
 import './DashboardPage.css';
-import { FiFileText, FiCheckCircle, FiAlertCircle, FiClock, FiX, FiEye, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { FiFileText, FiCheckCircle, FiAlertCircle, FiClock, FiX, FiEye, FiEdit2, FiTrash2, FiSearch, FiRotateCcw, FiBookOpen } from 'react-icons/fi';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale, enUS } from 'date-fns/locale';
 
@@ -42,12 +42,23 @@ const DashboardPage = () => {
   const { isIndonesian } = useLanguage();
   const [dashboard, setDashboard] = useState(null);
   const [articles, setArticles] = useState([]);
+  const [allCategories, setAllCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [articlesLoading, setArticlesLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteArticleId, setDeleteArticleId] = useState(null);
   const [deleteArticleTitle, setDeleteArticleTitle] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  
+  // Filter and search states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [sortBy, setSortBy] = useState('-created_at');
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchDashboard = async () => {
@@ -60,14 +71,49 @@ const DashboardPage = () => {
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  const fetchCategories = async () => {
+    try {
+      const response = await publicAPI.getCategories({ page_size: 100 });
+      const cats = response.data.results || response.data || [];
+      setAllCategories(cats);
+    } catch (err) {
+      console.error('Failed to fetch categories:', err);
+    }
+  };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchArticles = async () => {
     try {
-      const response = await internalAPI.getMyArticles({ page_size: 5 });
+      setArticlesLoading(true);
+      const params = {
+        page: currentPage,
+        page_size: pageSize,
+        ordering: sortBy,
+      };
+
+      // Add search parameter
+      if (searchQuery.trim()) {
+        params.search = searchQuery.trim();
+      }
+
+      // Add category filter
+      if (selectedCategory) {
+        params.category = selectedCategory;
+      }
+
+      // Add status filter
+      if (selectedStatus) {
+        params.status = selectedStatus;
+      }
+
+      const response = await internalAPI.getMyArticles(params);
       const articlesData = response.data.results || [];
       setArticles(articlesData);
+      setTotalCount(response.data.count || 0);
     } catch (err) {
-      // Silently handle error
+      console.error('Failed to fetch articles:', err);
     } finally {
+      setArticlesLoading(false);
       setLoading(false);
     }
   };
@@ -110,9 +156,22 @@ const DashboardPage = () => {
     }
 
     fetchDashboard();
-    fetchArticles();
+    fetchCategories();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading]);
+
+  // Re-fetch articles when filters/search/sort change
+  useEffect(() => {
+    if (!authLoading) {
+      fetchArticles();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, selectedCategory, selectedStatus, sortBy, pageSize, currentPage, authLoading]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory, selectedStatus, sortBy, pageSize]);
 
   if (loading) return <LoadingSpinner message={t('messages.loading')} />;
 
@@ -198,7 +257,7 @@ const DashboardPage = () => {
         </div>
 
         {dashboard && (
-          <Row className="mb-4 stats-row">
+          <Row className="stats-row">
             <Col md={3} className="mb-3">
               <Card className="stat-card">
                 <Card.Body className="text-center">
@@ -218,7 +277,7 @@ const DashboardPage = () => {
               </Card>
             </Col>
             <Col md={3} className="mb-3">
-              <Card className="stat-card">
+              <Card className={`stat-card ${dashboard.rejected_articles > 0 ? 'stat-card-highlight' : ''}`}>
                 <Card.Body className="text-center">
                   <FiX className="stat-icon text-danger" />
                   <div className="stat-value">{dashboard.rejected_articles || 0}</div>
@@ -251,9 +310,134 @@ const DashboardPage = () => {
                   {t('buttons.create')}
                 </Button>
               </Card.Header>
+              
+              {/* Filter and Search Controls */}
+              <div className="dashboard-filters">
+                <Row className="g-3">
+                  {/* Search Input */}
+                  <Col md={4} sm={12}>
+                    <InputGroup>
+                      <InputGroup.Text className="search-icon">
+                        <FiSearch />
+                      </InputGroup.Text>
+                      <Form.Control
+                        placeholder={t('search.placeholder') || 'Cari pengetahuan...'}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="search-input"
+                      />
+                    </InputGroup>
+                  </Col>
+
+                  {/* Category Filter */}
+                  <Col md={3} sm={6}>
+                    <Form.Select
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      className="filter-select"
+                    >
+                      <option value="">{t('search.all_categories') || 'Semua Kategori'}</option>
+                      {allCategories.map(cat => (
+                        <option key={cat.id} value={cat.id}>
+                          {isIndonesian ? (cat.name_id || cat.name_en) : (cat.name_en || cat.name_id)}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  </Col>
+
+                  {/* Status Filter */}
+                  <Col md={3} sm={6}>
+                    <Form.Select
+                      value={selectedStatus}
+                      onChange={(e) => setSelectedStatus(e.target.value)}
+                      className="filter-select"
+                    >
+                      <option value="">{t('search.all_status')}</option>
+                      <option value="draft">{t('dashboard.status_draft')}</option>
+                      <option value="review">{t('dashboard.status_review')}</option>
+                      <option value="approved">{t('dashboard.status_approved')}</option>
+                      <option value="published">{t('dashboard.status_published')}</option>
+                      <option value="rejected">{t('dashboard.status_rejected')}</option>
+                      <option value="scheduled">{t('dashboard.status_scheduled')}</option>
+                      <option value="archived">{t('dashboard.status_archived')}</option>
+                    </Form.Select>
+                  </Col>
+
+                  {/* Sort By */}
+                  <Col md={2} sm={6}>
+                    <Form.Select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="filter-select"
+                    >
+                      <option value="-created_at">{t('search.newest')}</option>
+                      <option value="created_at">{t('search.oldest')}</option>
+                      <option value="title_id">{t('search.title')}</option>
+                      <option value="-updated_at">{t('search.recently_updated')}</option>
+                    </Form.Select>
+                  </Col>
+
+                  {/* Items Per Page Selector */}
+                  <Col md={2} sm={6}>
+                    <div>
+                      <label className="form-label fw-bold mb-2">{t('common.items_per_page') || 'Items Per Page'}</label>
+                      <Form.Select
+                        value={pageSize}
+                        onChange={(e) => setPageSize(Number(e.target.value))}
+                        className="filter-select"
+                      >
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={25}>25</option>
+                        <option value={50}>50</option>
+                      </Form.Select>
+                    </div>
+                  </Col>
+
+                  {/* Results Counter */}
+                  <Col md={2} sm={6}>
+                    <div>
+                      <label className="form-label fw-bold mb-2">{t('common.results') || 'Results'}</label>
+                      <div className="form-control-plaintext pt-2">
+                        <small className="text-muted">
+                          {totalCount === 0 ? '0' : (currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, totalCount)} {t('pagination.of') || 'of'} <strong>{totalCount}</strong>
+                        </small>
+                      </div>
+                    </div>
+                  </Col>
+
+                  {/* Reset Filters Button */}
+                  <Col xs={12} sm="auto" className="d-flex align-items-end">
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSelectedCategory('');
+                        setSelectedStatus('');
+                        setSortBy('-created_at');
+                        setCurrentPage(1);
+                        setPageSize(10);
+                      }}
+                      className="reset-filters-btn"
+                    >
+                      <FiRotateCcw size={16} className="me-1" />
+                      {t('search.reset')}
+                    </Button>
+                  </Col>
+                </Row>
+              </div>
+
               <Card.Body>
-                {articles.length === 0 ? (
-                  <p className="text-muted">{t('dashboard.no_data')}</p>
+                {articlesLoading ? (
+                  <div className="text-center py-4">
+                    <LoadingSpinner message={t('messages.loading')} />
+                  </div>
+                ) : articles.length === 0 ? (
+                  <div className="empty-state">
+                    <FiFileText size={48} className="empty-icon" />
+                    <p className="empty-message">{t('dashboard.no_data') || 'Tidak ada pengetahuan'}</p>
+                  </div>
                 ) : (
                   <div className="articles-list">
                     {articles.map((article) => (
@@ -332,8 +516,8 @@ const DashboardPage = () => {
                               title={t('dashboard.view_draft')}
                               className="btn-view-draft d-flex align-items-center gap-1"
                             >
-                              <FiEye size={16} />
-                              <span>{t('dashboard.view_draft')}</span>
+                              <FiFileText size={16} />
+                              <span className="btn-draft-text">{t('dashboard.view_draft')}</span>
                             </Button>
                             
                             {/* Lihat Dipublikasikan Button - Show published version if it exists */}
@@ -345,8 +529,8 @@ const DashboardPage = () => {
                                 title={t('dashboard.view_published')}
                                 className="btn-view-published d-flex align-items-center gap-1"
                               >
-                                <FiEye size={16} />
-                                <span>{t('dashboard.view_published')}</span>
+                                <FiCheckCircle size={16} />
+                                <span className="btn-published-text">{t('dashboard.view_published')}</span>
                               </Button>
                             )}
                             
@@ -373,6 +557,94 @@ const DashboardPage = () => {
                   </div>
                 )}
               </Card.Body>
+
+              {/* Pagination Controls */}
+              {totalCount > 0 && (
+                <div className="pagination-container">
+                  <div className="pagination-controls-wrapper">
+                    {/* Page Info */}
+                    <div className="pagination-info-text">
+                      <span className="pagination-label">
+                        {t('pagination.page', { current: currentPage, total: Math.ceil(totalCount / pageSize) })}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Page Navigation Buttons */}
+                  <div className="pagination-buttons-wrapper">
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                      className="pagination-btn pagination-first"
+                      title={t('pagination.first')}
+                    >
+                      ⏮
+                    </Button>
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="pagination-btn pagination-prev"
+                      title={t('pagination.previous')}
+                    >
+                      ◄
+                    </Button>
+
+                    {/* Page Number Buttons */}
+                    <div className="pagination-numbers">
+                      {Array.from(
+                        { length: Math.ceil(totalCount / pageSize) },
+                        (_, i) => i + 1
+                      )
+                        .filter((page) => {
+                          // Show first 2, current ±1, last 2
+                          if (page <= 2 || page >= Math.ceil(totalCount / pageSize) - 1) return true;
+                          if (page >= currentPage - 1 && page <= currentPage + 1) return true;
+                          return false;
+                        })
+                        .map((page, idx, arr) => (
+                          <React.Fragment key={page}>
+                            {idx > 0 && arr[idx - 1] !== page - 1 && (
+                              <span className="pagination-ellipsis">...</span>
+                            )}
+                            <Button
+                              variant={page === currentPage ? 'primary' : 'outline-secondary'}
+                              size="sm"
+                              onClick={() => setCurrentPage(page)}
+                              className="pagination-btn pagination-number"
+                            >
+                              {page}
+                            </Button>
+                          </React.Fragment>
+                        ))}
+                    </div>
+
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={currentPage === Math.ceil(totalCount / pageSize)}
+                      className="pagination-btn pagination-next"
+                      title={t('pagination.next')}
+                    >
+                      ►
+                    </Button>
+                    <Button
+                      variant="outline-secondary"
+                      size="sm"
+                      onClick={() => setCurrentPage(Math.ceil(totalCount / pageSize))}
+                      disabled={currentPage === Math.ceil(totalCount / pageSize)}
+                      className="pagination-btn pagination-last"
+                      title={t('pagination.last')}
+                    >
+                      ⏭
+                    </Button>
+                  </div>
+                </div>
+              )}
             </Card>
           </Col>
         </Row>

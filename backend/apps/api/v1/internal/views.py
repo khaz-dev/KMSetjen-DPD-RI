@@ -19,6 +19,7 @@ from .serializers import (
     DashboardArticleSerializer, FileSerializer
 )
 from .filters import InternalArticleFilter
+from .pptx_endpoints import PptxConversionMixin
 
 
 
@@ -839,7 +840,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
                 logger.error(f'Failed to copy file {file_obj.original_filename} for article {draft_article.id}: {str(e)}')
 
 
-class FileViewSet(viewsets.ModelViewSet):
+class FileViewSet(PptxConversionMixin, viewsets.ModelViewSet):
     """
     Internal API for file attachments (authenticated users).
     
@@ -849,6 +850,12 @@ class FileViewSet(viewsets.ModelViewSet):
     - PATCH /api/v1/internal/articles/{article_id}/files/{id}/ - Update file
     - DELETE /api/v1/internal/articles/{article_id}/files/{id}/ - Delete file
     - POST /api/v1/internal/articles/{article_id}/files/reorder/ - Reorder files
+    
+    PPTX Endpoints (via PptxConversionMixin):
+    - GET .../files/{id}/thumbnail/ - Get slide thumbnail
+    - GET .../files/{id}/thumbnails_all/ - Get all slide thumbnails
+    - GET .../files/{id}/pptx_info/ - Get presentation info
+    - POST .../files/{id}/convert_pdf/ - Convert to PDF
     """
     permission_classes = [IsAuthenticated]
     queryset = File.objects.all()

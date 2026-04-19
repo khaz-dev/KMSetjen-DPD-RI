@@ -113,6 +113,8 @@ function UserManagementPage({ onLogout }) {
   const [itemsPerPage, setItemsPerPage] = useState(10); // Page size selector
   const [filterStatus, setFilterStatus] = useState('all'); // Filter: all, active, inactive
   const [filterStaff, setFilterStaff] = useState('all'); // Filter: all, staff, regular
+  const [sortBy, setSortBy] = useState('username'); // Sort field
+  const [sortOrder, setSortOrder] = useState('asc'); // Sort order: 'asc' or 'desc'
 
   // Confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -147,6 +149,11 @@ function UserManagementPage({ onLogout }) {
         params.is_staff = false;
       }
 
+      // Add sorting
+      if (sortBy) {
+        params.ordering = sortOrder === 'desc' ? `-${sortBy}` : sortBy;
+      }
+
       const response = await adminAPI.getUsers(params);
       const totalItems = response.data.count || 0;
       const calculatedTotalPages = Math.ceil(totalItems / itemsPerPage);
@@ -165,7 +172,7 @@ function UserManagementPage({ onLogout }) {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, searchQuery, t, pageSize, itemsPerPage, filterStatus, filterStaff]);
+  }, [currentPage, searchQuery, t, pageSize, itemsPerPage, filterStatus, filterStaff, sortBy, sortOrder]);
 
   // Reset to page 1 when page size changes
   useEffect(() => {
@@ -177,6 +184,23 @@ function UserManagementPage({ onLogout }) {
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
+
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      // Toggle sort order if clicking same field
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new sort field with ascending order
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+    setCurrentPage(1);
+  };
+
+  const getSortIcon = (field) => {
+    if (sortBy !== field) return ' ↕';
+    return sortOrder === 'asc' ? ' ↑' : ' ↓';
+  };
 
   const handleOpenModal = (user = null) => {
     if (user) {
@@ -750,12 +774,24 @@ function UserManagementPage({ onLogout }) {
                     <thead className="table-header">
                       <tr>
                         <th style={{width:'50px',textAlign:'center'}}>{'No.'}</th>
-                        <th>{t('table.name')}</th>
-                        <th>{t('users.nip') || 'NIP'}</th>
-                        <th>{t('users.email')}</th>
-                        <th>{t('users.is_active')}</th>
-                        <th>{t('users.is_staff')}</th>
-                        <th>{t('users.date_joined')}</th>
+                        <th style={{cursor:'pointer'}} onClick={() => handleSort('first_name')}>
+                          {t('table.name')}{getSortIcon('first_name')}
+                        </th>
+                        <th style={{cursor:'pointer'}} onClick={() => handleSort('nip')}>
+                          {t('users.nip') || 'NIP'}{getSortIcon('nip')}
+                        </th>
+                        <th style={{cursor:'pointer'}} onClick={() => handleSort('email')}>
+                          {t('users.email')}{getSortIcon('email')}
+                        </th>
+                        <th style={{cursor:'pointer'}} onClick={() => handleSort('is_active')}>
+                          {t('users.is_active')}{getSortIcon('is_active')}
+                        </th>
+                        <th style={{cursor:'pointer'}} onClick={() => handleSort('is_staff')}>
+                          {t('users.is_staff')}{getSortIcon('is_staff')}
+                        </th>
+                        <th style={{cursor:'pointer'}} onClick={() => handleSort('date_joined')}>
+                          {t('users.date_joined')}{getSortIcon('date_joined')}
+                        </th>
                         <th>{t('common.actions')}</th>
                       </tr>
                     </thead>

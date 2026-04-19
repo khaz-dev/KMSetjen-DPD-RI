@@ -24,6 +24,46 @@ function ArticleModerationPage({ onLogout }) {
   const [action, setAction] = useState('approve'); // 'approve' or 'reject'
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [sortBy, setSortBy] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
+  
+  // Status counts state
+  const [statusCounts, setStatusCounts] = useState({
+    PENDING: 0,
+    APPROVED: 0,
+    REJECTED: 0,
+    PUBLISHED: 0
+  });
+
+  // Fetch counts for all statuses
+  const loadStatusCounts = useCallback(async () => {
+    try {
+      const statusMap = {
+        'PENDING': 'review',
+        'APPROVED': 'approved',
+        'REJECTED': 'rejected',
+        'PUBLISHED': 'published'
+      };
+      
+      const counts = {};
+      for (const [key, backendStatus] of Object.entries(statusMap)) {
+        try {
+          const response = await axios.get(
+            `${import.meta.env.VITE_API_URL}/api/v1/internal/articles/?status=${backendStatus}&page=1&page_size=1`,
+            { headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` } }
+          );
+          counts[key] = response.data.count || 0;
+        } catch (err) {
+          console.debug(`Failed to load ${key} count:`, err.message);
+          counts[key] = 0;
+        }
+      }
+      setStatusCounts(counts);
+      console.log('[ArticleModeration] Status counts loaded:', counts);
+    } catch (err) {
+      console.error('Failed to load status counts:', err);
+    }
+  }, []);
 
   const loadArticles = useCallback(async () => {
     try {
@@ -39,10 +79,12 @@ function ArticleModerationPage({ onLogout }) {
       };
       const backendStatus = statusMap[filterStatus] || filterStatus;
       
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/v1/internal/articles/?status=${backendStatus}&page=${currentPage}`,
-        { headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` } }
-      );
+      let url = `${import.meta.env.VITE_API_URL}/api/v1/internal/articles/?status=${backendStatus}&page=${currentPage}`;
+      if (sortBy) {
+        const orderingValue = sortOrder === 'desc' ? `-${sortBy}` : sortBy;
+        url += `&ordering=${orderingValue}`;
+      }
+      const response = await axios.get(url, { headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` } });
       setArticles(response.data.results || []);
       setTotalPages(Math.ceil((response.data.count || 0) / 20));
     } catch (err) {
@@ -50,7 +92,12 @@ function ArticleModerationPage({ onLogout }) {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, filterStatus, t]);
+  }, [currentPage, filterStatus, t, sortBy, sortOrder]);
+
+  // Load status counts on mount
+  useEffect(() => {
+    loadStatusCounts();
+  }, [loadStatusCounts]);
 
   useEffect(() => {
     loadArticles();
@@ -77,6 +124,7 @@ function ArticleModerationPage({ onLogout }) {
         { headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` } }
       );
       loadArticles();
+      loadStatusCounts();
       setError(null);
     } catch (err) {
       setError(err.response?.data?.error || err.response?.data?.detail || 'Failed to publish article');
@@ -103,6 +151,7 @@ function ArticleModerationPage({ onLogout }) {
         { headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` } }
       );
       loadArticles();
+      loadStatusCounts();
       setShowModal(false);
     } catch (err) {
       setError(err.response?.data?.error || err.response?.data?.detail || 'An error occurred');
@@ -129,9 +178,24 @@ function ArticleModerationPage({ onLogout }) {
     return statusMap[status] || status;
   };
 
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+    setCurrentPage(1);
+  };
+
+  const getSortIcon = (field) => {
+    if (sortBy !== field) return ' ↕';
+    return sortOrder === 'asc' ? ' ↑' : ' ↓';
+  };
+
   return (
     <div className={`admin-wrapper ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
-      <AdminSidebar onLogout={onLogout} />
+      <AdminSidebar onLogout={onLogout} pendingReviewCount={statusCounts.PENDING} />
       <div className="admin-content">
         <Container>
           <div className="admin-header">
@@ -149,7 +213,7 @@ function ArticleModerationPage({ onLogout }) {
             onSelect={(k) => { setFilterStatus(k); setCurrentPage(1); }} 
             className="mb-4"
           >
-            <Tab eventKey="PENDING" title={t('moderation.pending_review')}>
+            <Tab eventKey="PENDING" title={<span>{t('moderation.pending_review')} <Badge bg="warning">{statusCounts.PENDING}</Badge></span>}>
               {loading ? (
                 <div className="loading-container">
                   <Spinner animation="border" role="status" />
@@ -162,17 +226,19 @@ function ArticleModerationPage({ onLogout }) {
                       <Table hover className="mb-0">
                         <thead className="table-header">
                           <tr>
-                            <th>{t('moderation.table_title')}</th>
-                            <th>{t('moderation.table_author')}</th>
-                            <th>{t('moderation.table_category')}</th>
-                            <th>{t('moderation.table_status')}</th>
-                            <th>{t('moderation.table_date')}</th>
+                            <th style={{ width: '50px', textAlign: 'center', fontWeight: '600' }}>No.</th>
+                            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('title_id')} title="Click to sort">{t('moderation.table_title')}{getSortIcon('title_id')}</th>
+                            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('author__username')} title="Click to sort">{t('moderation.table_author')}{getSortIcon('author__username')}</th>
+                            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('category__name_id')} title="Click to sort">{t('moderation.table_category')}{getSortIcon('category__name_id')}</th>
+                            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('status')} title="Click to sort">{t('moderation.table_status')}{getSortIcon('status')}</th>
+                            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('created_at')} title="Click to sort">{t('moderation.table_date')}{getSortIcon('created_at')}</th>
                             <th>{t('moderation.table_actions')}</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {articles.map((article) => (
+                          {articles.map((article, index) => (
                             <tr key={article.id}>
+                              <td style={{ textAlign: 'center', fontWeight: '600', color: '#999', width: '50px' }}>{(currentPage - 1) * 20 + index + 1}</td>
                               <td><strong>{(isIndonesian ? article.title_id : article.title_en).substring(0, 40)}...</strong></td>
                               <td>{article.author?.username || t('moderation.empty_value')}</td>
                               <td>{(isIndonesian ? article.category?.name_id : article.category?.name_en) || t('moderation.empty_value')}</td>
@@ -219,7 +285,7 @@ function ArticleModerationPage({ onLogout }) {
                 </Card>
               )}
             </Tab>
-            <Tab eventKey="APPROVED" title={t('moderation.approved')}>
+            <Tab eventKey="APPROVED" title={<span>{t('moderation.approved')} <Badge bg="success">{statusCounts.APPROVED}</Badge></span>}>
               {loading ? (
                 <div className="loading-container">
                   <Spinner animation="border" role="status" />
@@ -232,17 +298,19 @@ function ArticleModerationPage({ onLogout }) {
                       <Table hover className="mb-0">
                         <thead className="table-header">
                           <tr>
-                            <th>{t('moderation.table_title')}</th>
-                            <th>{t('moderation.table_author')}</th>
-                            <th>{t('moderation.table_category')}</th>
-                            <th>{t('moderation.table_status')}</th>
-                            <th>{t('moderation.table_date')}</th>
+                            <th style={{ width: '50px', textAlign: 'center', fontWeight: '600' }}>No.</th>
+                            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('title_id')} title="Click to sort">{t('moderation.table_title')}{getSortIcon('title_id')}</th>
+                            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('author__username')} title="Click to sort">{t('moderation.table_author')}{getSortIcon('author__username')}</th>
+                            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('category__name_id')} title="Click to sort">{t('moderation.table_category')}{getSortIcon('category__name_id')}</th>
+                            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('status')} title="Click to sort">{t('moderation.table_status')}{getSortIcon('status')}</th>
+                            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('created_at')} title="Click to sort">{t('moderation.table_date')}{getSortIcon('created_at')}</th>
                             <th>{t('moderation.table_actions')}</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {articles.map((article) => (
+                          {articles.map((article, index) => (
                             <tr key={article.id}>
+                              <td style={{ textAlign: 'center', fontWeight: '600', color: '#999', width: '50px' }}>{(currentPage - 1) * 20 + index + 1}</td>
                               <td><strong>{(isIndonesian ? article.title_id : article.title_en).substring(0, 40)}...</strong></td>
                               <td>{article.author?.username || t('moderation.empty_value')}</td>
                               <td>{(isIndonesian ? article.category?.name_id : article.category?.name_en) || t('moderation.empty_value')}</td>
@@ -284,7 +352,7 @@ function ArticleModerationPage({ onLogout }) {
                 </Card>
               )}
             </Tab>
-            <Tab eventKey="REJECTED" title={t('moderation.rejected')}>
+            <Tab eventKey="REJECTED" title={<span>{t('moderation.rejected')} <Badge bg="danger">{statusCounts.REJECTED}</Badge></span>}>
               {loading ? (
                 <div className="loading-container">
                   <Spinner animation="border" role="status" />
@@ -297,17 +365,19 @@ function ArticleModerationPage({ onLogout }) {
                       <Table hover className="mb-0">
                         <thead className="table-header">
                           <tr>
-                            <th>{t('moderation.table_title')}</th>
-                            <th>{t('moderation.table_author')}</th>
-                            <th>{t('moderation.table_category')}</th>
-                            <th>{t('moderation.table_status')}</th>
-                            <th>{t('moderation.table_date')}</th>
+                            <th style={{ width: '50px', textAlign: 'center', fontWeight: '600' }}>No.</th>
+                            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('title_id')} title="Click to sort">{t('moderation.table_title')}{getSortIcon('title_id')}</th>
+                            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('author__username')} title="Click to sort">{t('moderation.table_author')}{getSortIcon('author__username')}</th>
+                            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('category__name_id')} title="Click to sort">{t('moderation.table_category')}{getSortIcon('category__name_id')}</th>
+                            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('status')} title="Click to sort">{t('moderation.table_status')}{getSortIcon('status')}</th>
+                            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('created_at')} title="Click to sort">{t('moderation.table_date')}{getSortIcon('created_at')}</th>
                             <th>{t('moderation.table_actions')}</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {articles.map((article) => (
+                          {articles.map((article, index) => (
                             <tr key={article.id}>
+                              <td style={{ textAlign: 'center', fontWeight: '600', color: '#999', width: '50px' }}>{(currentPage - 1) * 20 + index + 1}</td>
                               <td><strong>{(isIndonesian ? article.title_id : article.title_en).substring(0, 40)}...</strong></td>
                               <td>{article.author?.username || t('moderation.empty_value')}</td>
                               <td>{(isIndonesian ? article.category?.name_id : article.category?.name_en) || t('moderation.empty_value')}</td>
@@ -348,7 +418,7 @@ function ArticleModerationPage({ onLogout }) {
                 </Card>
               )}
             </Tab>
-            <Tab eventKey="PUBLISHED" title={t('moderation.published')}>
+            <Tab eventKey="PUBLISHED" title={<span>{t('moderation.published')} <Badge bg="primary">{statusCounts.PUBLISHED}</Badge></span>}>
               {loading ? (
                 <div className="loading-container">
                   <Spinner animation="border" role="status" />
@@ -361,17 +431,19 @@ function ArticleModerationPage({ onLogout }) {
                       <Table hover className="mb-0">
                         <thead className="table-header">
                           <tr>
-                            <th>{t('moderation.table_title')}</th>
-                            <th>{t('moderation.table_author')}</th>
-                            <th>{t('moderation.table_category')}</th>
-                            <th>{t('moderation.table_status')}</th>
-                            <th>{t('moderation.table_date')}</th>
+                            <th style={{ width: '50px', textAlign: 'center', fontWeight: '600' }}>No.</th>
+                            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('title_id')} title="Click to sort">{t('moderation.table_title')}{getSortIcon('title_id')}</th>
+                            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('author__username')} title="Click to sort">{t('moderation.table_author')}{getSortIcon('author__username')}</th>
+                            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('category__name_id')} title="Click to sort">{t('moderation.table_category')}{getSortIcon('category__name_id')}</th>
+                            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('status')} title="Click to sort">{t('moderation.table_status')}{getSortIcon('status')}</th>
+                            <th style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort('created_at')} title="Click to sort">{t('moderation.table_date')}{getSortIcon('created_at')}</th>
                             <th>{t('moderation.table_actions')}</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {articles.map((article) => (
+                          {articles.map((article, index) => (
                             <tr key={article.id}>
+                              <td style={{ textAlign: 'center', fontWeight: '600', color: '#999', width: '50px' }}>{(currentPage - 1) * 20 + index + 1}</td>
                               <td><strong>{(isIndonesian ? article.title_id : article.title_en).substring(0, 40)}...</strong></td>
                               <td>{article.author?.username || t('moderation.empty_value')}</td>
                               <td>{(isIndonesian ? article.category?.name_id : article.category?.name_en) || t('moderation.empty_value')}</td>

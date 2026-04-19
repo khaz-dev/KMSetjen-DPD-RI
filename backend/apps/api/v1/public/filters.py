@@ -24,8 +24,15 @@ class ArticleFilter(django_filters.FilterSet):
     tags = django_filters.ModelMultipleChoiceFilter(
         queryset=Tag.objects.filter(is_active=True),
         field_name='tags',
-        conjoined=False,  # OR condition (any tag match)
+        conjoined=False,  # OR condition (any tag match) - default
         label='Filter by tags'
+    )
+    
+    # Tag filter logic mode (OR or AND)
+    tags_logic = django_filters.ChoiceFilter(
+        choices=[('or', 'OR - Any tag match'), ('and', 'AND - All tags match')],
+        method='filter_tags_logic',
+        label='Tag filter logic'
     )
     
     # Published date range
@@ -72,7 +79,7 @@ class ArticleFilter(django_filters.FilterSet):
     
     class Meta:
         model = Article
-        fields = ['search', 'category', 'tags', 'published_after', 'published_before', 'language', 'access_level']
+        fields = ['search', 'category', 'tags', 'tags_logic', 'published_after', 'published_before', 'language', 'access_level']
     
     def filter_search(self, queryset, name, value):
         """Full-text search across title and content."""
@@ -87,6 +94,13 @@ class ArticleFilter(django_filters.FilterSet):
             Q(summary_id__icontains=value) |
             Q(summary_en__icontains=value)
         )
+    
+    def filter_tags_logic(self, queryset, name, value):
+        """
+        This is a placeholder filter - actual tag filtering is handled by the
+        tags field with dynamic conjoined value based on tags_logic parameter.
+        """
+        return queryset
 
 
 class CategoryFilter(django_filters.FilterSet):

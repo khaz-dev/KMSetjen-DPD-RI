@@ -100,6 +100,23 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
             return ArticleDetailSerializer
         return ArticleListSerializer
     
+    def filter_queryset(self, queryset):
+        """Override filter_queryset to handle AND/OR logic for tags."""
+        # Apply default filtering
+        queryset = super().filter_queryset(queryset)
+        
+        # Handle tag filtering with AND/OR logic
+        # Use getlist() to get all tag values (django-filter compatibility)
+        tag_ids = self.request.query_params.getlist('tags')
+        tags_logic = self.request.query_params.get('tags_logic', 'or')
+        
+        if tag_ids and tags_logic == 'and':
+            # AND logic - articles must have ALL selected tags
+            for tag_id in tag_ids:
+                queryset = queryset.filter(tags__id=tag_id)
+        
+        return queryset
+    
     def get_object(self):
         """
         Override to support lookup by SLUG or ID.

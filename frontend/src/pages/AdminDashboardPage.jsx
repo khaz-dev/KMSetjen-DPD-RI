@@ -55,7 +55,7 @@ function AdminDashboardPage({ onLogout }) {
       setError(null);
 
       const response = await adminAPI.getStatistics();
-      setStats(response);
+      setStats(response.data);
     } catch (err) {
       console.error('Error loading statistics:', err);
       setError(

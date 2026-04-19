@@ -3,11 +3,12 @@ import { Form, InputGroup, Button } from 'react-bootstrap';
 import { FiSearch } from 'react-icons/fi';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../hooks/useLanguage';
+import TagFilter from './TagFilter';
 import './SearchFilter.css';
 
 /**
  * SearchFilter Component
- * Displays search input with filters (category, sort, access level, etc.)
+ * Displays search input with filters (category, tags, sort, access level, etc.)
  * 
  * Note: Access level filter is hidden for PUBLIC role users since they
  * can only see 'public' access level articles anyway
@@ -20,9 +21,18 @@ const SearchFilter = ({
   categories = [],
   selectedAccessLevel = '',
   onAccessLevelChange,
+  selectedTags = [],
+  onTagsChange,
+  tags = [],
+  tagsLogic = 'or',
+  onTagsLogicChange = () => {},
   sortBy = 'published_at',
   onSortChange,
   onReset,
+  itemsPerPage = 10,
+  onItemsPerPageChange,
+  totalCount = 0,
+  currentPage = 1,
   user = null,
 }) => {
   const { t } = useTranslation();
@@ -41,7 +51,7 @@ const SearchFilter = ({
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [localSearchQuery, searchQuery, onSearchChange]);
+  }, [localSearchQuery, searchQuery]);
 
   // Update local state when external searchQuery changes (from URL)
   useEffect(() => {
@@ -54,7 +64,8 @@ const SearchFilter = ({
 
   return (
     <div className="search-filter-container">
-      <div className="search-input-wrapper">
+      {/* Top Section: Search Input on Left, Results/Items Per Page on Right */}
+      <div className="search-header-wrapper">
         <InputGroup className="search-input">
           <InputGroup.Text className="search-icon">
             <FiSearch />
@@ -66,13 +77,40 @@ const SearchFilter = ({
             className="search-field"
           />
         </InputGroup>
+
+        {/* Items Per Page and Results Display - Positioned on Right */}
+        <div className="pagination-info-container">
+          <div className="items-per-page-wrapper">
+            <label className="form-label fw-bold mb-2">{t('common.items_per_page') || 'Items Per Page'}</label>
+            <Form.Select
+              value={itemsPerPage}
+              onChange={(e) => onItemsPerPageChange?.(Number(e.target.value))}
+              className="filter-select pagination-select"
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </Form.Select>
+          </div>
+
+          <div className="results-display-wrapper">
+            <label className="form-label fw-bold mb-2">{t('common.results') || 'Results'}</label>
+            <div className="form-control-plaintext">
+              <small>
+                <strong>{Math.min((currentPage - 1) * itemsPerPage + 1, totalCount)}</strong> - <strong>{Math.min(currentPage * itemsPerPage, totalCount)}</strong> {t('pagination.of') || 'of'} <strong>{totalCount}</strong>
+              </small>
+            </div>
+          </div>
+        </div>
       </div>
 
+      {/* Main Filter Controls Row */}
       <div className="filter-controls">
         <Form.Select
           value={selectedCategory}
           onChange={(e) => onCategoryChange(e.target.value)}
           className="filter-select"
+          title={t('search.filter_category') || 'Filter by category'}
         >
           <option value="">{t('search.all_categories')}</option>
           {categories.map((cat) => (
@@ -87,11 +125,11 @@ const SearchFilter = ({
             value={selectedAccessLevel}
             onChange={(e) => onAccessLevelChange(e.target.value)}
             className="filter-select"
+            title={t('search.filter_access_level') || 'Filter by access level'}
           >
             <option value="">{t('search.all_access_levels')}</option>
             <option value="public">{t('search.access_public')}</option>
             <option value="internal">{t('search.access_internal')}</option>
-            <option value="role_based">{t('search.access_role_based')}</option>
           </Form.Select>
         )}
 
@@ -99,6 +137,7 @@ const SearchFilter = ({
           value={sortBy}
           onChange={(e) => onSortChange(e.target.value)}
           className="filter-select"
+          title={t('search.sort_by') || 'Sort by'}
         >
           <option value="date">{t('search.newest')}</option>
           <option value="date-asc">{t('search.oldest')}</option>
@@ -111,9 +150,24 @@ const SearchFilter = ({
           size="sm"
           onClick={onReset}
           className="reset-btn"
+          title={t('search.reset_filters') || 'Reset all filters'}
         >
           {t('search.reset')}
         </Button>
+      </div>
+
+      {/* Tag Filter - Moved Below Filter Controls for Better UX */}
+      <div className="tag-filter-wrapper">
+        <label className="tag-filter-label">
+          {t('search.filter_tags') || 'Filter by Tags'}
+        </label>
+        <TagFilter
+          selectedTags={selectedTags}
+          onTagsChange={onTagsChange}
+          tags={tags}
+          tagsLogic={tagsLogic}
+          onTagsLogicChange={onTagsLogicChange}
+        />
       </div>
     </div>
   );

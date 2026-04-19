@@ -167,7 +167,7 @@ class Tag(models.Model):
     Flexible tagging system for articles.
     """
     name_id = models.CharField(max_length=100, help_text='Tag name (ID)')
-    name_en = models.CharField(max_length=100, help_text='Tag name (EN)')
+    name_en = models.CharField(max_length=100, blank=True, help_text='Tag name (EN)')
     slug = models.SlugField(
         unique=True,
         max_length=100,

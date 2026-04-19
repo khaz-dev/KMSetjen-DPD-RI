@@ -198,8 +198,8 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '1000/hour',  # Increased for development
-        'user': '10000/hour',  # Increased for development
+        'anon': '5000/hour',  # 5000 requests/hour for anonymous users (~1.4 req/sec average)
+        'user': '10000/hour',  # 10000 requests/hour for authenticated users
     },
     'EXCEPTION_HANDLER': 'shared.exceptions.custom_exception_handler',
 }

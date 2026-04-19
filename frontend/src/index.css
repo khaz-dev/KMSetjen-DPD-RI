@@ -50,8 +50,7 @@ button {
 a {
   text-decoration: none;
   color: var(--primary-color);
+  transition: color 0.2s ease-in-out;
 }
 
-a:hover {
-  text-decoration: underline;
-}
+/* Removed global a:hover underline - components control their own hover behavior */

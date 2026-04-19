@@ -22,14 +22,17 @@
 }
 
 .page-subtitle {
-  font-size: var(--font-size-base);
-  color: #6c757d;
+  font-size: var(--font-size-lg);
+  color: #495057;
   margin-bottom: var(--spacing-8);
   line-height: var(--line-height-relaxed);
+  font-weight: var(--font-weight-light);
+  letter-spacing: 0.3px;
+  max-width: 90%;
 }
 
 [data-theme="dark"] .page-subtitle {
-  color: #b0b0b0;
+  color: #d0d0d0;
 }
 
 .empty-state {
@@ -95,7 +98,7 @@
   position: relative;
   display: flex;
   align-items: flex-end;
-  padding: var(--spacing-4);
+  padding: 0.5rem var(--spacing-4);
   overflow: hidden;
 }
 
@@ -110,28 +113,48 @@
 }
 
 .article-category-badge {
-  position: relative;
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
   z-index: 10;
-  background-color: rgba(255, 255, 255, 0.9);
-  color: #14b8a6;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.25rem;
-  font-size: 0.8rem;
+  padding: 6px 10px;
+  border-radius: 16px;
+  font-size: 0.75rem;
   font-weight: 600;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 0.5rem;
-  max-width: 100%;
+  gap: 6px;
+  max-width: 85%;
   min-width: 0;
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
-[data-theme="dark"] .article-category-badge {
-  background-color: rgba(40, 40, 40, 0.9);
-  color: #5eead4;
+.article-category-badge .badge-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 16px;
+  min-height: 16px;
+}
+
+.article-category-badge .badge-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+
+.article-card:hover .article-category-badge {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .article-card-content {
@@ -149,6 +172,12 @@
 }
 
 .article-title a {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: #14b8a6;
   text-decoration: none;
   transition: color 0.2s ease-in-out;
@@ -172,6 +201,12 @@
   line-height: 1.6;
   margin-bottom: 1rem;
   flex-grow: 1;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 [data-theme="dark"] .article-excerpt {
@@ -211,7 +246,7 @@
   background-color: #14b8a6;
   color: white;
   border: none;
-  padding: 0.6rem 1.2rem;
+  padding: 0.5rem 0.75rem;
   border-radius: 0.375rem;
   cursor: pointer;
   font-weight: 500;

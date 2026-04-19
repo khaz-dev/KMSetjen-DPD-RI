@@ -38,6 +38,8 @@ function RoleManagementPage({ onLogout }) {
     description: '',
     permissions: [],
   });
+  const [sortBy, setSortBy] = useState('code'); // Sort field
+  const [sortOrder, setSortOrder] = useState('asc'); // Sort order: 'asc' or 'desc'
 
   // Memoized permission lookup object for efficient ID-to-codename mapping
   // MUST be after state declarations to avoid TDZ (Temporal Dead Zone) error
@@ -108,9 +110,16 @@ function RoleManagementPage({ onLogout }) {
       setLoading(true);
       setError(null);
 
-      const response = await adminAPI.getRoles({
+      const params = {
         page: currentPage,
-      });
+      };
+
+      // Add sorting
+      if (sortBy) {
+        params.ordering = sortOrder === 'desc' ? `-${sortBy}` : sortBy;
+      }
+
+      const response = await adminAPI.getRoles(params);
 
       const rolesList = response.data.results || [];
       
@@ -128,7 +137,7 @@ function RoleManagementPage({ onLogout }) {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, t]);
+  }, [currentPage, t, sortBy, sortOrder]);
 
   const loadPermissions = useCallback(async () => {
     try {
@@ -163,6 +172,23 @@ function RoleManagementPage({ onLogout }) {
     console.log('[RoleManagement] Component mounted - loading permissions');
     loadPermissions();
   }, [loadPermissions]);
+
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      // Toggle sort order if clicking same field
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new sort field with ascending order
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+    setCurrentPage(1);
+  };
+
+  const getSortIcon = (field) => {
+    if (sortBy !== field) return ' ↕';
+    return sortOrder === 'asc' ? ' ↑' : ' ↓';
+  };
 
   // Load roles when currentPage changes
   useEffect(() => {
@@ -454,9 +480,15 @@ function RoleManagementPage({ onLogout }) {
                   <Table hover className="mb-0">
                     <thead className="table-header">
                       <tr>
-                        <th>{t('roles.code')}</th>
-                        <th>{t('roles.name')}</th>
-                        <th>{t('roles.description')}</th>
+                        <th style={{cursor:'pointer'}} onClick={() => handleSort('code')}>
+                          {t('roles.code')}{getSortIcon('code')}
+                        </th>
+                        <th style={{cursor:'pointer'}} onClick={() => handleSort('name')}>
+                          {t('roles.name')}{getSortIcon('name')}
+                        </th>
+                        <th style={{cursor:'pointer'}} onClick={() => handleSort('description')}>
+                          {t('roles.description')}{getSortIcon('description')}
+                        </th>
                         <th>{t('roles.permissions')}</th>
                         <th>{t('sidebar.users')}</th>
                         <th>{t('common.actions')}</th>

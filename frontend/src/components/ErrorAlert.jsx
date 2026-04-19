@@ -13,9 +13,18 @@ const ErrorAlert = ({ message, type = 'danger', onDismiss = null }) => {
   if (!message) return null;
 
   // If message starts with 't:', treat it as a translation key
-  const displayMessage = message.startsWith('t:') 
-    ? t(message.substring(2))
-    : message;
+  // Handle non-string messages (error objects, etc.)
+  let displayMessage = message;
+  if (typeof message === 'string') {
+    displayMessage = message.startsWith('t:') 
+      ? t(message.substring(2))
+      : message;
+  } else if (message && typeof message === 'object') {
+    // Handle error objects - try to extract readable message
+    displayMessage = message.message || message.detail || JSON.stringify(message);
+  } else {
+    displayMessage = String(message);
+  }
 
   // Determine the prefix label based on alert type
   const getAlertPrefix = () => {

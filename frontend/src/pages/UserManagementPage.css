@@ -679,8 +679,8 @@
 }
 
 .form-control-plaintext {
-  color: #2c3e50;
-  padding: 0.6rem 1rem;
+  color: #2c3e50 !important;
+  padding: 0.1rem 0.5rem !important;
 }
 
 .admin-wrapper.dark-mode .form-control-plaintext,
