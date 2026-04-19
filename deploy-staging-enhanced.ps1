@@ -359,24 +359,21 @@ function Sync-MediaFiles {
     if ($DryRun) {
         Write-DryRun "Would sync $mediaCount media files to remote server"
     } else {
-        Write-Info "Syncing $mediaCount media files..."
+        Write-Info "Syncing $mediaCount media files with SCP..."
         
-        # Use rsync via SSH for efficient file sync
-        $rsyncCmd = "rsync -avz -e 'ssh -i `\"$SSHKeyPath`\"' `"$LocalMediaPath`" `"$ServerUser@$($ServerIP):$ServerProjectPath/`""
-        
-        $result = Invoke-Expression $rsyncCmd 2>&1
-        
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warning-Custom "Media sync had issues (may be normal if rsync not available on Windows)"
-            # Try SCP instead as fallback
-            Write-Info "Retrying with SCP..."
+        # Use SCP to sync media files (rsync may not be available on Windows)
+        Get-ChildItem -Path $LocalMediaPath -Recurse -File | ForEach-Object {
+            $relativePath = $_.FullName.Substring($LocalMediaPath.Length + 1)
+            $remoteDir = Split-Path -Parent "$ServerProjectPath/media/$relativePath"
             
-            Get-ChildItem -Path $LocalMediaPath -Recurse -File | ForEach-Object {
-                $relativePath = $_.FullName.Substring($LocalMediaPath.Length + 1)
-                $remoteDir = Split-Path -Parent "$ServerProjectPath/media/$relativePath"
-                
-                & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "mkdir -p '$remoteDir'" 2>&1 | Out-Null
-                & scp -i "$SSHKeyPath" "$($_.FullName)" "$ServerUser@$($ServerIP)`:$ServerProjectPath/media/$relativePath" 2>&1 | Out-Null
+            # Create remote directory if needed
+            & ssh -i "$SSHKeyPath" "$ServerUser@$ServerIP" "mkdir -p '$remoteDir'" 2>&1 | Out-Null
+            
+            # Transfer file via SCP
+            $result = & scp -i "$SSHKeyPath" "$($_.FullName)" "$ServerUser@$($ServerIP)`:$ServerProjectPath/media/$relativePath" 2>&1
+            
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning-Custom "Failed to sync: $($_.Name) - $result"
             }
         }
         
