@@ -119,12 +119,26 @@ class CategoryDetailSerializer(serializers.ModelSerializer):
 class FileSerializer(serializers.ModelSerializer):
     """Serializer for File attachments."""
     file_size_display = serializers.SerializerMethodField()
+    file = serializers.SerializerMethodField()  # Override to get absolute URL with correct protocol
     
     class Meta:
         model = File
         fields = ['id', 'original_filename', 'file', 'file_size', 'file_size_display',
                   'mime_type', 'description_id', 'description_en', 'order_index', 'created_at']
         read_only_fields = ['id', 'file_size', 'created_at']
+    
+    def get_file(self, obj):
+        """Get absolute URL for file with correct protocol (HTTPS on staging/production)."""
+        if not obj.file:
+            return None
+        
+        request = self.context.get('request')
+        if request:
+            # Use request to build absolute URL with correct protocol (HTTPS on staging/prod)
+            return request.build_absolute_uri(obj.file.url)
+        
+        # Fallback to relative path if no request context
+        return obj.file.url if obj.file else None
     
     def get_file_size_display(self, obj):
         """Format file size in human-readable format."""
