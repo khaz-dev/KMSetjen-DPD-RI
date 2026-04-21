@@ -532,6 +532,7 @@ class FileSerializer(serializers.ModelSerializer):
     Handles file uploads and metadata management.
     """
     file_size_display = serializers.SerializerMethodField()
+    file = serializers.SerializerMethodField()  # Override to get absolute URL with correct protocol
     
     class Meta:
         model = File
@@ -541,6 +542,19 @@ class FileSerializer(serializers.ModelSerializer):
             'uploaded_by', 'order_index', 'created_at'
         ]
         read_only_fields = ['id', 'article', 'file_size', 'mime_type', 'uploaded_by', 'created_at']
+    
+    def get_file(self, obj):
+        """Get absolute URL for file with correct protocol (HTTPS on staging/production)."""
+        if not obj.file:
+            return None
+        
+        request = self.context.get('request')
+        if request:
+            # Use request to build absolute URL with correct protocol (HTTPS on staging/prod)
+            return request.build_absolute_uri(obj.file.url)
+        
+        # Fallback to relative path if no request context
+        return obj.file.url if obj.file else None
     
     def get_file_size_display(self, obj):
         """Format file size to human-readable format."""
