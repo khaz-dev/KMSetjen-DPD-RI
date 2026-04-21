@@ -13,6 +13,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from apps.content.models import Article, Category, Tag, File
 from apps.audit.services import AuditService
 from shared.permissions.base import IsAuthorOrEditor, IsEditor
+from shared.permissions.pptx import IsAuthenticatedOrPublicArticleFile
 from .serializers import (
     InternalArticleCreateSerializer, InternalArticleUpdateSerializer,
     InternalArticleDetailSerializer, SubmitReviewSerializer,
@@ -860,6 +861,18 @@ class FileViewSet(PptxConversionMixin, viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     queryset = File.objects.all()
     serializer_class = FileSerializer
+
+    def get_permissions(self):
+        """
+        Return appropriate permissions based on the action.
+        PPTX preview endpoints allow unauthenticated access to public article files.
+        """
+        # PPTX endpoints allow unauthenticated access for public articles
+        if self.action in ['pptx_info', 'thumbnails_all', 'thumbnail', 'convert_pdf']:
+            return [IsAuthenticatedOrPublicArticleFile()]
+        
+        # All other endpoints require authentication
+        return [IsAuthenticated()]
 
     def get_queryset(self):
         """Return files for the article from URL."""

@@ -14,7 +14,6 @@ import logging
 
 from apps.content.models import File as FileModel
 from shared.utils.pptx_processor import PptxProcessor, CacheManager, HAS_PPTX
-from shared.permissions.pptx import IsAuthenticatedOrPublicArticleFile
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,7 @@ class PptxConversionMixin:
     Mixin to add PPTX conversion endpoints to FileViewSet
     """
     
-    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticatedOrPublicArticleFile])
+    @action(detail=True, methods=['get'])
     def thumbnail(self, request, article_id=None, pk=None):
         """
         Get thumbnail for PPTX file
@@ -90,7 +89,7 @@ class PptxConversionMixin:
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
-    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticatedOrPublicArticleFile])
+    @action(detail=True, methods=['get'])
     def thumbnails_all(self, request, article_id=None, pk=None):
         """
         Get thumbnails for all slides
@@ -178,7 +177,7 @@ class PptxConversionMixin:
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
-    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticatedOrPublicArticleFile])
+    @action(detail=True, methods=['get'])
     def pptx_info(self, request, article_id=None, pk=None):
         """
         Get PPTX file information
