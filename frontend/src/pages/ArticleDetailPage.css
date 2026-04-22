@@ -329,14 +329,28 @@
 /* File Preview Styles */
 .file-preview-container {
   margin-top: 1rem;
-  padding: 1rem;
+  padding: 0;
   background-color: #f8f9fa;
   border: 1px solid #dee2e6;
   border-radius: 4px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: flex-start;
   align-items: center;
   min-height: 200px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Padding for images and other non-presentation content */
+.file-preview-container .file-preview-image {
+  padding: 1rem;
+}
+
+/* No padding for presentations */
+.file-preview-container .pptx-gallery-container {
+  padding: 0;
+  width: 100%;
 }
 
 .file-preview-image {
@@ -1557,15 +1571,37 @@ table tbody td {
 /* ===== FILE PREVIEW CONTAINER ===== */
 .file-preview-container {
   margin-top: 1.5rem;
-  padding: 2rem;
+  padding: 0;
   background: linear-gradient(135deg, #f8f9fa 0%, #f0f1f3 100%);
   border: 2px solid #e9ecef;
   border-radius: 10px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: flex-start;
   align-items: center;
   min-height: 250px;
   animation: fadeIn 0.3s ease-out;
+  width: 100%;
+  box-sizing: border-box;
+  gap: 0;
+}
+
+/* Padding for file preview images and other non-presentation content */
+.file-preview-container .file-preview-image,
+.file-preview-container .file-preview-video,
+.file-preview-container .file-preview-audio {
+  padding: 2rem;
+}
+
+/* No padding for presentations - gallery manages its own layout */
+.file-preview-container .pptx-gallery-container {
+  padding: 0;
+  width: 100%;
+  flex-grow: 1;
+}
+
+.file-preview-container .file-preview-pdf {
+  padding: 2rem;
 }
 
 .file-preview-image {
@@ -1686,8 +1722,19 @@ table tbody td {
   }
 
   .file-preview-container {
-    padding: 1rem;
+    padding: 0;
     min-height: 200px;
+  }
+
+  .file-preview-container .file-preview-image,
+  .file-preview-container .file-preview-video,
+  .file-preview-container .file-preview-audio {
+    padding: 1rem;
+  }
+
+  .file-preview-container .pptx-gallery-container {
+    width: 100%;
+    padding: 0;
   }
 }
 

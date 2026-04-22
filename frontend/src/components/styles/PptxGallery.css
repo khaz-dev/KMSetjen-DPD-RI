@@ -11,6 +11,7 @@
   box-shadow: none;
   min-height: auto;
   height: auto;
+  flex-grow: 1;
 }
 
 /* Main Gallery Section */
