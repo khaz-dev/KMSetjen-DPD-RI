@@ -11,7 +11,6 @@ import { id as idLocale, enUS } from 'date-fns/locale';
 import { FiShare2, FiPrinter, FiCheck, FiFacebook, FiTwitter, FiMail, FiEye, FiHeart } from 'react-icons/fi';
 import ImageWithFallback from '../components/ImageWithFallback';
 import PptxViewer from '../components/PptxViewer';
-import PptxGallery from '../components/PptxGallery';
 import './ArticleDetailPage.css';
 
 /**
@@ -653,21 +652,11 @@ const ArticleDetailPage = () => {
                                 </audio>
                               )}
                               {previewType === 'presentation' && (
-                                article?.id && file?.id ? (
-                                  <PptxGallery 
-                                    fileUrl={file.file}
-                                    fileId={file.id}
-                                    articleId={article.id}
-                                    fileName={file.original_filename}
-                                    onError={(err) => console.error('[FilePreview] PptxGallery error:', err)}
-                                  />
-                                ) : (
-                                  <PptxViewer 
-                                    fileUrl={file.file}
-                                    fileName={file.original_filename}
-                                    onError={(err) => console.error('[FilePreview] PptxViewer error:', err)}
-                                  />
-                                )
+                                <PptxViewer 
+                                  fileUrl={file.file}
+                                  fileName={file.original_filename}
+                                  onError={(err) => console.error('[FilePreview] PptxViewer error:', err)}
+                                />
                               )}
                             </div>
                           )}
@@ -971,6 +960,15 @@ const ArticleDetailPage = () => {
                   >
                     Your browser does not support the audio tag.
                   </audio>
+                </div>
+              )}
+              {(fullscreenFile.mime_type?.includes('presentation') || fullscreenFile.mime_type?.includes('powerpoint')) && (
+                <div className="fullscreen-pptx-container">
+                  <PptxViewer
+                    fileUrl={fullscreenFile.file}
+                    fileName={fullscreenFile.original_filename}
+                    onError={(err) => console.error('[FullscreenPreview] PptxViewer error:', err)}
+                  />
                 </div>
               )}
             </div>

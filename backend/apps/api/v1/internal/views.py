@@ -13,14 +13,12 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from apps.content.models import Article, Category, Tag, File
 from apps.audit.services import AuditService
 from shared.permissions.base import IsAuthorOrEditor, IsEditor
-from shared.permissions.pptx import IsAuthenticatedOrPublicArticleFile
 from .serializers import (
     InternalArticleCreateSerializer, InternalArticleUpdateSerializer,
     InternalArticleDetailSerializer, SubmitReviewSerializer,
     DashboardArticleSerializer, FileSerializer
 )
 from .filters import InternalArticleFilter
-from .pptx_endpoints import PptxConversionMixin
 
 
 
@@ -841,7 +839,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
                 logger.error(f'Failed to copy file {file_obj.original_filename} for article {draft_article.id}: {str(e)}')
 
 
-class FileViewSet(PptxConversionMixin, viewsets.ModelViewSet):
+class FileViewSet(viewsets.ModelViewSet):
     """
     Internal API for file attachments (authenticated users).
     
@@ -851,28 +849,10 @@ class FileViewSet(PptxConversionMixin, viewsets.ModelViewSet):
     - PATCH /api/v1/internal/articles/{article_id}/files/{id}/ - Update file
     - DELETE /api/v1/internal/articles/{article_id}/files/{id}/ - Delete file
     - POST /api/v1/internal/articles/{article_id}/files/reorder/ - Reorder files
-    
-    PPTX Endpoints (via PptxConversionMixin):
-    - GET .../files/{id}/thumbnail/ - Get slide thumbnail
-    - GET .../files/{id}/thumbnails_all/ - Get all slide thumbnails
-    - GET .../files/{id}/pptx_info/ - Get presentation info
-    - POST .../files/{id}/convert_pdf/ - Convert to PDF
     """
     permission_classes = [IsAuthenticated]
     queryset = File.objects.all()
     serializer_class = FileSerializer
-
-    def get_permissions(self):
-        """
-        Return appropriate permissions based on the action.
-        PPTX preview endpoints allow unauthenticated access to public article files.
-        """
-        # PPTX endpoints allow unauthenticated access for public articles
-        if self.action in ['pptx_info', 'thumbnails_all', 'thumbnail', 'convert_pdf']:
-            return [IsAuthenticatedOrPublicArticleFile()]
-        
-        # All other endpoints require authentication
-        return [IsAuthenticated()]
 
     def get_queryset(self):
         """Return files for the article from URL."""

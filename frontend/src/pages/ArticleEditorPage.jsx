@@ -11,7 +11,6 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
 import EditorTagFilter from '../components/EditorTagFilter';
 import PptxViewer from '../components/PptxViewer';
-import PptxGallery from '../components/PptxGallery';
 import { publicAPI, internalAPI } from '../services/api';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTheme } from '../hooks/useTheme';
@@ -1526,21 +1525,11 @@ const ArticleEditor = () => {
                             </audio>
                           )}
                           {previewType === 'presentation' && previewUrl && (
-                            formData?.id && file?.id ? (
-                              <PptxGallery 
-                                fileUrl={previewUrl}
-                                fileId={file.id}
-                                articleId={formData.id}
-                                fileName={file.original_filename}
-                                onError={(err) => console.error('[FilePreview] PptxGallery error:', err)}
-                              />
-                            ) : (
-                              <PptxViewer 
-                                fileUrl={previewUrl}
-                                fileName={file.original_filename}
-                                onError={(err) => console.error('[FilePreview] PptxViewer error:', err)}
-                              />
-                            )
+                            <PptxViewer 
+                              fileUrl={previewUrl}
+                              fileName={file.original_filename}
+                              onError={(err) => console.error('[FilePreview] PptxViewer error:', err)}
+                            />
                           )}
                         </div>
                       )}
