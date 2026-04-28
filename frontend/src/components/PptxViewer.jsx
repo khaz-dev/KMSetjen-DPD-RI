@@ -80,7 +80,7 @@ const PptxViewer = ({ fileUrl, fileName = 'Presentation', onError }) => {
           setIframeError(true);
           onError?.(e);
         }}
-        sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox"
+        sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms"
       />
     </div>
   );
