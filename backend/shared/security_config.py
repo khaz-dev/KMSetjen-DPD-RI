@@ -69,12 +69,13 @@ X_FRAME_OPTIONS = 'DENY'
 # Content Security Policy
 SECURE_CONTENT_SECURITY_POLICY = {
     'default-src': ("'self'",),
-    'script-src': ("'self'", "'unsafe-inline'", "cdn.jsdelivr.net"),
-    'style-src': ("'self'", "'unsafe-inline'", "cdn.jsdelivr.net"),
-    'img-src': ("'self'", "data:", "https:"),
-    'font-src': ("'self'", "cdn.jsdelivr.net"),
-    'connect-src': ("'self'", "localhost:8002", "localhost:5175"),
+    'script-src': ("'self'", "'unsafe-inline'", "'unsafe-eval'", "cdn.jsdelivr.net", "https://officeapps.live.com", "https://*.officeapps.live.com"),
+    'style-src': ("'self'", "'unsafe-inline'", "cdn.jsdelivr.net", "https://officeapps.live.com", "https://*.officeapps.live.com"),
+    'img-src': ("'self'", "data:", "https:", "https://officeapps.live.com", "https://*.officeapps.live.com"),
+    'font-src': ("'self'", "cdn.jsdelivr.net", "https://officeapps.live.com", "https://*.officeapps.live.com"),
+    'connect-src': ("'self'", "localhost:8002", "localhost:5175", "https://officeapps.live.com", "https://*.officeapps.live.com", "https://wopi.online.office.net", "https://*.wopi.online.office.net"),
     'frame-ancestors': ("'none'",),
+    'frame-src': ("'self'", "https://officeapps.live.com", "https://*.officeapps.live.com"),
 }
 
 # ============================================================================

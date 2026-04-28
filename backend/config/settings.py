@@ -418,12 +418,13 @@ SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=not DEBUG)  # Read
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  # Trust X-Forwarded-Proto header from Nginx
 SECURE_CONTENT_SECURITY_POLICY = {
     'default-src': ("'self'",),
-    'script-src': ("'self'", "'unsafe-inline'"),
-    'style-src': ("'self'", "'unsafe-inline'"),
-    'img-src': ("'self'", 'data:', 'https:'),
-    'font-src': ("'self'",),
-    'connect-src': ("'self'",),
+    'script-src': ("'self'", "'unsafe-inline'", "'unsafe-eval'", "https://officeapps.live.com", "https://*.officeapps.live.com"),
+    'style-src': ("'self'", "'unsafe-inline'", "https://officeapps.live.com", "https://*.officeapps.live.com"),
+    'img-src': ("'self'", 'data:', 'https:', "https://officeapps.live.com", "https://*.officeapps.live.com"),
+    'font-src': ("'self'", "https://officeapps.live.com", "https://*.officeapps.live.com"),
+    'connect-src': ("'self'", "https://officeapps.live.com", "https://*.officeapps.live.com", "https://wopi.online.office.net", "https://*.wopi.online.office.net"),
     'frame-ancestors': ("'none'",),
+    'frame-src': ("'self'", "https://officeapps.live.com", "https://*.officeapps.live.com"),
 }
 SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 SECURE_BROWSER_XSS_FILTER = True
