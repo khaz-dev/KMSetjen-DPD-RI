@@ -142,6 +142,15 @@ class TestArticlePublicAPI:
         """Test latest articles endpoint."""
         response = api_client.get('/api/v1/public/articles/latest/')
         assert response.status_code == 200
+
+    @pytest.mark.django_db
+    def test_popular_articles(self, api_client, published_article):
+        """Test popular articles endpoint."""
+        published_article.view_count = 25
+        published_article.save()
+
+        response = api_client.get('/api/v1/public/articles/popular/')
+        assert response.status_code == 200
     
     @pytest.mark.django_db
     def test_record_view(self, api_client, published_article):

@@ -31,6 +31,11 @@ router.register(r'tags', TagViewSet, basename='tag')
 
 # Public API URLs
 urlpatterns = [
+    # Explicit article action routes must come before router detail routes.
+    # Without these, /articles/popular/ and similar paths are captured as pk lookups.
+    path('articles/trending/', ArticleViewSet.as_view({'get': 'trending'}), name='article-trending'),
+    path('articles/latest/', ArticleViewSet.as_view({'get': 'latest'}), name='article-latest'),
+    path('articles/popular/', ArticleViewSet.as_view({'get': 'popular'}), name='article-popular'),
     path('', include(router.urls)),
     path('contact/send-email/', send_contact_email, name='send-contact-email'),
 ]
