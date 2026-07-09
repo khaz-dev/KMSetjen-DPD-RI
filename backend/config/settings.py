@@ -313,8 +313,11 @@ LOGGING = {
 # ============================================================================
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake',
+        'BACKEND': env('CACHE_BACKEND', default='django_redis.cache.RedisCache'),
+        'LOCATION': env('CACHE_LOCATION', default='redis://127.0.0.1:6382/1'),
+        'OPTIONS': {
+            'CLIENT_CLASS': env('CACHE_CLIENT_CLASS', default='django_redis.client.DefaultClient'),
+        },
     }
 }
 

@@ -1,98 +1,111 @@
 services:
-  # ==============================================================================
-  # PostgreSQL Database - Running on local machine (not Docker)
-  # Configuration for local PostgreSQL:
-  # - Host: localhost
-  # - Port: 5432
-  # - Database: kmsdb
-  # - User: postgres
-  # - Password: Okkdpdri@2026
-  # ==============================================================================
-
-  # ==============================================================================
-  # Redis Cache & Session Store
-  # ==============================================================================
   redis:
     image: redis:7-alpine
     container_name: kms_redis
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
+    restart: unless-stopped
+    command: redis-server --port 6382 --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_password}
     volumes:
       - redis_data:/data
     ports:
       - "6382:6382"
+    networks:
+      - kms_network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-p", "6382", "--raw", "incr", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - kms_network
-    restart: unless-stopped
 
-  # ==============================================================================
-  # Django Application
-  # ==============================================================================
   django:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: kms_django
-    depends_on:
-      redis:
-        condition: service_healthy
+    restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
     env_file: .env
     environment:
-      # Override only database host to use Docker networking
-      DB_HOST: host.docker.internal
-      # Override Redis host to use Docker service name
-      REDIS_HOST: redis
-      REDIS_PORT: "6382"
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6382/0
-      CACHE_LOCATION: redis://:${REDIS_PASSWORD}@redis:6382/1
-      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6382/1
-      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6382/2
-      ENABLE_CAPTCHA: ${ENABLE_CAPTCHA:-True}
+      # Database Configuration
+      DB_NAME: ${DB_NAME:-kmsdb}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-Okkdpdri@2026}
+      DB_HOST: ${DB_HOST:-host.docker.internal}
+      DB_PORT: ${DB_PORT:-5432}
 
+      # Redis Cache
+      REDIS_HOST: redis
+      REDIS_PORT: 6382
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_password}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_password}@redis:6382/0
+      CACHE_BACKEND: ${CACHE_BACKEND:-django_redis.cache.RedisCache}
+      CACHE_LOCATION: ${CACHE_LOCATION:-redis://:${REDIS_PASSWORD:-redis_password}@redis:6382/1}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://:${REDIS_PASSWORD:-redis_password}@redis:6382/1}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://:${REDIS_PASSWORD:-redis_password}@redis:6382/2}
+
+      # Django Core Settings
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: ${DEBUG:-False}
+      DJANGO_LOG_LEVEL: ${DJANGO_LOG_LEVEL:-INFO}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,django,kms-be.dpd.go.id,kms.dpd.go.id}
+
+      # Email Configuration
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      FROM_EMAIL: ${FROM_EMAIL:-noreply@kms.dpd.go.id}
+
+      # Site URLs
+      FRONTEND_SITE_URL: ${FRONTEND_SITE_URL:-http://localhost:5175}
+      BACKEND_SITE_URL: ${BACKEND_SITE_URL:-http://localhost:8002}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8002/api}
+
+      # OAuth Configuration
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
+      GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-}
+
+      # CORS & Security
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5175,https://kms.dpd.go.id,https://kms-be.dpd.go.id}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost,http://127.0.0.1,https://kms.dpd.go.id,https://kms-be.dpd.go.id}
+      REQUESTS_CA_BUNDLE: /etc/ssl/certs/ca-certificates.crt
+      SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
+
+      # App Controls
+      ENABLE_CAPTCHA: ${ENABLE_CAPTCHA:-True}
       MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE:-2621440}
       ALLOWED_FILE_EXTENSIONS: ${ALLOWED_FILE_EXTENSIONS:-.jpg,.jpeg,.png,.pdf,.docx,.xlsx}
-      
+
       # Logging
-      LOG_LEVEL: INFO
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
       LOG_FILE_PATH: /app/logs/django.log
+
     volumes:
       - ./backend:/app
-      - kms_django_static:/app/staticfiles
       - kms_django_media:/app/media
+      - kms_django_static:/app/staticfiles
       - kms_django_logs:/app/logs
     ports:
-      - "8002:8002"
+      - "${BACKEND_HOST_PORT:-8002}:8002"
+    depends_on:
+      redis:
+        condition: service_healthy
     networks:
       - kms_network
-    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8002/health/"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # ==============================================================================
-  # Frontend (React Application - Vite)
-  # ==============================================================================
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        # Pass build arguments from .env to Docker build
-        # IMPORTANT: defaults should match staging/production, not localhost!
-        # Staging default: / (subdomain routing), Production default: depends on deploy, Local default: /
         VITE_APP_SUBPATH: ${VITE_APP_SUBPATH:-/}
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://django:8002/api}
-        VITE_API_URL: ${VITE_API_URL:-http://django:8002}
-        VITE_API_TIMEOUT: ${VITE_API_TIMEOUT:-10000}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8002/api}
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8002}
+        VITE_API_TIMEOUT: ${VITE_API_TIMEOUT:-30000}
         FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5175}
         VITE_SSO_URL: ${VITE_SSO_URL:-https://nusadpd.duckdns.org}
         VITE_SSO_CLIENT_ID: ${VITE_SSO_CLIENT_ID:-KMS}
@@ -100,53 +113,39 @@ services:
         VITE_GOOGLE_REDIRECT_URI: ${VITE_GOOGLE_REDIRECT_URI:-http://localhost:5175/google/callback/}
         VITE_RECAPTCHA_SITE_KEY: ${VITE_RECAPTCHA_SITE_KEY:-}
     container_name: kms_frontend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MODE: ${MODE:-development}
+      FRONTEND_SITE_URL: ${FRONTEND_SITE_URL:-http://localhost:5175}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8002/api}
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8002}
+      VITE_API_TIMEOUT: ${VITE_API_TIMEOUT:-30000}
+      VITE_PORT: 5175
     ports:
       - "5175:5175"
     depends_on:
-      - django
-    env_file: .env
-    environment:
-      # API configuration for docker environment
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://django:8002/api}
-      VITE_API_URL: ${VITE_API_URL:-http://django:8002}
-      VITE_API_TIMEOUT: ${VITE_API_TIMEOUT:-10000}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5175}
-      
-      # SSO Configuration
-      VITE_SSO_URL: ${VITE_SSO_URL:-https://nusadpd.duckdns.org}
-      VITE_SSO_CLIENT_ID: ${VITE_SSO_CLIENT_ID:-KMS}
-      
-      # Google OAuth
-      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
-      VITE_GOOGLE_REDIRECT_URI: ${VITE_GOOGLE_REDIRECT_URI:-http://localhost:5175/google/callback/}
-      
-      # reCAPTCHA
-      VITE_RECAPTCHA_SITE_KEY: ${VITE_RECAPTCHA_SITE_KEY:-}
+      django:
+        condition: service_healthy
     networks:
       - kms_network
-    restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5175/"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-# ==============================================================================
-# Volumes for persistent data
-# ==============================================================================
-volumes:
-  redis_data:
-    driver: local
-  kms_django_static:
-    driver: local
-  kms_django_media:
-    driver: local
-  kms_django_logs:
-    driver: local
-
-# ==============================================================================
-# Networks
-# ==============================================================================
 networks:
   kms_network:
     driver: bridge
+    name: kms_network
+
+volumes:
+  redis_data:
+    name: kms_redis_data
+  kms_django_media:
+    name: kms_media_files
+  kms_django_static:
+    name: kms_static_files
+  kms_django_logs:
+    name: kms_backend_logs

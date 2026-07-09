@@ -28,6 +28,7 @@ celery==5.3.4
 requests==2.31.0
 
 # Cache & async
+django-redis==5.4.0
 redis==5.0.1
 
 # Development
