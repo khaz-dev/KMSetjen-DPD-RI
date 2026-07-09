@@ -310,14 +310,22 @@ check_prerequisites() {
 backup_database() {
 	print_step "Backing up database"
 	mkdir -p "$BACKUP_DIR"
+	local temp_backup_file="${DB_BACKUP_FILE}.tmp"
+
+	if ! docker ps --filter "name=${BACKEND_CONTAINER}" --filter "status=running" --format '{{.Names}}' | grep -q "^${BACKEND_CONTAINER}$"; then
+		print_warning "Backend container not running; skipping DB backup"
+		return 0
+	fi
 
 	if run_compose exec -T "$BACKEND_SERVICE" env PGPASSWORD="$DB_PASSWORD" \
 		pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" "$DB_NAME" \
-		> "$DB_BACKUP_FILE" 2>"${BACKUP_DIR}/db_backup_error_${BACKUP_TIMESTAMP}.log"; then
+		> "$temp_backup_file" 2>"${BACKUP_DIR}/db_backup_error_${BACKUP_TIMESTAMP}.log"; then
+		mv "$temp_backup_file" "$DB_BACKUP_FILE"
 		print_success "Database backed up to: $DB_BACKUP_FILE"
 		print_verbose "Backup size: $(du -h "$DB_BACKUP_FILE" | cut -f1)"
 		return 0
 	else
+		rm -f "$temp_backup_file"
 		print_warning "Database backup failed (continuing)"
 		print_warning "See: ${BACKUP_DIR}/db_backup_error_${BACKUP_TIMESTAMP}.log"
 		return 0
@@ -349,7 +357,10 @@ pull_latest_code() {
 	print_step "Pulling latest code from git"
 	cd "$PROJECT_PATH"
 
-	if ! git diff-index --quiet HEAD --; then
+	# Ignore chmod-only noise on Linux servers (common after first chmod +x).
+	git config core.fileMode false >/dev/null 2>&1 || true
+
+	if ! git diff --quiet --ignore-submodules -- || ! git diff --cached --quiet --; then
 		print_error "Working tree has local changes. Commit/stash/discard before deployment."
 		git status --short || true
 		return 1
@@ -381,6 +392,9 @@ deploy_full_clean_build() {
 	print_warning "This mode removes containers and volumes. Data can be lost."
 	read -r -p "Press Enter to continue or Ctrl+C to cancel: "
 
+	# Fail fast: never stop running services until git pull succeeds.
+	pull_latest_code || return 1
+
 	backup_database
 	backup_application
 
@@ -388,13 +402,11 @@ deploy_full_clean_build() {
 	print_verbose "Stopping containers and removing volumes"
 	run_compose down -v 2>/dev/null || true
 
-	pull_latest_code
-
 	print_verbose "Building images without cache"
-	run_compose build --no-cache 2>&1 | tail -20
+	run_compose build --no-cache || return 1
 
 	print_verbose "Starting containers"
-	run_compose up -d 2>&1 | tail -5
+	run_compose up -d || return 1
 
 	wait_for_backend_health 240 || exit 1
 	run_backend_management "Running Django system checks" python manage.py check
@@ -410,14 +422,14 @@ deploy_update_only() {
 	print_header "DEPLOYMENT MODE: Update Only"
 
 	cd "$PROJECT_PATH"
-	pull_latest_code
+	pull_latest_code || return 1
 
 	print_verbose "Building images with cache"
-	run_compose build 2>&1 | tail -20
+	run_compose build || return 1
 
 	print_verbose "Restarting containers"
-	run_compose down
-	run_compose up -d
+	run_compose down || return 1
+	run_compose up -d || return 1
 
 	wait_for_backend_health 240 || exit 1
 	run_backend_management "Running Django system checks" python manage.py check
@@ -433,18 +445,20 @@ deploy_update_only() {
 deploy_update_with_data_refresh() {
 	print_header "DEPLOYMENT MODE: Update with Data Refresh"
 
+	# Pull first to avoid taking backups for a deployment that cannot proceed.
+	pull_latest_code || return 1
+
 	backup_database
 	backup_application
 
 	cd "$PROJECT_PATH"
-	pull_latest_code
 
 	print_verbose "Building images"
-	run_compose build 2>&1 | tail -20
+	run_compose build || return 1
 
 	print_verbose "Restarting containers"
-	run_compose down
-	run_compose up -d
+	run_compose down || return 1
+	run_compose up -d || return 1
 
 	wait_for_backend_health 240 || exit 1
 	run_backend_management "Running Django system checks" python manage.py check
@@ -483,6 +497,10 @@ verify_runtime_health() {
 		local local_health_url="http://127.0.0.1:${BACKEND_HOST_PORT}/health/"
 		if ! curl -fsS --max-time 15 "$local_health_url" >/dev/null; then
 			print_error "Local backend health check failed at: $local_health_url"
+			print_info "Backend /health response body:"
+			curl -sS --max-time 15 "$local_health_url" || true
+			print_info "Recent backend logs:"
+			run_compose logs --tail=120 "$BACKEND_SERVICE" || true
 			return 1
 		fi
 
@@ -502,6 +520,22 @@ verify_runtime_health() {
 		fi
 	else
 		print_warning "curl not found; skipped HTTP/CORS runtime verification"
+	fi
+
+	if ! docker ps --filter "name=${FRONTEND_CONTAINER}" --filter "status=running" --format '{{.Names}}' | grep -q "^${FRONTEND_CONTAINER}$"; then
+		print_error "Frontend container is not running (${FRONTEND_CONTAINER})"
+		print_info "Recent frontend logs:"
+		run_compose logs --tail=120 frontend || true
+		return 1
+	fi
+
+	if command -v curl >/dev/null 2>&1; then
+		if ! curl -fsS --max-time 15 "http://127.0.0.1:5175/" >/dev/null; then
+			print_error "Local frontend health check failed at: http://127.0.0.1:5175/"
+			print_info "Recent frontend logs:"
+			run_compose logs --tail=120 frontend || true
+			return 1
+		fi
 	fi
 
 	print_success "Backend runtime and CORS verification passed"
@@ -542,13 +576,13 @@ main() {
 
 	case "$MODE" in
 		full-clean-build)
-			deploy_full_clean_build || exit 1
+			deploy_full_clean_build
 			;;
 		update-only)
-			deploy_update_only || exit 1
+			deploy_update_only
 			;;
 		update-with-data-refresh)
-			deploy_update_with_data_refresh || exit 1
+			deploy_update_with_data_refresh
 			;;
 	esac
 

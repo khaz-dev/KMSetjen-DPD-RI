@@ -125,8 +125,7 @@ services:
     ports:
       - "5175:5175"
     depends_on:
-      django:
-        condition: service_healthy
+      - django
     networks:
       - kms_network
     healthcheck:
