@@ -73,6 +73,48 @@ while ! nc -z "$REDIS_HOST" "$REDIS_PORT" 2>/dev/null; do
 done
 echo "✓ Redis is ready"
 
+# ==============================================================================
+# Create database if it doesn't exist (CRITICAL: Must run before migrations)
+# ==============================================================================
+echo "🗄️  Ensuring database exists..."
+python << 'PYEOF'
+import psycopg2
+import os
+import sys
+
+DB_NAME = os.getenv('DB_NAME', 'kmsdb')
+DB_USER = os.getenv('DB_USER', 'postgres')
+DB_PASSWORD = os.getenv('DB_PASSWORD', 'postgres')
+DB_HOST = os.getenv('DB_HOST', 'localhost')
+DB_PORT = int(os.getenv('DB_PORT', '5432'))
+
+# Connect to postgres database (the server itself, not kmsdb)
+try:
+    conn = psycopg2.connect(
+        host=DB_HOST,
+        port=DB_PORT,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        database='postgres'
+    )
+    conn.autocommit = True
+    cursor = conn.cursor()
+    
+    # Check if database exists and create if not
+    cursor.execute(f"SELECT 1 FROM pg_database WHERE datname = %s;", (DB_NAME,))
+    if cursor.fetchone() is None:
+        cursor.execute(f"CREATE DATABASE {DB_NAME};")
+        print(f"✓ Database '{DB_NAME}' created successfully")
+    else:
+        print(f"✓ Database '{DB_NAME}' already exists")
+    
+    cursor.close()
+    conn.close()
+except Exception as e:
+    print(f"⚠ Database setup warning: {e}")
+    print("  Continuing anyway - migrations may fail if database doesn't exist")
+PYEOF
+
 # Run migrations
 echo "📦 Running database migrations..."
 python manage.py migrate --noinput 2>&1 || echo "⚠ Migration warning (may have pending model changes - run makemigrations)"
