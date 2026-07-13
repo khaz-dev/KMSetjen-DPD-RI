@@ -6,22 +6,14 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
+from django.shortcuts import redirect
 from django.views.decorators.http import require_http_methods
 from config.favicon_views import favicon_view, favicon_svg_view
 
 @require_http_methods(["GET"])
 def api_root(request):
-    """Root API endpoint with available endpoints"""
-    return JsonResponse({
-        'message': 'Welcome to KMSetjen DPD RI API',
-        'version': '1.0.0',
-        'available_endpoints': {
-            'admin': '/admin/',
-            'api_v1': '/api/v1/',
-            'authentication': '/api/auth/',
-            'health': '/health/',
-        }
-    })
+    """Redirect backend root to Django admin login page."""
+    return redirect('/admin/login/?next=/admin/')
 
 @require_http_methods(["GET"])
 def health_check(request):
