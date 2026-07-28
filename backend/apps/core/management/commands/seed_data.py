@@ -224,9 +224,12 @@ class Command(BaseCommand):
                 defaults=user_data
             )
             
-            if created:
-                user.set_password(password)
-                user.save()
+            # Ensure attributes and password are set regardless of whether user was newly created or existed
+            for key, val in user_data.items():
+                if key != 'username':
+                    setattr(user, key, val)
+            user.set_password(password)
+            user.save()
             
             # Assign role
             role = Role.objects.get(code=role_code)
@@ -664,9 +667,12 @@ class Command(BaseCommand):
                 defaults=user_data
             )
             
-            if created:
-                user.set_password(password)
-                user.save()
+            # Ensure attributes and password are set regardless of whether user was newly created or existed
+            for key, val in user_data.items():
+                if key != 'username':
+                    setattr(user, key, val)
+            user.set_password(password)
+            user.save()
             
             # Assign role
             role = Role.objects.get(code=role_code)

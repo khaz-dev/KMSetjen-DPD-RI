@@ -58,27 +58,15 @@ class Command(BaseCommand):
         )
 
         # Try to find existing admin user
-        admin_user = None
-        
-        # First, try to find by username 'admin'
-        try:
-            admin_user = User.objects.get(username='admin', is_superuser=True)
-            self.stdout.write(
-                self.style.SUCCESS(f'✓ Found existing admin user with username "admin"')
-            )
-        except User.DoesNotExist:
-            # Try to find by email
-            try:
-                admin_user = User.objects.filter(is_superuser=True).first()
-                if admin_user:
-                    self.stdout.write(
-                        self.style.SUCCESS(f'✓ Found existing superuser: {admin_user.username}')
-                    )
-            except Exception as e:
-                self.stdout.write(self.style.ERROR(f'✗ Error finding admin user: {e}'))
+        admin_user = (
+            User.objects.filter(username=username).first()
+            or User.objects.filter(username='admin').first()
+            or User.objects.filter(email=email).first()
+            or User.objects.filter(is_superuser=True).first()
+        )
 
         if not admin_user:
-            self.stdout.write(self.style.WARNING('⚠ No existing admin user found. Creating new one...'))
+            self.stdout.write(self.style.WARNING('[WARN] No existing admin user found. Creating new superuser...'))
             try:
                 admin_user = User.objects.create_superuser(
                     username=username,
@@ -88,14 +76,14 @@ class Command(BaseCommand):
                     last_name=last_name
                 )
                 self.stdout.write(
-                    self.style.SUCCESS(f'✓ Created new admin user: {username}')
+                    self.style.SUCCESS(f'[OK] Created new admin superuser: {username}')
                 )
             except Exception as e:
-                self.stdout.write(self.style.ERROR(f'✗ Failed to create admin user: {e}'))
+                self.stdout.write(self.style.ERROR(f'[FAIL] Failed to create admin user: {e}'))
                 return
         else:
             # Update existing admin user
-            self.stdout.write(f'\n📝 Updating admin user credentials...\n')
+            self.stdout.write(f'\nUpdating admin user credentials and permissions...\n')
             
             old_username = admin_user.username
             old_email = admin_user.email
@@ -104,21 +92,37 @@ class Command(BaseCommand):
             admin_user.email = email
             admin_user.first_name = first_name
             admin_user.last_name = last_name
+            admin_user.is_staff = True
+            admin_user.is_superuser = True
+            admin_user.is_active = True
             admin_user.set_password(password)
             admin_user.save()
             
             self.stdout.write(
-                self.style.SUCCESS(f'  ✓ Username: {old_username} → {username}')
+                self.style.SUCCESS(f'  [OK] Username: {old_username} -> {username}')
             )
             self.stdout.write(
-                self.style.SUCCESS(f'  ✓ Email: {old_email} → {email}')
+                self.style.SUCCESS(f'  [OK] Email: {old_email} -> {email}')
             )
             self.stdout.write(
-                self.style.SUCCESS(f'  ✓ Name: {first_name} {last_name}')
+                self.style.SUCCESS(f'  [OK] Name: {first_name} {last_name}')
             )
             self.stdout.write(
-                self.style.SUCCESS(f'  ✓ Password: updated')
+                self.style.SUCCESS(f'  [OK] Staff / Superuser / Active: True')
             )
+            self.stdout.write(
+                self.style.SUCCESS(f'  [OK] Password: updated')
+            )
+
+        # Ensure admin role assignment
+        try:
+            from apps.core.models import Role
+            admin_role = Role.objects.filter(code='admin').first()
+            if admin_role:
+                admin_user.roles.add(admin_role)
+                self.stdout.write(self.style.SUCCESS(f'  [OK] Assigned admin role'))
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f'  [WARN] Could not assign admin role: {e}'))
 
         # Display final status
         self.stdout.write(f'\n' + '='*60)
