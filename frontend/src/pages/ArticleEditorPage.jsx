@@ -11,6 +11,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
 import EditorTagFilter from '../components/EditorTagFilter';
 import PptxViewer from '../components/PptxViewer';
+import PdfViewer from '../components/PdfViewer';
 import { publicAPI, internalAPI } from '../services/api';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTheme } from '../hooks/useTheme';
@@ -1498,12 +1499,13 @@ const ArticleEditor = () => {
                             </>
                           )}
                           {previewType === 'pdf' && previewUrl && (
-                            <iframe
-                              src={`${previewUrl}#toolbar=0`}
+                            <PdfViewer
+                              fileUrl={file.preview_url || previewUrl}
+                              fileId={file.id}
+                              fileName={file.original_filename}
                               className="file-preview-pdf"
-                              title={file.original_filename}
-                              onLoad={() => console.debug('[FilePreview] PDF iframe loaded successfully')}
-                              onError={(e) => console.error('[FilePreview] PDF iframe error - URL may be invalid or inaccessible:', previewUrl, e)}
+                              toolbar={1}
+                              onError={(e) => console.error('[FilePreview] PDF error:', previewUrl, e)}
                             />
                           )}
                           {previewType === 'video' && (

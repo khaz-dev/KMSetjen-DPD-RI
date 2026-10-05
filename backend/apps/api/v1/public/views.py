@@ -1,15 +1,17 @@
 """Views for public API endpoints."""
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes, renderer_classes
+from rest_framework.renderers import BaseRenderer
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
-from apps.content.models import Article, Category, Tag
+from apps.content.models import Article, Category, Tag, File
 from apps.audit.services import AuditService
 from shared.permissions.base import IsPublic
 from .serializers import (
@@ -467,3 +469,94 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
         
         serializer = ArticleListSerializer(articles, many=True)
         return Response(serializer.data)
+
+
+class PassthroughRenderer(BaseRenderer):
+    """Renderer that allows any media type and returns binary/file data directly without modification."""
+    media_type = '*/*'
+    format = ''
+
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        return data
+
+
+@api_view(['GET', 'HEAD', 'OPTIONS'])
+@permission_classes([AllowAny])
+@renderer_classes([PassthroughRenderer])
+def preview_file(request, file_id):
+    """
+    Serve file for inline browser preview.
+    The URL has NO .pdf extension (e.g. /api/v1/public/files/31/preview/),
+    preventing IDM (Internet Download Manager) and other browser extensions from intercepting it.
+    """
+    if request.method == 'OPTIONS':
+        response = HttpResponse()
+        origin = request.META.get('HTTP_ORIGIN')
+        if origin:
+            response['Access-Control-Allow-Origin'] = origin
+            response['Access-Control-Allow-Credentials'] = 'true'
+        else:
+            response['Access-Control-Allow-Origin'] = '*'
+        response['Access-Control-Allow-Methods'] = 'GET, OPTIONS, HEAD'
+        response['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, Accept, X-Requested-With'
+        return response
+
+    import os
+    import mimetypes
+
+    file_obj = get_object_or_404(File.objects.select_related('article'), id=file_id)
+    article = file_obj.article
+
+    # Check article access: published public article or authenticated staff
+    is_public_published = (
+        article.version_type == 'published' and
+        article.is_published and
+        article.status == 'published' and
+        article.access_level == 'public'
+    )
+    if not is_public_published:
+        user = request.user
+        if not (user and user.is_authenticated):
+            raise Http404("File not found or access denied")
+        if article.access_level == 'role_based':
+            if not article.allowed_roles.filter(id__in=user.roles.all()).exists() and not (user.is_editor() or user.is_admin()):
+                raise Http404("File not found or access denied")
+
+    if not file_obj.file or not os.path.exists(file_obj.file.path):
+        raise Http404("File not found on disk")
+
+    is_raw = request.GET.get('raw') == '1' or 'application/octet-stream' in request.META.get('HTTP_ACCEPT', '')
+
+    if is_raw:
+        # Return base64-encoded document data as application/json.
+        # This completely guarantees that IDM, browser download hooks, or file-type sniffers
+        # will NEVER treat this as a download or intercept the preview stream.
+        import base64
+        with open(file_obj.file.path, 'rb') as f:
+            encoded_data = base64.b64encode(f.read()).decode('ascii')
+
+        response = JsonResponse({
+            'success': True,
+            'file_id': file_obj.id,
+            'filename': file_obj.original_filename,
+            'file_size': file_obj.file_size,
+            'data': encoded_data,
+        })
+    else:
+        mime_type = file_obj.mime_type or mimetypes.guess_type(file_obj.original_filename)[0] or 'application/octet-stream'
+        response = FileResponse(open(file_obj.file.path, 'rb'), content_type=mime_type)
+        response['Content-Disposition'] = f'inline; filename="{file_obj.original_filename}"'
+
+    origin = request.META.get('HTTP_ORIGIN')
+    if origin:
+        response['Access-Control-Allow-Origin'] = origin
+        response['Access-Control-Allow-Credentials'] = 'true'
+    else:
+        response['Access-Control-Allow-Origin'] = '*'
+
+    response['X-Frame-Options'] = 'ALLOWALL'
+    response['Access-Control-Allow-Methods'] = 'GET, OPTIONS, HEAD'
+    response['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, Accept, X-Requested-With'
+    response['Access-Control-Expose-Headers'] = 'Content-Length, Content-Range, Accept-Ranges'
+    return response
+

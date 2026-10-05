@@ -311,15 +311,28 @@ LOGGING = {
 # ============================================================================
 # REDIS & CACHE
 # ============================================================================
-CACHES = {
-    'default': {
-        'BACKEND': env('CACHE_BACKEND', default='django_redis.cache.RedisCache'),
-        'LOCATION': env('CACHE_LOCATION', default='redis://127.0.0.1:6382/1'),
-        'OPTIONS': {
-            'CLIENT_CLASS': env('CACHE_CLIENT_CLASS', default='django_redis.client.DefaultClient'),
-        },
+_cache_backend = env('CACHE_BACKEND', default='django_redis.cache.RedisCache')
+
+if 'redis' in _cache_backend.lower():
+    CACHES = {
+        'default': {
+            'BACKEND': _cache_backend,
+            'LOCATION': env('CACHE_LOCATION', default='redis://127.0.0.1:6379/1'),
+            'OPTIONS': {
+                'CLIENT_CLASS': env('CACHE_CLIENT_CLASS', default='django_redis.client.DefaultClient'),
+                'IGNORE_EXCEPTIONS': True,
+                'SOCKET_CONNECT_TIMEOUT': 2,
+                'SOCKET_TIMEOUT': 2,
+            },
+        }
     }
-}
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': _cache_backend,
+            'LOCATION': env('CACHE_LOCATION', default='kms-local-cache'),
+        }
+    }
 
 # ============================================================================
 # CELERY (OPTIONAL)

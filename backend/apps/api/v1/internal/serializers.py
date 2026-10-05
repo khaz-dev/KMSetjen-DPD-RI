@@ -533,11 +533,12 @@ class FileSerializer(serializers.ModelSerializer):
     """
     file_size_display = serializers.SerializerMethodField()
     file = serializers.SerializerMethodField()  # Override to get absolute URL with correct protocol
+    preview_url = serializers.SerializerMethodField()
     
     class Meta:
         model = File
         fields = [
-            'id', 'article', 'file', 'original_filename', 'file_size',
+            'id', 'article', 'file', 'preview_url', 'original_filename', 'file_size',
             'file_size_display', 'mime_type', 'description_en', 'description_id',
             'uploaded_by', 'order_index', 'created_at'
         ]
@@ -555,6 +556,16 @@ class FileSerializer(serializers.ModelSerializer):
         
         # Fallback to relative path if no request context
         return obj.file.url if obj.file else None
+
+    def get_preview_url(self, obj):
+        """Get absolute URL for inline preview (without .pdf extension to prevent IDM interception)."""
+        if not obj.file:
+            return None
+        url = f'/api/v1/public/files/{obj.id}/preview/'
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(url)
+        return url
     
     def get_file_size_display(self, obj):
         """Format file size to human-readable format."""

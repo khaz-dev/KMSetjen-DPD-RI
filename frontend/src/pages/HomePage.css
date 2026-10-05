@@ -323,7 +323,8 @@
 }
 
 /* Article Summary with 3-line clamp and tooltip */
-.article-summary {
+.article-card .article-summary,
+.home-page .article-summary {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -338,16 +339,19 @@
   max-height: 4.5em;
 }
 
-.article-summary:hover {
+.article-card .article-summary:hover,
+.home-page .article-summary:hover {
   opacity: 0.85;
   color: #2c3e50;
 }
 
-[data-theme="dark"] .article-summary {
+[data-theme="dark"] .article-card .article-summary,
+[data-theme="dark"] .home-page .article-summary {
   color: #d8d8d8;
 }
 
-[data-theme="dark"] .article-summary:hover {
+[data-theme="dark"] .article-card .article-summary:hover,
+[data-theme="dark"] .home-page .article-summary:hover {
   color: #ffffff;
 }
 

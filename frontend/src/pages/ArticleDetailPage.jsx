@@ -11,6 +11,7 @@ import { id as idLocale, enUS } from 'date-fns/locale';
 import { FiShare2, FiPrinter, FiCheck, FiFacebook, FiTwitter, FiMail, FiEye, FiHeart } from 'react-icons/fi';
 import ImageWithFallback from '../components/ImageWithFallback';
 import PptxViewer from '../components/PptxViewer';
+import PdfViewer from '../components/PdfViewer';
 import './ArticleDetailPage.css';
 
 /**
@@ -83,10 +84,10 @@ const ArticleDetailPage = () => {
   // Helper function to convert Markdown to HTML
   const convertMarkdownToHtml = (markdown) => {
     if (!markdown) return '';
-    
+
     // Check if content looks like markdown (starts with #, contains markdown syntax)
     const isMarkdown = /^#+\s|^-\s|^\*\*|^\*[^*]|\[.*\]\(.*\)/.test(markdown.trim());
-    
+
     if (isMarkdown) {
       try {
         return marked(markdown, {
@@ -99,12 +100,12 @@ const ArticleDetailPage = () => {
         return markdown; // Fallback to raw markdown if conversion fails
       }
     }
-    
+
     // If it looks like HTML already, return as-is
     if (markdown.trim().startsWith('<')) {
       return markdown;
     }
-    
+
     // Otherwise treat as plain text
     return markdown;
   };
@@ -115,11 +116,11 @@ const ArticleDetailPage = () => {
         setLoading(true);
         setError(null);
         let response;
-        
+
         // Check if we need to load draft version
         const versionParam = searchParams.get('version');
         const isDraftRequest = versionParam === 'draft';
-        
+
         // Route articles based on user role:
         // - PUBLIC users → use public API (can see published articles only)
         // - CONTRIBUTOR/READER → use internal API (can see articles based on author/editor status)
@@ -153,11 +154,11 @@ const ArticleDetailPage = () => {
           // User is public (public role) or not authenticated - use public API (published articles only)
           response = await publicAPI.getArticle(idOrSlug);
         }
-        
+
         setArticle(response.data);
         // Set liked state from response
         setLiked(response.data.liked_by_user || false);
-        
+
         // Record view (track article views in backend)
         // ONLY record views for published articles
         // Don't block the request if this fails - it's non-critical
@@ -180,7 +181,7 @@ const ArticleDetailPage = () => {
           // Silently fail
           console.debug('View recording error:', viewErr);
         }
-        
+
         // Load related articles after main article is loaded
         await loadRelatedArticles(response.data);
       } catch (err) {
@@ -203,16 +204,16 @@ const ArticleDetailPage = () => {
   const loadRelatedArticles = async (currentArticle) => {
     try {
       setLoadingRelated(true);
-      
+
       // Fetch all articles to find similar/related/popular
       const response = await publicAPI.getArticles({ page: 1, limit: 50 });
       const allArticles = response.data.results || response.data;
-      
+
       // Filter articles
       const similar = allArticles.filter(
         (art) => art.id !== currentArticle.id && art.category?.id === currentArticle.category?.id
       ).slice(0, 3);
-      
+
       // Find related by tags
       const currentTags = currentArticle.tags?.map(t => t.id) || [];
       const related = allArticles.filter((art) => {
@@ -220,13 +221,13 @@ const ArticleDetailPage = () => {
         const artTags = art.tags?.map(t => t.id) || [];
         return currentTags.some(tagId => artTags.includes(tagId));
       }).slice(0, 3);
-      
+
       // Get popular articles (top by views)
       const popular = allArticles
         .filter((art) => art.id !== currentArticle.id)
         .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
         .slice(0, 5);
-      
+
       setSimilarArticles(similar);
       setRelatedArticles(related);
       setPopularArticles(popular);
@@ -239,13 +240,13 @@ const ArticleDetailPage = () => {
 
   const toggleLike = async () => {
     if (!article) return;
-    
+
     // CRITICAL: Only allow likes on published articles by AUTHENTICATED users
     if (!article.is_published || article.status !== 'published') {
       console.debug('Like disabled: Article must be published');
       return;
     }
-    
+
     // CRITICAL: Only authenticated users can like articles
     const token = localStorage.getItem('access_token');
     if (!token && !user) {
@@ -253,16 +254,16 @@ const ArticleDetailPage = () => {
       alert(t('auth.login_required_to_like') || 'Please log in to like articles');
       return;
     }
-    
+
     setLikeLoading(true);
     try {
       // Use public API for like toggle (works for all users, requires authentication)
       const response = await publicAPI.recordLike(article.id);
-      
+
       if (response.data.success) {
         // Update local state with the response
         setLiked(response.data.liked);
-        
+
         // Update article with new like count
         setArticle(prev => ({
           ...prev,
@@ -306,20 +307,20 @@ const ArticleDetailPage = () => {
   }
 
   // Content language selection with fallback to Indonesian if English not available
-  const title = isIndonesian 
-    ? article.title_id 
+  const title = isIndonesian
+    ? article.title_id
     : (article.title_en || article.title_id);
-  
-  const content = isIndonesian 
-    ? article.content_id 
+
+  const content = isIndonesian
+    ? article.content_id
     : (article.content_en || article.content_id);
-  
-  const summary = isIndonesian 
-    ? article.summary_id 
+
+  const summary = isIndonesian
+    ? article.summary_id
     : (article.summary_en || article.summary_id);
-  
-  const categoryName = isIndonesian 
-    ? article.category?.name_id 
+
+  const categoryName = isIndonesian
+    ? article.category?.name_id
     : (article.category?.name_en || article.category?.name_id);
 
   const articleUrl = `${window.location.origin}${getArticleUrl(article)}`;
@@ -361,11 +362,11 @@ const ArticleDetailPage = () => {
 
   const handlePrint = () => {
     if (!articleRef.current) return;
-    
+
     // Add class to hide non-article content during print
     const body = document.body;
     body.classList.add('article-print-mode');
-    
+
     // Use setTimeout to ensure the class is applied before printing
     setTimeout(() => {
       window.print();
@@ -381,7 +382,7 @@ const ArticleDetailPage = () => {
     const artTitle = isIndonesian ? art.title_id : (art.title_en || art.title_id);
     const artContent = isIndonesian ? art.content_id : (art.content_en || art.content_id);
     const artSummary = isIndonesian ? art.summary_id : (art.summary_en || art.summary_id);
-    
+
     // Create excerpt from summary or content, max 120 characters
     const getExcerpt = () => {
       let excerpt = artSummary || artContent || '';
@@ -392,11 +393,11 @@ const ArticleDetailPage = () => {
       // Limit to 120 chars
       return excerpt.length > 120 ? excerpt.substring(0, 120) + '...' : excerpt;
     };
-    
+
     const excerpt = getExcerpt();
-    
+
     return (
-      <div 
+      <div
         className="article-list-item p-3 border-bottom"
         style={{ cursor: 'pointer' }}
         onClick={() => navigate(getArticleUrl(art))}
@@ -412,17 +413,17 @@ const ArticleDetailPage = () => {
               className="article-list-thumbnail"
             />
           </div>
-          
+
           {/* Title and Excerpt Center with flex-grow-1 */}
           <div className="flex-grow-1">
-            <h6 
+            <h6
               className="mb-2 article-list-item-title"
               title={artTitle}
             >
               {artTitle}
             </h6>
             {excerpt && (
-              <p 
+              <p
                 className="mb-0 article-list-item-excerpt"
                 title={excerpt}
               >
@@ -431,7 +432,7 @@ const ArticleDetailPage = () => {
             )}
           </div>
         </div>
-        
+
         {/* Row 2: Meta Stick to Right End */}
         <div className="article-list-item-meta">
           <FiEye size={12} />
@@ -451,8 +452,8 @@ const ArticleDetailPage = () => {
           <Col lg={8}>
             <article ref={articleRef}>
               <div className="article-featured-image">
-                <ImageWithFallback 
-                  src={article.image || article.image_url} 
+                <ImageWithFallback
+                  src={article.image || article.image_url}
                   alt={title}
                   className="img-fluid rounded"
                   style={{ maxHeight: '400px', objectFit: 'cover', width: '100%' }}
@@ -462,21 +463,21 @@ const ArticleDetailPage = () => {
 
               <header className="article-header">
                 <h1 className="display-7 fw-bold">{title}</h1>
-                
+
                 <div className="article-meta mb-3">
                   {/* Category Badge - Custom Styled Span */}
                   {(() => {
                     const catColor = article.category?.color;
-                    console.log('[ArticleDetail] Category color from API:', { 
+                    console.log('[ArticleDetail] Category color from API:', {
                       category: article.category?.name_id,
                       color: catColor,
                       fallback: '#0d6efd',
                       applied: catColor || '#0d6efd'
                     });
                     return (
-                      <span 
+                      <span
                         className="article-badge-custom me-2"
-                        style={{ 
+                        style={{
                           backgroundColor: catColor || '#0d6efd',
                           borderColor: catColor || '#0d6efd',
                           color: '#ffffff',
@@ -492,21 +493,21 @@ const ArticleDetailPage = () => {
                       </span>
                     );
                   })()}
-                  
+
                   {/* Tag Badges - Custom Styled Spans */}
                   {article.tags?.map((tag) => {
                     const tagColor = tag.color;
-                    console.log('[ArticleDetail] Tag color from API:', { 
+                    console.log('[ArticleDetail] Tag color from API:', {
                       tag: tag.name_id,
                       color: tagColor,
                       fallback: '#6c757d',
                       applied: tagColor || '#6c757d'
                     });
                     return (
-                      <span 
+                      <span
                         key={tag.id}
                         className="article-badge-custom me-2"
-                        style={{ 
+                        style={{
                           backgroundColor: tagColor || '#6c757d',
                           borderColor: tagColor || '#6c757d',
                           color: '#ffffff',
@@ -530,7 +531,7 @@ const ArticleDetailPage = () => {
                   </span>
                   <span className="separator">•</span>
                   <span>
-                    {formatDistanceToNow(new Date(article.published_at || article.updated_at), { 
+                    {formatDistanceToNow(new Date(article.published_at || article.updated_at), {
                       addSuffix: true,
                       locale: isIndonesian ? idLocale : enUS
                     })}
@@ -541,11 +542,11 @@ const ArticleDetailPage = () => {
                     {article.view_count} {t('articles.views')}
                   </span>
                 </div>
-                
+
               </header>
 
               {summary && (
-                <div className="article-summary bg-light p-4 mb-4 rounded">
+                <div className="article-summary bg-light p-4 mb-4 rounded d-flex align-items-center">
                   <p className="text-muted fst-italic mb-0">{summary}</p>
                 </div>
               )}
@@ -566,7 +567,7 @@ const ArticleDetailPage = () => {
                               <i className={`bi ${getFileIcon(file.mime_type)}`}></i>
                             </div>
                             <div className="attachment-info">
-                              <div 
+                              <div
                                 className="attachment-name"
                                 title={file.original_filename}
                               >
@@ -599,8 +600,8 @@ const ArticleDetailPage = () => {
                                   <span className="ms-1">{t('buttons.fullscreen') || 'Full Screen'}</span>
                                 </button>
                               )}
-                              <a 
-                                href={file.file} 
+                              <a
+                                href={file.file}
                                 download={file.original_filename}
                                 className="btn btn-sm btn-outline-primary"
                               >
@@ -614,8 +615,8 @@ const ArticleDetailPage = () => {
                           {showPreview && previewType && file.file && (
                             <div className="file-preview-container">
                               {previewType === 'image' && (
-                                <img 
-                                  src={file.file} 
+                                <img
+                                  src={file.file}
                                   alt={file.original_filename}
                                   className="file-preview-image"
                                   onError={(e) => {
@@ -625,12 +626,13 @@ const ArticleDetailPage = () => {
                                 />
                               )}
                               {previewType === 'pdf' && (
-                                <iframe
-                                  src={`${file.file}#toolbar=0`}
+                                <PdfViewer
+                                  fileUrl={file.preview_url || file.file}
+                                  fileId={file.id}
+                                  fileName={file.original_filename}
                                   className="file-preview-pdf"
-                                  title={file.original_filename}
-                                  onLoad={() => console.debug('[FilePreview] PDF iframe loaded')}
-                                  onError={(e) => console.error('[FilePreview] PDF iframe error:', file.file, e)}
+                                  toolbar={1}
+                                  onError={(e) => console.error('[FilePreview] PDF error:', file.preview_url || file.file, e)}
                                 />
                               )}
                               {previewType === 'video' && (
@@ -652,7 +654,7 @@ const ArticleDetailPage = () => {
                                 </audio>
                               )}
                               {previewType === 'presentation' && (
-                                <PptxViewer 
+                                <PptxViewer
                                   fileUrl={file.file}
                                   fileName={file.original_filename}
                                   onError={(err) => console.error('[FilePreview] PptxViewer error:', err)}
@@ -694,27 +696,27 @@ const ArticleDetailPage = () => {
                   !article.is_published || article.status !== 'published'
                     ? t('articles.like_disabled') || 'Liking disabled for unpublished articles'
                     : (!user && !localStorage.getItem('access_token'))
-                    ? t('auth.login_required_to_like') || 'Please log in to like articles'
-                    : (liked ? t('buttons.unlike') || 'Unlike' : t('buttons.like') || 'Like')
+                      ? t('auth.login_required_to_like') || 'Please log in to like articles'
+                      : (liked ? t('buttons.unlike') || 'Unlike' : t('buttons.like') || 'Like')
                 }
               >
-                <FiHeart 
+                <FiHeart
                   size={16}
                   fill={liked ? 'currentColor' : 'none'}
                 />
                 {article.like_count} {t('articles.likes')}
               </Button>
-              
+
               <div className="article-actions-right">
-                <Button 
-                  variant="outline-primary" 
+                <Button
+                  variant="outline-primary"
                   className="me-2"
                   onClick={() => setShowShareModal(true)}
                 >
                   <FiShare2 className="me-2" style={{ display: 'inline' }} />
                   {t('articles.share')}
                 </Button>
-                <Button 
+                <Button
                   variant="outline-secondary"
                   onClick={handlePrint}
                 >
@@ -851,24 +853,24 @@ const ArticleDetailPage = () => {
             <div className="mb-3">
               <p className="mb-3">{t('articles.share_article')}</p>
               <div className="d-grid gap-2">
-                <Button 
-                  variant="light" 
+                <Button
+                  variant="light"
                   className="text-start"
                   onClick={() => handleShare('facebook')}
                 >
                   <FiFacebook className="me-2" style={{ color: '#1877F2' }} />
                   {t('articles.share_facebook')}
                 </Button>
-                <Button 
-                  variant="light" 
+                <Button
+                  variant="light"
                   className="text-start"
                   onClick={() => handleShare('twitter')}
                 >
                   <FiTwitter className="me-2" style={{ color: '#1DA1F2' }} />
                   {t('articles.share_twitter')}
                 </Button>
-                <Button 
-                  variant="light" 
+                <Button
+                  variant="light"
                   className="text-start"
                   onClick={() => handleShare('email')}
                 >
@@ -881,13 +883,13 @@ const ArticleDetailPage = () => {
             <div>
               <p className="mb-2">{t('articles.copy_link')}</p>
               <div className="input-group">
-                <input 
-                  type="text" 
-                  className="form-control" 
-                  value={articleUrl} 
-                  readOnly 
+                <input
+                  type="text"
+                  className="form-control"
+                  value={articleUrl}
+                  readOnly
                 />
-                <Button 
+                <Button
                   variant={copySuccess ? 'success' : 'outline-secondary'}
                   onClick={() => handleShare('copy')}
                 >
@@ -907,8 +909,8 @@ const ArticleDetailPage = () => {
       </Modal>
 
       {/* Fullscreen File Preview Modal */}
-      <Modal 
-        show={!!fullscreenFile} 
+      <Modal
+        show={!!fullscreenFile}
         onHide={() => setFullscreenFile(null)}
         size="xl"
         fullscreen={true}
@@ -921,8 +923,8 @@ const ArticleDetailPage = () => {
           {fullscreenFile && (
             <div className="fullscreen-file-container">
               {fullscreenFile.mime_type?.startsWith('image/') && (
-                <img 
-                  src={fullscreenFile.file} 
+                <img
+                  src={fullscreenFile.file}
                   alt={fullscreenFile.original_filename}
                   className="fullscreen-file-image"
                   onError={(e) => {
@@ -932,12 +934,13 @@ const ArticleDetailPage = () => {
                 />
               )}
               {fullscreenFile.mime_type === 'application/pdf' && (
-                <iframe
-                  src={`${fullscreenFile.file}#toolbar=1`}
+                <PdfViewer
+                  fileUrl={fullscreenFile.preview_url || fullscreenFile.file}
+                  fileId={fullscreenFile.id}
+                  fileName={fullscreenFile.original_filename}
                   className="fullscreen-file-pdf"
-                  title={fullscreenFile.original_filename}
-                  onLoad={() => console.debug('[FullscreenPreview] PDF iframe loaded')}
-                  onError={(e) => console.error('[FullscreenPreview] PDF iframe error:', fullscreenFile.file, e)}
+                  toolbar={1}
+                  onError={(e) => console.error('[FullscreenPreview] PDF error:', fullscreenFile.preview_url || fullscreenFile.file, e)}
                 />
               )}
               {fullscreenFile.mime_type?.startsWith('video/') && (

@@ -20,7 +20,7 @@ Endpoints:
 """
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import ArticleViewSet, CategoryViewSet, TagViewSet
+from .views import ArticleViewSet, CategoryViewSet, TagViewSet, preview_file
 from .contact import send_contact_email
 
 # Create router and register viewsets
@@ -36,6 +36,7 @@ urlpatterns = [
     path('articles/trending/', ArticleViewSet.as_view({'get': 'trending'}), name='article-trending'),
     path('articles/latest/', ArticleViewSet.as_view({'get': 'latest'}), name='article-latest'),
     path('articles/popular/', ArticleViewSet.as_view({'get': 'popular'}), name='article-popular'),
+    path('files/<int:file_id>/preview/', preview_file, name='file-preview'),
     path('', include(router.urls)),
     path('contact/send-email/', send_contact_email, name='send-contact-email'),
 ]
