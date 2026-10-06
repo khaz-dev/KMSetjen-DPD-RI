@@ -46,9 +46,8 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
     """
     permission_classes = [AllowAny]
     pagination_class = PublicAPIPagination
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = ArticleFilter
-    search_fields = ['title_id', 'title_en', 'content_id', 'content_en']
     ordering = ['-published_at']
     
     def get_queryset(self):

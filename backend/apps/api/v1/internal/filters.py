@@ -2,6 +2,7 @@
 import django_filters
 from django.db.models import Q
 from apps.content.models import Article, Category, Tag
+from apps.content.search import search_articles_queryset
 
 
 class InternalArticleFilter(django_filters.FilterSet):
@@ -25,7 +26,7 @@ class InternalArticleFilter(django_filters.FilterSet):
     # Full-text search
     search = django_filters.CharFilter(
         method='filter_search',
-        label='Search articles by title, content, or summary'
+        label='Search articles by title, content, summary, creator, author, date, category, tags, or attachments'
     )
     
     # Category filter
@@ -82,15 +83,5 @@ class InternalArticleFilter(django_filters.FilterSet):
         fields = ['status', 'search', 'category', 'tags', 'published_after', 'published_before', 'language']
     
     def filter_search(self, queryset, name, value):
-        """Full-text search across title and content."""
-        if not value:
-            return queryset
-        
-        return queryset.filter(
-            Q(title_id__icontains=value) |
-            Q(title_en__icontains=value) |
-            Q(content_id__icontains=value) |
-            Q(content_en__icontains=value) |
-            Q(summary_id__icontains=value) |
-            Q(summary_en__icontains=value)
-        )
+        """Full-text search across title, content, summary, creator, author, date, category, tags, and attachments."""
+        return search_articles_queryset(queryset, value)

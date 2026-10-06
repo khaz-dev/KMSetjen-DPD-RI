@@ -45,9 +45,8 @@ class ArticleViewSet(viewsets.ModelViewSet):
     """
     permission_classes = [IsAuthenticated]
     pagination_class = InternalAPIPagination
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = InternalArticleFilter
-    search_fields = ['title_id', 'title_en', 'content_id', 'content_en']
     ordering_fields = ['created_at', 'updated_at', 'published_at', 'view_count']
     ordering = ['-updated_at']
     

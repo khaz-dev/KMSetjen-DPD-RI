@@ -72,6 +72,8 @@ const SearchFilter = ({
           </InputGroup.Text>
           <Form.Control
             placeholder={t('search.placeholder')}
+            title={t('search.placeholder')}
+            aria-label={t('search.placeholder')}
             value={localSearchQuery}
             onChange={handleSearchInput}
             className="search-field"

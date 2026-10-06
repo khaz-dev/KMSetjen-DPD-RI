@@ -176,7 +176,7 @@
   },
   "articles": {
     "title": "Semua Pengetahuan",
-    "search_placeholder": "Cari pengetahuan...",
+    "search_placeholder": "Cari judul, ringkasan, penulis/pembuat, tanggal, kategori, lampiran, atau konten...",
     "filter_by_category": "Filter berdasarkan Kategori",
     "sort_by": "Urutkan berdasarkan",
     "sort_newest": "Terbaru Terlebih Dahulu",
@@ -592,6 +592,9 @@
     "all_types": "Semua Tipe",
     "resource_type": "Tipe Sumber Daya",
     "ip_address": "Alamat IP"
+  },
+  "search": {
+    "placeholder": "Cari judul, ringkasan, penulis/pembuat, tanggal, kategori, lampiran, atau konten..."
   },
   "editor": {
     "title": "Editor Pengetahuan",

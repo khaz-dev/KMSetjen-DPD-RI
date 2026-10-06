@@ -23,8 +23,9 @@ def published_article(db):
         password='pass123'
     )
     category = Category.objects.create(
-        name_id='Test Category',
-        name_en='Test Category'
+        name_id='Published Category',
+        name_en='Published Category',
+        slug='published-category'
     )
     article = Article.objects.create(
         title_id='Test Article',
@@ -35,9 +36,10 @@ def published_article(db):
         summary_en='Summary in English',
         author=user,
         category=category,
-        status='PUBLISHED',
-        access_level='PUBLIC',
+        status='published',
+        access_level='public',
         is_published=True,
+        version_type='published',
     )
     return article
 

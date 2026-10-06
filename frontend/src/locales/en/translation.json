@@ -176,7 +176,7 @@
   },
   "articles": {
     "title": "All Knowledge",
-    "search_placeholder": "Search knowledge...",
+    "search_placeholder": "Search title, excerpt, author/creator, date, category, attachments, or content...",
     "filter_by_category": "Filter by Category",
     "sort_by": "Sort by",
     "sort_newest": "Newest First",
@@ -592,6 +592,9 @@
     "all_types": "All Types",
     "resource_type": "Resource Type",
     "ip_address": "IP Address"
+  },
+  "search": {
+    "placeholder": "Search title, excerpt, author/creator, date, category, attachments, or content..."
   },
   "moderation": {
     "title": "Knowledge Moderation",
