@@ -447,6 +447,10 @@ class ArticleViewSet(viewsets.ModelViewSet):
             existing_published.summary_en = article.summary_en
             existing_published.category = article.category
             existing_published.tags.set(article.tags.all())
+            existing_published.creator_type = article.creator_type
+            existing_published.creator_name = article.creator_name
+            existing_published.creator_user = article.creator_user
+            existing_published.creators_data = article.creators_data
             existing_published.access_level = article.access_level
             existing_published.allowed_roles.set(article.allowed_roles.all())
             existing_published.image_url = article.image_url
@@ -477,6 +481,10 @@ class ArticleViewSet(viewsets.ModelViewSet):
                 summary_id=article.summary_id,
                 summary_en=article.summary_en,
                 category=article.category,
+                creator_type=article.creator_type,
+                creator_name=article.creator_name,
+                creator_user=article.creator_user,
+                creators_data=article.creators_data,
                 access_level=article.access_level,
                 image_url=article.image_url,
                 is_bilingual=article.is_bilingual,
@@ -713,6 +721,100 @@ class ArticleViewSet(viewsets.ModelViewSet):
             'exclude_id': exclude_id_int,
             'message': 'Slug is already in use' if slug_exists else 'Slug is available'
         })
+
+    @action(detail=False, methods=['get'], url_path='creators-internal')
+    def creators_internal(self, request):
+        """
+        Autocomplete sugesti penyusun internal (Pegawai Setjen DPD RI & Unit Kerja).
+        GET /api/v1/internal/articles/creators-internal/?q=...
+        """
+        q = request.query_params.get('q', '').strip()
+        results = []
+        
+        # Unit kerja standar di lingkungan Setjen DPD RI
+        DPD_UNITS = [
+            "Sekretariat Jenderal DPD RI",
+            "Biro Persidangan I",
+            "Biro Persidangan II",
+            "Biro Protokol, Humas dan Media",
+            "Biro Keuangan dan Perencanaan",
+            "Biro Organisasi, Kepegawaian dan Hukum",
+            "Biro Umum",
+            "Pusat Kajian Daerah dan Anggaran",
+            "Pusat Perancangan Kebijakan dan Hukum",
+            "Pusat Teknologi Informasi dan Komunikasi",
+            "Inspektorat",
+            "Bagian Hubungan Masyarakat",
+            "Bagian Pengelolaan TI",
+            "Bagian Pemberitaan dan Media",
+            "Bagian Risalah dan Dokumen Persidangan",
+        ]
+        
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        
+        user_query = User.objects.filter(is_active=True)
+        if q:
+            user_query = user_query.filter(
+                Q(first_name__icontains=q) |
+                Q(last_name__icontains=q) |
+                Q(username__icontains=q) |
+                Q(nip__icontains=q) |
+                Q(department__icontains=q) |
+                Q(unit_organisasi__icontains=q) |
+                Q(jabatan__icontains=q)
+            )
+        
+        users = user_query.order_by('first_name', 'last_name')[:15]
+        for u in users:
+            full_name = f"{u.first_name} {u.last_name}".strip() or u.username
+            results.append({
+                'id': u.id,
+                'name': full_name,
+                'nip': u.nip or '',
+                'department': u.department or u.unit_organisasi or '',
+                'jabatan': u.jabatan or '',
+                'type': 'employee'
+            })
+        
+        # Tambahkan sugesti unit kerja jika cocok atau jika query masih pendek
+        matched_units = [u for u in DPD_UNITS if not q or q.lower() in u.lower()]
+        for unit in matched_units[:6]:
+            results.append({
+                'id': None,
+                'name': unit,
+                'nip': '',
+                'department': 'Unit Kerja Setjen DPD RI',
+                'jabatan': 'Unit Kerja',
+                'type': 'work_unit'
+            })
+        
+        return Response(results)
+
+    @action(detail=False, methods=['get'], url_path='creators-external')
+    def creators_external(self, request):
+        """
+        Autocomplete sugesti penyusun eksternal.
+        GET /api/v1/internal/articles/creators-external/?q=...
+        """
+        q = request.query_params.get('q', '').strip()
+        from apps.content.models import ExternalAuthor
+        
+        query = ExternalAuthor.objects.all()
+        if q:
+            query = query.filter(Q(name__icontains=q) | Q(institution__icontains=q))
+        
+        authors = query.order_by('name')[:20]
+        results = [
+            {
+                'id': a.id,
+                'name': a.name,
+                'institution': a.institution,
+                'type': 'external'
+            }
+            for a in authors
+        ]
+        return Response(results)
 
     @action(detail=False, methods=['get'])
     def dashboard(self, request):

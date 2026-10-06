@@ -12,6 +12,7 @@ import { FiShare2, FiPrinter, FiCheck, FiFacebook, FiTwitter, FiMail, FiEye, FiH
 import ImageWithFallback from '../components/ImageWithFallback';
 import PptxViewer from '../components/PptxViewer';
 import PdfViewer from '../components/PdfViewer';
+import ArticleMetaLine from '../components/ArticleMetaLine';
 import './ArticleDetailPage.css';
 
 /**
@@ -502,22 +503,8 @@ const ArticleDetailPage = () => {
                   })}
                 </div>
 
-                <div className="article-detail-info text-muted small mb-3">
-                  <span>
-                    {t('common.by')} <strong>{article.author_name}</strong>
-                  </span>
-                  <span className="separator">•</span>
-                  <span>
-                    {formatDistanceToNow(new Date(article.published_at || article.updated_at), {
-                      addSuffix: true,
-                      locale: isIndonesian ? idLocale : enUS
-                    })}
-                  </span>
-                  <span className="separator">•</span>
-                  <span className="d-inline-flex align-items-center gap-1">
-                    <FiEye size={14} />
-                    {article.view_count} {t('articles.views')}
-                  </span>
+                <div className="article-detail-info-wrapper mb-3">
+                  <ArticleMetaLine article={article} showViews={true} />
                 </div>
 
               </header>
@@ -723,6 +710,14 @@ const ArticleDetailPage = () => {
                         {article.status === 'approved' && t('dashboard.status_approved')}
                         {article.status === 'rejected' && t('dashboard.status_rejected')}
                       </Badge>
+                    </p>
+                    <p>
+                      <strong>{t('articles.creator_original', 'Penyusun / Penulis Asli')}:</strong><br />
+                      <span>{article.creator_name || article.author_name || '-'}</span>
+                    </p>
+                    <p>
+                      <strong>{t('articles.published_by', 'Dipublikasikan Oleh')}:</strong><br />
+                      <span>{article.uploader_name || article.author_name || '-'}</span>
                     </p>
                     <p>
                       <strong>{t('articles.last_updated')}:</strong><br />

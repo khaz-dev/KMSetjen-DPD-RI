@@ -217,7 +217,7 @@ const EditorDashboard = () => {
                         <h5 className="article-title">{article.title}</h5>
                         <div className="article-meta">
                           <small className="text-muted">
-                            By {article.author?.first_name || 'Anonymous'} •
+                            ✍️ {article.creator_name || article.author?.first_name || article.author?.username || 'Setjen DPD RI'} | 🌐 {article.uploader_name || article.author?.first_name || article.author?.username || 'Admin KM'} •
                             {' '}{new Date(article.created_at).toLocaleDateString()}
                           </small>
                         </div>
@@ -289,7 +289,7 @@ const EditorDashboard = () => {
                         <h5 className="article-title">{article.title}</h5>
                         <div className="article-meta">
                           <small className="text-muted">
-                            By {article.author?.first_name || 'Anonymous'} •
+                            ✍️ {article.creator_name || article.author?.first_name || article.author?.username || 'Setjen DPD RI'} | 🌐 {article.uploader_name || article.author?.first_name || article.author?.username || 'Admin KM'} •
                             {' '}{new Date(article.created_at).toLocaleDateString()}
                           </small>
                         </div>
@@ -339,7 +339,7 @@ const EditorDashboard = () => {
                         <h5 className="article-title">{article.title}</h5>
                         <div className="article-meta">
                           <small className="text-muted">
-                            By {article.author?.first_name || 'Anonymous'} •
+                            ✍️ {article.creator_name || article.author?.first_name || article.author?.username || 'Setjen DPD RI'} | 🌐 {article.uploader_name || article.author?.first_name || article.author?.username || 'Admin KM'} •
                             {' '}{new Date(article.created_at).toLocaleDateString()}
                           </small>
                         </div>

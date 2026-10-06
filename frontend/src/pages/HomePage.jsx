@@ -13,6 +13,7 @@ import {
   FiLayers, FiActivity, FiTrendingUp, FiExternalLink, FiChevronLeft, FiChevronRight
 } from 'react-icons/fi';
 import ImageWithFallback from '../components/ImageWithFallback';
+import ArticleMetaLine from '../components/ArticleMetaLine';
 import { getDefaultImages, getAssetPath } from '../utils/imageUtils';
 import './HomePage.css';
 
@@ -432,11 +433,8 @@ const HomePage = () => {
                           
                           {/* Article Meta Information */}
                           <div className="article-meta mt-3" style={{ transition: 'none' }}>
-                            <div className="meta-row mb-2">
-                              <small className="text-muted">
-                                {formatSafeDate(article.published_at || article.updated_at, isIndonesian)}
-                              </small>
-                              <span className="meta-separator">•</span>
+                            <ArticleMetaLine article={article} compact={true} />
+                            <div className="meta-row mt-2">
                               <small className="text-muted d-flex align-items-center gap-1">
                                 <FiEye size={14} />
                                 {article.view_count} {t('articles.views')}
@@ -447,13 +445,6 @@ const HomePage = () => {
                                 {article.like_count} {t('articles.likes')}
                               </small>
                             </div>
-                            {article.author_name && (
-                              <div className="meta-row">
-                                <small className="text-secondary">
-                                  {t('articles.by', { name: article.author_name })}
-                                </small>
-                              </div>
-                            )}
                           </div>
                         </Card.Body>
                         <Card.Footer className="bg-transparent d-flex justify-content-end">

@@ -238,7 +238,16 @@ function ArticleModerationPage({ onLogout }) {
                             <tr key={article.id}>
                               <td style={{ textAlign: 'center', fontWeight: '600', color: '#999', width: '50px' }}>{(currentPage - 1) * 20 + index + 1}</td>
                               <td><strong>{(isIndonesian ? article.title_id : article.title_en).substring(0, 40)}...</strong></td>
-                              <td>{article.author?.username || t('moderation.empty_value')}</td>
+                              <td>
+                                <div className="d-flex flex-column gap-1">
+                                  <span title="Penyusun / Penulis Asli" style={{ fontSize: '0.85rem' }}>
+                                    ✍️ <strong>{article.creator_name || article.author?.username || t('moderation.empty_value')}</strong>
+                                  </span>
+                                  <span title="Dipublikasikan / Diunggah Oleh" className="text-muted" style={{ fontSize: '0.78rem' }}>
+                                    🌐 {article.uploader_name || article.author?.username || '-'}
+                                  </span>
+                                </div>
+                              </td>
                               <td>{(isIndonesian ? article.category?.name_id : article.category?.name_en) || t('moderation.empty_value')}</td>
                               <td><Badge bg={getStatusBadge(article.status)}>{getStatusLabel(article.status)}</Badge></td>
                               <td>{new Date(article.created_at).toLocaleDateString()}</td>

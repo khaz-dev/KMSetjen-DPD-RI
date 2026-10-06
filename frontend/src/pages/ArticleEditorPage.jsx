@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -76,6 +76,14 @@ const ArticleEditor = () => {
   const [isDraggingImage, setIsDraggingImage] = useState(false); // Track drag state for featured image upload
   const [isDraggingFiles, setIsDraggingFiles] = useState(false); // Track drag state for file upload area
 
+  // Multiple creators state
+  const [creators, setCreators] = useState([]);
+  const [creatorInputText, setCreatorInputText] = useState('');
+  const [activeCreatorType, setActiveCreatorType] = useState('internal');
+  const [creatorSuggestions, setCreatorSuggestions] = useState([]);
+  const [isSearchingCreator, setIsSearchingCreator] = useState(false);
+  const [showCreatorDropdown, setShowCreatorDropdown] = useState(false);
+
   const [formData, setFormData] = useState({
     id: null,
     // Indonesian fields
@@ -86,6 +94,10 @@ const ArticleEditor = () => {
     title_en: '',
     description_en: '',
     content_en: '',
+    // Creator metadata (Penyusun / Penulis Asli)
+    creator_type: 'internal',
+    creator_name: '',
+    creator_user_id: null,
     // Common fields
     category_id: '',
     featured_image: '',
@@ -122,6 +134,10 @@ const ArticleEditor = () => {
         title_en: data.title_en || '',
         description_en: data.summary_en || '',
         content_en: data.content_en || '',
+        // Creator metadata (Penyusun / Penulis Asli)
+        creator_type: data.creator_type || 'internal',
+        creator_name: data.creator_name || data.author_name || '',
+        creator_user_id: data.creator_user_id || (data.creator_user?.id) || null,
         // Common fields
         category_id: data.category?.id || data.category_id || '',
         featured_image: data.image || data.image_url || '',
@@ -131,6 +147,28 @@ const ArticleEditor = () => {
         status: data.status || 'draft',
         access_level: data.access_level || 'public'  // Load access level from API
       });
+
+      // Initialize multiple creators list
+      let loadedCreators = [];
+      if (Array.isArray(data.creators_data) && data.creators_data.length > 0) {
+        loadedCreators = data.creators_data.map(c => {
+          const isInternal = c.type === 'internal' || c.type === 'employee' || c.type === 'work_unit';
+          return {
+            ...c,
+            type: isInternal ? 'internal' : 'external',
+            employeeType: c.employeeType || (c.type === 'work_unit' ? 'work_unit' : 'employee')
+          };
+        });
+      } else if (data.creator_name) {
+        loadedCreators = [{
+          id: data.creator_user_id || 'legacy-0',
+          name: data.creator_name.trim(),
+          type: data.creator_type === 'external' ? 'external' : 'internal',
+          employeeType: 'employee'
+        }];
+      }
+      setCreators(loadedCreators);
+
       const tagsArray = data.tags?.map(t => t.id) || [];
       setSelectedTags(tagsArray);
       
@@ -143,6 +181,9 @@ const ArticleEditor = () => {
         title_en: data.title_en || '',
         description_en: data.summary_en || '',
         content_en: data.content_en || '',
+        creator_type: data.creator_type || 'internal',
+        creator_name: data.creator_name || data.author_name || '',
+        creator_user_id: data.creator_user_id || (data.creator_user?.id) || null,
         category_id: data.category?.id || data.category_id || '',
         featured_image: data.image || data.image_url || '',
         featured_image_file: null,
@@ -207,6 +248,12 @@ const ArticleEditor = () => {
         payload.append('summary_en', formData.description_en);
         payload.append('category', formData.category_id);
         payload.append('access_level', formData.access_level);
+        payload.append('creator_type', formData.creator_type || 'internal');
+        payload.append('creator_name', (formData.creator_name || '').trim());
+        payload.append('creators_data', JSON.stringify(creators));
+        if (formData.creator_user_id) {
+          payload.append('creator_user', formData.creator_user_id);
+        }
         payload.append('status', formData.status || 'draft');
         payload.append('slug', formData.slug || '');
         payload.append('image', formData.featured_image_file);
@@ -224,6 +271,10 @@ const ArticleEditor = () => {
         payload.summary_id = formData.description_id;
         payload.summary_en = formData.description_en;
         payload.tags = selectedTags;
+        payload.creator_type = formData.creator_type || 'internal';
+        payload.creator_name = (formData.creator_name || '').trim();
+        payload.creator_user = formData.creator_user_id || null;
+        payload.creators_data = creators;
         payload.status = formData.status || 'draft';
         payload.category = formData.category_id;
         payload.access_level = formData.access_level;
@@ -279,6 +330,9 @@ const ArticleEditor = () => {
         title_en: formData.title_en,
         description_en: formData.description_en,
         content_en: formData.content_en,
+        creator_type: formData.creator_type,
+        creator_name: formData.creator_name,
+        creator_user_id: formData.creator_user_id,
         category_id: formData.category_id,
         featured_image: data.image || formData.featured_image,  // Use actual saved image URL
         featured_image_file: null,  // File is null after save (no File object to track)
@@ -472,7 +526,10 @@ const ArticleEditor = () => {
       formData.featured_image_file !== initialFormData.featured_image_file ||
       formData.featured_image_url !== initialFormData.featured_image_url ||
       formData.slug !== initialFormData.slug ||
-      formData.access_level !== initialFormData.access_level
+      formData.access_level !== initialFormData.access_level ||
+      formData.creator_type !== initialFormData.creator_type ||
+      formData.creator_name !== initialFormData.creator_name ||
+      formData.creator_user_id !== initialFormData.creator_user_id
     );
     
     // Compare tags
@@ -485,6 +542,117 @@ const ArticleEditor = () => {
     
     return fieldsChanged || tagsChanged || filesChanged;
   }, [formData, initialFormData, selectedTags, initialSelectedTags, files, initialFiles, id]);
+
+  // Default creator to current user for new articles
+  // Default creator to current user for new articles
+  useEffect(() => {
+    if (!id && user && creators.length === 0) {
+      const defaultName = user.full_name || (user.first_name ? `${user.first_name} ${user.last_name}`.trim() : '') || user.username || '';
+      if (defaultName) {
+        const initialItem = {
+          id: user.id || null,
+          name: defaultName,
+          type: 'internal',
+          employeeType: 'employee'
+        };
+        setCreators([initialItem]);
+        setFormData(prev => ({
+          ...prev,
+          creator_name: defaultName,
+          creator_type: 'internal',
+          creator_user_id: user.id || null
+        }));
+      }
+    }
+  }, [id, user, creators.length]);
+
+  // Sync creators list to formData
+  const syncCreatorsToForm = useCallback((updatedCreators) => {
+    setCreators(updatedCreators);
+    const names = updatedCreators.map(c => c.name).join(', ');
+    const hasInternal = updatedCreators.some(c => c.type === 'internal' || c.type === 'employee' || c.type === 'work_unit');
+    const hasExternal = updatedCreators.some(c => c.type === 'external');
+    const computedType = hasInternal && hasExternal ? 'mixed' : (hasExternal ? 'external' : 'internal');
+    const firstInternalId = updatedCreators.find(c => (c.type === 'internal' || c.type === 'employee') && c.id && typeof c.id === 'number')?.id || null;
+
+    setFormData(prev => ({
+      ...prev,
+      creator_name: names,
+      creator_type: computedType,
+      creator_user_id: firstInternalId
+    }));
+  }, []);
+
+  const handleAddCreator = (item) => {
+    if (!item || !item.name || !item.name.trim()) return;
+    const cleanName = item.name.trim();
+    if (creators.some(c => c.name.trim().toLowerCase() === cleanName.toLowerCase())) {
+      setCreatorInputText('');
+      setShowCreatorDropdown(false);
+      return;
+    }
+    const isInternal =
+      item.type === 'internal' ||
+      item.type === 'employee' ||
+      item.type === 'work_unit' ||
+      activeCreatorType === 'internal';
+
+    const employeeType =
+      item.employeeType ||
+      (item.type === 'work_unit' ? 'work_unit' : 'employee');
+
+    const newCreator = {
+      id: item.id || null,
+      name: cleanName,
+      type: isInternal ? 'internal' : 'external',
+      employeeType: isInternal ? employeeType : undefined,
+      nip: item.nip || '',
+      department: item.department || '',
+      institution: item.institution || ''
+    };
+    syncCreatorsToForm([...creators, newCreator]);
+    setCreatorInputText('');
+    setShowCreatorDropdown(false);
+  };
+
+  const handleRemoveCreator = (index) => {
+    const updated = creators.filter((_, i) => i !== index);
+    syncCreatorsToForm(updated);
+  };
+
+  // Fetch creator suggestions (internal or external)
+  const fetchCreatorSuggestions = useCallback(async (query = '', type = 'internal') => {
+    try {
+      setIsSearchingCreator(true);
+      let response;
+      if (type === 'internal') {
+        response = await internalAPI.searchInternalCreators(query);
+      } else {
+        response = await internalAPI.searchExternalCreators(query);
+      }
+      const data = response.data || response;
+      setCreatorSuggestions(Array.isArray(data) ? data : []);
+      setShowCreatorDropdown(true);
+    } catch (err) {
+      setCreatorSuggestions([]);
+    } finally {
+      setIsSearchingCreator(false);
+    }
+  }, []);
+
+  const creatorDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (creatorDropdownRef.current && !creatorDropdownRef.current.contains(event.target)) {
+        setShowCreatorDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Auto-save draft every 2 minutes (only if there are changes)
   useEffect(() => {
@@ -1192,6 +1360,240 @@ const ArticleEditor = () => {
               </Form.Text>
             </Form.Group>
           )}
+        </div>
+
+        {/* PENYUSUN & PENERBIT SECTION */}
+        <div className="form-section creator-metadata-section" ref={creatorDropdownRef}>
+          <div className="form-section-title">
+            <i className="bi bi-person-lines-fill"></i>
+            <div>
+              <h3>{t('editor.creator_section') || 'Penyusun / Penulis Asli & Penerbit'}</h3>
+              <p className="section-subtitle text-muted mb-0">
+                {t('editor.creator_section_desc') || 'Menunjuk pada individu atau unit kerja yang melakukan riset, membuat konten, atau merumuskan pengetahuan tersebut.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Opsi Internal vs Eksternal untuk menambah */}
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">
+              {t('editor.creator_type') || 'Kategori Penyusun Yang Ditambahkan'}
+            </Form.Label>
+            <div className="creator-type-segmented-control">
+              <button
+                type="button"
+                className={`creator-type-pill ${activeCreatorType === 'internal' ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveCreatorType('internal');
+                  if (creatorInputText) {
+                    fetchCreatorSuggestions(creatorInputText, 'internal');
+                  }
+                }}
+              >
+                <i className="bi bi-building me-2"></i>
+                {t('editor.creator_internal') || 'Internal (Pegawai / Unit Kerja Setjen DPD RI)'}
+              </button>
+              <button
+                type="button"
+                className={`creator-type-pill ${activeCreatorType === 'external' ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveCreatorType('external');
+                  if (creatorInputText) {
+                    fetchCreatorSuggestions(creatorInputText, 'external');
+                  }
+                }}
+              >
+                <i className="bi bi-globe me-2"></i>
+                {t('editor.creator_external') || 'Eksternal'}
+              </button>
+            </div>
+          </Form.Group>
+
+          {/* Autocomplete Input & Add Button */}
+          <Form.Group className="mb-3 position-relative">
+            <Form.Label className="fw-semibold">
+              ✍️ {t('editor.creator_name') || 'Cari atau Tambah Penyusun'}
+            </Form.Label>
+            <div className="creator-input-row">
+              <div className="creator-input-container">
+                <Form.Control
+                  type="text"
+                  value={creatorInputText}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setCreatorInputText(val);
+                    fetchCreatorSuggestions(val, activeCreatorType);
+                  }}
+                  onFocus={() => {
+                    fetchCreatorSuggestions(creatorInputText, activeCreatorType);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (creatorInputText.trim()) {
+                        handleAddCreator({ name: creatorInputText.trim(), type: activeCreatorType });
+                      }
+                    }
+                  }}
+                  placeholder={
+                    activeCreatorType === 'internal'
+                      ? (t('editor.creator_name_placeholder_internal') || 'Ketik nama Pegawai atau Unit Kerja Setjen DPD RI...')
+                      : (t('editor.creator_name_placeholder_external') || 'Ketik nama penyusun eksternal...')
+                  }
+                  autoComplete="off"
+                />
+                {isSearchingCreator && (
+                  <div className="creator-search-loading">
+                    <div className="spinner-border spinner-border-sm text-primary" role="status" />
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                className="creator-add-btn"
+                disabled={!creatorInputText.trim()}
+                onClick={() => {
+                  if (creatorInputText.trim()) {
+                    handleAddCreator({ name: creatorInputText.trim(), type: activeCreatorType });
+                  }
+                }}
+              >
+                <i className="bi bi-plus-lg"></i>
+                {t('editor.creator_add') || 'Tambah'}
+              </button>
+            </div>
+
+            {/* Suggestions Dropdown */}
+            {showCreatorDropdown && (
+              <div className="creator-dropdown-list shadow-lg">
+                {creatorSuggestions.length > 0 ? (
+                  creatorSuggestions.map((item, idx) => (
+                    <div
+                      key={item.id ? `${item.type}-${item.id}` : `unit-${idx}`}
+                      className="creator-dropdown-item"
+                      onClick={() => handleAddCreator(item)}
+                    >
+                      <div className="dropdown-item-icon">
+                        {item.type === 'employee' ? '👤' : item.type === 'work_unit' ? '🏛️' : '🌐'}
+                      </div>
+                      <div className="dropdown-item-text">
+                        <div className="dropdown-item-title">{item.name}</div>
+                        <div className="dropdown-item-meta text-muted small">
+                          {item.type === 'employee' && (
+                            <>
+                              {item.nip && <span className="me-2">NIP: {item.nip}</span>}
+                              {item.department && <span>• {item.department}</span>}
+                            </>
+                          )}
+                          {item.type === 'work_unit' && (
+                            <span>Unit Kerja Setjen DPD RI</span>
+                          )}
+                          {item.type === 'external' && (
+                            <span>{item.institution || 'Penulis Eksternal Terdaftar'}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  activeCreatorType === 'external' && creatorInputText.trim() ? (
+                    <div
+                      className="creator-dropdown-item new-external-option"
+                      onClick={() => handleAddCreator({ name: creatorInputText.trim(), type: 'external' })}
+                    >
+                      <div className="dropdown-item-icon">✨</div>
+                      <div className="dropdown-item-text">
+                        <div className="dropdown-item-title">
+                          {t('editor.creator_add_new_external') || 'Gunakan sebagai nama eksternal baru'}: <strong>"{creatorInputText}"</strong>
+                        </div>
+                        <div className="dropdown-item-meta text-muted small">
+                          Klik untuk menambahkan penulis baru ini ke daftar penyusun
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3 text-muted text-center small">
+                      {isSearchingCreator ? 'Mencari...' : 'Tidak ada sugesti yang cocok. Anda dapat langsung menekan tombol Tambah.'}
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+            <Form.Text className="text-muted mt-1 d-block">
+              {activeCreatorType === 'internal'
+                ? '💡 Ketik nama untuk mencari Pegawai atau Unit Kerja Setjen DPD RI lalu klik untuk menambahkan.'
+                : '💡 Ketik nama penyusun eksternal lalu klik Tambah. Sistem akan mendaftarkannya otomatis.'}
+            </Form.Text>
+          </Form.Group>
+
+          {/* Selected Creators Chips Display */}
+          <div className="mb-4">
+            <Form.Label className="fw-semibold d-flex justify-content-between align-items-center">
+              <span>
+                📋 {t('editor.creator_list') || 'Daftar Penyusun Terpilih'} ({creators.length})
+                <strong style={{color: '#ff6b6b'}}> *</strong>
+              </span>
+              {creators.length > 0 && (
+                <small className="text-muted">
+                  {creators.length > 1 ? `${creators.length} penyusun` : '1 penyusun'}
+                </small>
+              )}
+            </Form.Label>
+
+            {creators.length > 0 ? (
+              <div className="creators-chips-container">
+                {creators.map((c, idx) => {
+                  const isInternal = c.type === 'internal' || c.type === 'employee' || c.type === 'work_unit';
+                  const isWorkUnit = c.employeeType === 'work_unit' || c.type === 'work_unit';
+                  return (
+                    <div key={c.id ? `${c.type}-${c.id}-${idx}` : `creator-${idx}`} className={`creator-chip ${isInternal ? 'internal' : 'external'}`}>
+                      <span className="creator-chip-icon">
+                        {isInternal ? (isWorkUnit ? '🏛️' : '👤') : '🌐'}
+                      </span>
+                      <span className="creator-chip-name">{c.name}</span>
+                      <span className="creator-chip-tag">
+                        {isInternal ? (isWorkUnit ? 'Unit Kerja' : 'Internal') : 'Eksternal'}
+                      </span>
+                      <button
+                        type="button"
+                        className="creator-chip-remove"
+                        onClick={() => handleRemoveCreator(idx)}
+                        title={t('editor.creator_remove') || 'Hapus'}
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="empty-creators-notice">
+                ⚠️ {t('editor.no_creators_selected') || 'Belum ada penyusun yang ditambahkan. Silakan cari atau ketik nama di atas lalu klik Tambah.'}
+              </div>
+            )}
+          </div>
+
+          {/* Uploader / Published By Info Box */}
+          <div className="uploader-info-box p-3 rounded d-flex align-items-center gap-3">
+            <div className="uploader-icon-badge">🌐</div>
+            <div className="uploader-content flex-grow-1">
+              <div className="uploader-label">
+                {t('editor.uploader_info') || 'Diterbitkan oleh'}: <strong className="text-primary">{user?.full_name || (user?.first_name ? `${user.first_name} ${user.last_name}`.trim() : '') || user?.username || 'Akun Anda'}</strong>
+              </div>
+              <div className="uploader-subtext text-muted small">
+                {t('editor.uploader_info_desc') || 'Menunjuk pada admin KM, agen perubahan, atau staf dokumentasi yang mengunggah artikel ini ke sistem.'}
+              </div>
+            </div>
+            <div className="uploader-preview-tag d-none d-lg-block text-end">
+              <span className="badge bg-light text-secondary border px-3 py-2">
+                {creators.length === 1 && (creators[0].name || '').trim().toLowerCase() === ((user?.full_name || (user?.first_name ? `${user.first_name} ${user.last_name}`.trim() : '') || user?.username) || '').trim().toLowerCase() ? (
+                  <>✍️ Dibuat dan Diterbitkan oleh: {creators[0].name}</>
+                ) : (
+                  <>✍️ {formData.creator_name || 'Penyusun'} | 🌐 {user?.full_name || user?.username || 'Pengunggah'}</>
+                )}
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* FEATURED IMAGE SECTION */}

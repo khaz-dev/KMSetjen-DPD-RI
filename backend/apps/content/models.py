@@ -215,6 +215,41 @@ class Tag(models.Model):
         super().save(*args, **kwargs)
 
 
+
+# ============================================================================
+# EXTERNAL AUTHOR MODEL
+# ============================================================================
+
+class ExternalAuthor(models.Model):
+    """
+    Model untuk menyimpan daftar penulis / penyusun eksternal.
+    Digunakan untuk memberikan sugesti saat user mengetik nama penulis eksternal.
+    """
+    name = models.CharField(
+        max_length=255,
+        unique=True,
+        db_index=True,
+        help_text='Nama penyusun / penulis eksternal'
+    )
+    institution = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+        help_text='Institusi / lembaga / organisasi eksternal'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'content_external_author'
+        verbose_name = 'External Author'
+        verbose_name_plural = 'External Authors'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
 # ============================================================================
 # ARTICLE MODEL
 # ============================================================================
@@ -353,6 +388,42 @@ class Article(models.Model):
         help_text='Jika access_level=role_based, roles mana saja yang bisa akses?'
     )
     
+    # Creator metadata (Penyusun / Penulis Asli)
+    CREATOR_INTERNAL = 'internal'
+    CREATOR_EXTERNAL = 'external'
+    CREATOR_MIXED = 'mixed'
+    CREATOR_TYPE_CHOICES = [
+        (CREATOR_INTERNAL, 'Internal Setjen DPD RI'),
+        (CREATOR_EXTERNAL, 'Eksternal'),
+        (CREATOR_MIXED, 'Gabungan Internal & Eksternal'),
+    ]
+
+    creator_type = models.CharField(
+        max_length=20,
+        default=CREATOR_INTERNAL,
+        choices=CREATOR_TYPE_CHOICES,
+        db_index=True,
+        help_text='Tipe penyusun: internal, eksternal, atau gabungan'
+    )
+    creator_name = models.TextField(
+        blank=True,
+        default='',
+        help_text='Nama penyusun / penulis asli (bisa multiple dipisahkan koma)'
+    )
+    creator_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_articles',
+        help_text='Pegawai internal Setjen DPD RI jika dipilih dari user internal'
+    )
+    creators_data = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Daftar penyusun/penulis terstruktur: [{name, type, user_id, nip, institution}]'
+    )
+
     # Relationships
     category = models.ForeignKey(
         Category,
@@ -373,7 +444,7 @@ class Article(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         related_name='authored_articles',
-        help_text='Penulis artikel'
+        help_text='Pengunggah / Publisher sistem artikel'
     )
     reviewer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -448,6 +519,8 @@ class Article(models.Model):
             models.Index(fields=['category']),
             models.Index(fields=['is_published', 'status']),
             models.Index(fields=['author']),
+            models.Index(fields=['creator_type']),
+            models.Index(fields=['creator_user']),
             models.Index(fields=['-published_at']),
             models.Index(fields=['access_level']),
         ]
@@ -463,9 +536,27 @@ class Article(models.Model):
         return f"{self.title_id} ({self.status})"
     
     def save(self, *args, **kwargs):
-        """Auto-generate slug if not provided, and auto-optimize featured image."""
+        """Auto-generate slug if not provided, ensure creator_name fallback, and auto-optimize featured image."""
         if not self.slug:
             self.slug = slugify(self.title_id)
+        if not self.creator_name and self.creators_data:
+            self.creator_name = ", ".join(
+                c.get('name') for c in self.creators_data if isinstance(c, dict) and c.get('name')
+            )
+        elif not self.creator_name:
+            if self.creator_user:
+                self.creator_name = self.creator_user.get_full_name() or self.creator_user.username
+            elif self.author:
+                self.creator_name = self.author.get_full_name() or self.author.username
+            else:
+                self.creator_name = 'Setjen DPD RI'
+
+        # Ensure creators_data is populated if creator_name exists
+        if not self.creators_data and self.creator_name:
+            self.creators_data = [
+                {'name': n.strip(), 'type': self.creator_type or 'internal'}
+                for n in self.creator_name.split(',') if n.strip()
+            ]
         if self.image and not getattr(self.image, '_committed', True):
             try:
                 from shared.utils.image_optimizer import optimize_image_file, MAX_SIZE_ARTICLE

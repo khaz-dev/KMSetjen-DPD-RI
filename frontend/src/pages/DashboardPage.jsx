@@ -8,6 +8,7 @@ import { useLanguage } from '../hooks/useLanguage';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
 import ImageWithFallback from '../components/ImageWithFallback';
+import ArticleMetaLine from '../components/ArticleMetaLine';
 import './DashboardPage.css';
 import { FiFileText, FiCheckCircle, FiAlertCircle, FiClock, FiX, FiEye, FiEdit2, FiTrash2, FiSearch, FiRotateCcw, FiBookOpen } from 'react-icons/fi';
 import { formatDistanceToNow } from 'date-fns';
@@ -488,6 +489,9 @@ const DashboardPage = () => {
                                     )}
                                   </div>
                                 )}
+                              </div>
+                              <div className="dashboard-creator-meta mb-2">
+                                <ArticleMetaLine article={article} compact={true} showDate={false} />
                               </div>
                               <div className="article-meta">
                                 <span className="date">

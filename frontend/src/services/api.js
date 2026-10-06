@@ -321,6 +321,13 @@ export const internalAPI = {
   archiveArticle: (id) =>
     apiClient.post(`/v1/internal/articles/${id}/archive/`),
   
+  // Creator Suggestions
+  searchInternalCreators: (query = '') =>
+    apiClient.get('/v1/internal/articles/creators-internal/', { params: { q: query } }),
+
+  searchExternalCreators: (query = '') =>
+    apiClient.get('/v1/internal/articles/creators-external/', { params: { q: query } }),
+
   // Slug Validation
   checkSlug: (slug, excludeId = null, versionType = 'draft') => {
     const params = { slug, version_type: versionType };

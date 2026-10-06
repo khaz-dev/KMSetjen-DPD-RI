@@ -1,0 +1,93 @@
+.article-meta-line {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 13.5px;
+  color: var(--text-secondary, #64748b);
+  line-height: 1.5;
+}
+
+.article-meta-line .meta-part {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: normal;
+}
+
+.article-meta-line .meta-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.article-meta-line .meta-label {
+  color: var(--text-secondary, #64748b);
+  font-weight: 500;
+}
+
+.article-meta-line .meta-name {
+  color: var(--text-primary, #1e293b);
+  font-weight: 600;
+}
+
+.article-meta-line .meta-date-text {
+  color: var(--text-secondary, #475569);
+  font-weight: 500;
+}
+
+.article-meta-line .meta-separator-pipe {
+  color: #cbd5e1;
+  font-weight: 400;
+  user-select: none;
+}
+
+/* Compact mode for cards and list views */
+.article-meta-line.meta-compact {
+  font-size: 12.5px;
+  gap: 4px 8px;
+}
+
+.article-meta-line.meta-compact .meta-icon {
+  font-size: 13px;
+}
+
+.article-meta-line .meta-views {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-secondary, #64748b);
+}
+
+.article-meta-line .meta-views-icon {
+  color: var(--primary, #0d9488);
+  flex-shrink: 0;
+}
+
+/* Dark mode styling */
+[data-theme="dark"] .article-meta-line {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .article-meta-line .meta-label {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .article-meta-line .meta-name {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .article-meta-line .meta-date-text {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .article-meta-line .meta-views {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .article-meta-line .meta-views-icon {
+  color: #2dd4bf;
+}
+
+[data-theme="dark"] .article-meta-line .meta-separator-pipe {
+  color: #475569;
+}

@@ -34,8 +34,10 @@ router.register(r'articles', ArticleViewSet, basename='article')
 
 # Internal API URLs
 urlpatterns = [
-    # Explicit URL for check-slug action must come FIRST to take priority over router
+    # Explicit URLs for actions that must come FIRST to take priority over router lookup
     path('articles/check-slug/', ArticleViewSet.as_view({'get': 'check_slug'}), name='article-check-slug'),
+    path('articles/creators-internal/', ArticleViewSet.as_view({'get': 'creators_internal'}), name='article-creators-internal'),
+    path('articles/creators-external/', ArticleViewSet.as_view({'get': 'creators_external'}), name='article-creators-external'),
     # Router for articles with detail actions (submit-review, publish, etc.)
     path('', include(router.urls)),
     # Nested file endpoints - use explicit re_path to properly capture article_id

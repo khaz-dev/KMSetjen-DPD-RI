@@ -8,6 +8,7 @@ import SearchFilter from '../components/SearchFilter';
 import Pagination from '../components/Pagination';
 import Breadcrumbs from '../components/Breadcrumbs';
 import ImageWithFallback from '../components/ImageWithFallback';
+import ArticleMetaLine from '../components/ArticleMetaLine';
 import { useLanguage } from '../hooks/useLanguage';
 import { useAuth } from '../contexts/AuthContext';
 import './ArticlesPage.css';
@@ -484,60 +485,18 @@ const ArticlesPage = () => {
                     <p className="article-excerpt" title={isIndonesian ? article.summary_id : article.summary_en}>
                       {isIndonesian ? article.summary_id : article.summary_en}
                     </p>
-                    <div className="article-meta mt-3 mb-0">
-                      {/* Author - Always first */}
+                    <div className="article-meta-line-container mt-3 mb-2">
+                      <ArticleMetaLine article={article} compact={true} />
+                    </div>
+                    <div className="article-meta mt-1 mb-0">
                       <span className="meta-item">
-                        {article.author_name || t('common.unknown_author')}
+                        <FiEye size={15} />
+                        {article.view_count} {t('articles.views')}
                       </span>
-
-                      {/* Dynamically reorder metrics based on sort selection */}
-                      {(sortBy === 'date' || sortBy === 'date-asc') && (
-                        <>
-                          <span className="meta-item meta-highlight">
-                            {formatSafeDate(article.published_at || article.updated_at, isIndonesian)}
-                          </span>
-                          <span className="meta-item">
-                            <FiEye size={16} />
-                            {article.view_count} {t('articles.views')}
-                          </span>
-                          <span className="meta-item">
-                            <FiHeart size={16} />
-                            {article.like_count} {t('articles.likes')}
-                          </span>
-                        </>
-                      )}
-
-                      {sortBy === 'views' && (
-                        <>
-                          <span className="meta-item meta-highlight">
-                            <FiEye size={16} />
-                            {article.view_count} {t('articles.views')}
-                          </span>
-                          <span className="meta-item">
-                            {formatSafeDate(article.published_at || article.updated_at, isIndonesian)}
-                          </span>
-                          <span className="meta-item">
-                            <FiHeart size={16} />
-                            {article.like_count} {t('articles.likes')}
-                          </span>
-                        </>
-                      )}
-
-                      {sortBy === 'likes' && (
-                        <>
-                          <span className="meta-item meta-highlight">
-                            <FiHeart size={16} />
-                            {article.like_count} {t('articles.likes')}
-                          </span>
-                          <span className="meta-item">
-                            <FiEye size={16} />
-                            {article.view_count} {t('articles.views')}
-                          </span>
-                          <span className="meta-item">
-                            {formatSafeDate(article.published_at || article.updated_at, isIndonesian)}
-                          </span>
-                        </>
-                      )}
+                      <span className="meta-item">
+                        <FiHeart size={15} />
+                        {article.like_count} {t('articles.likes')}
+                      </span>
                     </div>
                     <button
                       className="read-more-btn"

@@ -6,6 +6,7 @@ import { publicAPI, getArticleUrl } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorAlert from '../components/ErrorAlert';
 import Breadcrumbs from '../components/Breadcrumbs';
+import ArticleMetaLine from '../components/ArticleMetaLine';
 import './CategoryDetailPage.css';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale, enUS } from 'date-fns/locale';
@@ -109,17 +110,8 @@ const CategoryDetailPage = () => {
                   <p className="article-summary">
                     {isIndonesian ? article.summary_id : article.summary_en}
                   </p>
-                  <div className="article-info">
-                    <span className="author">
-                      By {article.author_name || t('common.unknown_author')}
-                    </span>
-                    <span className="separator">•</span>
-                    <span className="date">
-                      {formatDistanceToNow(new Date(article.created_at), {
-                        addSuffix: true,
-                        locale: isIndonesian ? idLocale : enUS
-                      })}
-                    </span>
+                  <div className="article-info d-flex align-items-center flex-wrap gap-2">
+                    <ArticleMetaLine article={article} compact={true} />
                     <span className="separator">•</span>
                     <span className="views">{article.view_count} {t('articles.views')}</span>
                   </div>

@@ -162,21 +162,39 @@ class ArticleListSerializer(serializers.ModelSerializer):
     category = CategorySimpleSerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
     author_name = serializers.SerializerMethodField()
+    uploader_name = serializers.SerializerMethodField()
+    creator_name = serializers.SerializerMethodField()
+    creator_user_id = serializers.IntegerField(source='creator_user.id', read_only=True, allow_null=True)
     image = serializers.SerializerMethodField()
     liked_by_user = serializers.SerializerMethodField()
     
     class Meta:
         model = Article
         fields = ['id', 'uuid', 'title_id', 'title_en', 'summary_id', 'summary_en', 'image',
-                  'slug', 'category', 'tags', 'author_name', 'is_bilingual', 'status', 'is_published',
+                  'slug', 'category', 'tags', 'author_name', 'uploader_name', 'creator_type', 'creator_name', 'creator_user_id', 'creators_data',
+                  'is_bilingual', 'status', 'is_published',
                   'view_count', 'like_count', 'liked_by_user', 'published_at', 'updated_at', 'created_at']
         read_only_fields = ['id', 'uuid', 'view_count', 'like_count', 'published_at', 'updated_at', 'created_at']
     
     def get_author_name(self, obj):
-        """Get full name of author."""
+        """Get full name of uploader/author."""
+        return self.get_uploader_name(obj)
+    
+    def get_uploader_name(self, obj):
+        """Get full name of the user who uploaded/published this article in the system."""
         if obj.author:
             return f"{obj.author.first_name} {obj.author.last_name}".strip() or obj.author.username
-        return "Unknown Author"
+        return "Admin KM"
+    
+    def get_creator_name(self, obj):
+        """Get original creator/author or work unit name."""
+        if obj.creator_name and obj.creator_name.strip():
+            return obj.creator_name.strip()
+        if obj.creator_user:
+            return obj.creator_user.get_full_name() or obj.creator_user.username
+        if obj.author:
+            return f"{obj.author.first_name} {obj.author.last_name}".strip() or obj.author.username
+        return "Setjen DPD RI"
     
     def get_image(self, obj):
         """Get image URL for article (uploaded image or external URL)."""
@@ -211,6 +229,9 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
     files = FileSerializer(many=True, read_only=True)
     author_name = serializers.SerializerMethodField()
+    uploader_name = serializers.SerializerMethodField()
+    creator_name = serializers.SerializerMethodField()
+    creator_user_id = serializers.IntegerField(source='creator_user.id', read_only=True, allow_null=True)
     author_email = serializers.SerializerMethodField()
     allowed_roles_display = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
@@ -220,16 +241,31 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
         model = Article
         fields = ['id', 'uuid', 'title_id', 'title_en', 'content_id', 'content_en',
                   'summary_id', 'summary_en', 'image', 'slug', 'category', 'tags', 'files',
-                  'status', 'is_published', 'access_level', 'allowed_roles_display', 'author_name',
+                  'status', 'is_published', 'access_level', 'allowed_roles_display',
+                  'author_name', 'uploader_name', 'creator_type', 'creator_name', 'creator_user_id', 'creators_data',
                   'author_email', 'is_bilingual', 'language', 'view_count', 'like_count',
                   'liked_by_user', 'published_at', 'scheduled_at', 'created_at', 'updated_at', 'rejection_reason', 'approval_comment']
         read_only_fields = ['id', 'uuid', 'view_count', 'like_count', 'published_at', 'created_at', 'updated_at']
     
     def get_author_name(self, obj):
-        """Get full name of author."""
+        """Get full name of author/uploader."""
+        return self.get_uploader_name(obj)
+    
+    def get_uploader_name(self, obj):
+        """Get full name of the user who uploaded/published this article in the system."""
         if obj.author:
             return f"{obj.author.first_name} {obj.author.last_name}".strip() or obj.author.username
-        return "Unknown Author"
+        return "Admin KM"
+    
+    def get_creator_name(self, obj):
+        """Get original creator/author or work unit name."""
+        if obj.creator_name and obj.creator_name.strip():
+            return obj.creator_name.strip()
+        if obj.creator_user:
+            return obj.creator_user.get_full_name() or obj.creator_user.username
+        if obj.author:
+            return f"{obj.author.first_name} {obj.author.last_name}".strip() or obj.author.username
+        return "Setjen DPD RI"
     
     def get_author_email(self, obj):
         """Get author email."""

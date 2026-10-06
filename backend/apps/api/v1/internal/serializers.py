@@ -56,6 +56,7 @@ class InternalArticleCreateSerializer(serializers.ModelSerializer):
             'id', 'uuid',  # Include ID in response so frontend can update form
             'title_id', 'title_en', 'content_id', 'content_en',
             'summary_id', 'summary_en', 'category', 'tags',
+            'creator_type', 'creator_name', 'creator_user', 'creators_data',
             'status', 'access_level', 'allowed_roles',
             'is_bilingual', 'language', 'slug', 'image', 'image_url'
         ]
@@ -68,6 +69,9 @@ class InternalArticleCreateSerializer(serializers.ModelSerializer):
             'summary_id': {'required': False, 'allow_blank': True},
             'summary_en': {'required': False, 'allow_blank': True},
             'category': {'required': True},
+            'creator_type': {'required': False, 'default': 'internal'},
+            'creator_name': {'required': False, 'allow_blank': True},
+            'creator_user': {'required': False, 'allow_null': True},
             'status': {'default': 'draft'},
             'access_level': {'default': 'public'},
             'is_bilingual': {'default': False},
@@ -107,10 +111,56 @@ class InternalArticleCreateSerializer(serializers.ModelSerializer):
         tags = validated_data.pop('tags', [])
         allowed_roles = validated_data.pop('allowed_roles', [])
         
-        # Set author to current user
+        # Set author to current user (the uploader)
         validated_data['author'] = self.context['request'].user
         # Ensure it's a draft version
         validated_data['version_type'] = Article.VERSION_DRAFT
+
+        # Handle creator metadata (supports multiple creators)
+        creators_data = validated_data.get('creators_data', [])
+        if isinstance(creators_data, str):
+            try:
+                import json
+                creators_data = json.loads(creators_data)
+                validated_data['creators_data'] = creators_data
+            except Exception:
+                creators_data = []
+        creator_type = validated_data.get('creator_type', 'internal')
+        creator_name = (validated_data.get('creator_name') or '').strip()
+        creator_user = validated_data.get('creator_user', None)
+
+        from apps.content.models import ExternalAuthor
+        if creators_data and isinstance(creators_data, list):
+            normalized_creators = []
+            for c in creators_data:
+                if isinstance(c, dict):
+                    c_type = c.get('type')
+                    is_internal = c_type in ['internal', 'employee', 'work_unit']
+                    normalized_creators.append({
+                        **c,
+                        'type': 'internal' if is_internal else 'external',
+                        'employeeType': c.get('employeeType') or ('work_unit' if c_type == 'work_unit' else 'employee')
+                    })
+                    if not is_internal and c.get('name'):
+                        ExternalAuthor.objects.get_or_create(
+                            name=c['name'].strip(),
+                            defaults={'institution': c.get('institution', '')}
+                        )
+            creators_data = normalized_creators
+            validated_data['creators_data'] = creators_data
+            if not creator_name:
+                creator_name = ", ".join(c.get('name') for c in creators_data if isinstance(c, dict) and c.get('name'))
+                validated_data['creator_name'] = creator_name
+        elif creator_type == 'external' and creator_name:
+            for n in [x.strip() for x in creator_name.split(',') if x.strip()]:
+                ExternalAuthor.objects.get_or_create(name=n)
+        elif creator_type == 'internal' and not creator_name:
+            if creator_user:
+                validated_data['creator_name'] = creator_user.get_full_name() or creator_user.username
+            else:
+                current_user = self.context['request'].user
+                validated_data['creator_name'] = current_user.get_full_name() or current_user.username
+                validated_data['creator_user'] = current_user
         
         article = Article.objects.create(**validated_data)
         
@@ -177,6 +227,7 @@ class InternalArticleUpdateSerializer(serializers.ModelSerializer):
             'id', 'uuid',  # Include ID in response for frontend to track updates
             'title_id', 'title_en', 'content_id', 'content_en',
             'summary_id', 'summary_en', 'category', 'tags',
+            'creator_type', 'creator_name', 'creator_user', 'creators_data',
             'status', 'access_level', 'allowed_roles',
             'is_bilingual', 'language', 'slug', 'image', 'image_url'
         ]
@@ -188,6 +239,9 @@ class InternalArticleUpdateSerializer(serializers.ModelSerializer):
             'content_en': {'required': False, 'allow_blank': True},
             'summary_id': {'required': False, 'allow_blank': True},
             'summary_en': {'required': False, 'allow_blank': True},
+            'creator_type': {'required': False},
+            'creator_name': {'required': False, 'allow_blank': True},
+            'creator_user': {'required': False, 'allow_null': True},
             'slug': {'required': False},
             'image': {'required': False, 'allow_null': True},
             'image_url': {'required': False, 'allow_blank': True, 'allow_null': True},
@@ -296,6 +350,52 @@ class InternalArticleUpdateSerializer(serializers.ModelSerializer):
         tags = validated_data.pop('tags', None)
         allowed_roles = validated_data.pop('allowed_roles', None)
         
+        # Handle creator metadata (supports multiple creators)
+        creators_data = validated_data.get('creators_data', None)
+        if isinstance(creators_data, str):
+            try:
+                import json
+                creators_data = json.loads(creators_data)
+                validated_data['creators_data'] = creators_data
+            except Exception:
+                creators_data = []
+        creator_type = validated_data.get('creator_type', instance.creator_type)
+        if 'creator_name' in validated_data:
+            creator_name = (validated_data.get('creator_name') or '').strip()
+            validated_data['creator_name'] = creator_name
+        else:
+            creator_name = instance.creator_name
+
+        from apps.content.models import ExternalAuthor
+        if creators_data is not None and isinstance(creators_data, list):
+            normalized_creators = []
+            for c in creators_data:
+                if isinstance(c, dict):
+                    c_type = c.get('type')
+                    is_internal = c_type in ['internal', 'employee', 'work_unit']
+                    normalized_creators.append({
+                        **c,
+                        'type': 'internal' if is_internal else 'external',
+                        'employeeType': c.get('employeeType') or ('work_unit' if c_type == 'work_unit' else 'employee')
+                    })
+                    if not is_internal and c.get('name'):
+                        ExternalAuthor.objects.get_or_create(
+                            name=c['name'].strip(),
+                            defaults={'institution': c.get('institution', '')}
+                        )
+            creators_data = normalized_creators
+            validated_data['creators_data'] = creators_data
+            if not creator_name:
+                creator_name = ", ".join(c.get('name') for c in creators_data if isinstance(c, dict) and c.get('name'))
+                validated_data['creator_name'] = creator_name
+        elif creator_type == 'external' and creator_name:
+            for n in [x.strip() for x in creator_name.split(',') if x.strip()]:
+                ExternalAuthor.objects.get_or_create(name=n)
+        elif creator_type == 'internal' and not creator_name:
+            creator_user = validated_data.get('creator_user', instance.creator_user)
+            if creator_user:
+                validated_data['creator_name'] = creator_user.get_full_name() or creator_user.username
+
         # Track changes for audit log
         # IMPORTANT: Serialize values to JSON-compatible format to avoid "not JSON serializable" errors
         changes = {}
@@ -379,6 +479,9 @@ class InternalArticleDetailSerializer(serializers.ModelSerializer):
     files = FileSerializer(many=True, read_only=True)
     image = serializers.SerializerMethodField()
     author_name = serializers.SerializerMethodField()
+    uploader_name = serializers.SerializerMethodField()
+    creator_name = serializers.SerializerMethodField()
+    creator_user_id = serializers.IntegerField(source='creator_user.id', read_only=True, allow_null=True)
     author_email = serializers.SerializerMethodField()
     can_edit = serializers.SerializerMethodField()
     can_delete = serializers.SerializerMethodField()
@@ -393,13 +496,14 @@ class InternalArticleDetailSerializer(serializers.ModelSerializer):
             'id', 'uuid', 'title_id', 'title_en', 'content_id', 'content_en',
             'summary_id', 'summary_en', 'slug', 'category',
             'tags', 'files', 'image', 'image_url', 'status', 'is_published', 'access_level', 'is_bilingual', 'language',
-            'author_name', 'author_email', 'view_count', 'like_count', 'liked_by_user',
+            'author_name', 'uploader_name', 'creator_type', 'creator_name', 'creator_user_id', 'creators_data',
+            'author_email', 'view_count', 'like_count', 'liked_by_user',
             'published_at', 'scheduled_at', 'created_at', 'updated_at', 'rejection_reason', 'approval_comment',
             'can_edit', 'can_delete', 'can_publish', 'version_type', 'draft_article_id', 'published_version_id'
         ]
         read_only_fields = [
             'id', 'uuid', 'slug', 'view_count', 'like_count', 'created_at', 'updated_at',
-            'category', 'tags', 'files', 'image_url', 'author_name', 'author_email',
+            'category', 'tags', 'files', 'image_url', 'author_name', 'uploader_name', 'creator_type', 'creator_name', 'creators_data',
             'version_type', 'draft_article_id', 'published_version_id'
         ]
     
@@ -428,10 +532,24 @@ class InternalArticleDetailSerializer(serializers.ModelSerializer):
         return None
     
     def get_author_name(self, obj):
-        """Get full name of author."""
+        """Get full name of uploader/author."""
+        return self.get_uploader_name(obj)
+    
+    def get_uploader_name(self, obj):
+        """Get full name of the user who uploaded/published this article in the system."""
         if obj.author:
             return f"{obj.author.first_name} {obj.author.last_name}".strip() or obj.author.username
-        return "Unknown Author"
+        return "Admin KM"
+    
+    def get_creator_name(self, obj):
+        """Get original creator/author or work unit name."""
+        if obj.creator_name and obj.creator_name.strip():
+            return obj.creator_name.strip()
+        if obj.creator_user:
+            return obj.creator_user.get_full_name() or obj.creator_user.username
+        if obj.author:
+            return f"{obj.author.first_name} {obj.author.last_name}".strip() or obj.author.username
+        return "Setjen DPD RI"
     
     def get_author_email(self, obj):
         """Get author email."""
@@ -601,6 +719,10 @@ class DashboardArticleSerializer(serializers.ModelSerializer):
     """Lightweight serializer for dashboard listing."""
     category_name = serializers.CharField(source='category.name_en', read_only=True)
     author = serializers.SerializerMethodField()
+    uploader_name = serializers.SerializerMethodField()
+    creator_name = serializers.SerializerMethodField()
+    creator_type = serializers.CharField(read_only=True)
+    creator_user_id = serializers.IntegerField(source='creator_user.id', read_only=True, allow_null=True)
     category = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
     status_display = serializers.CharField(source='get_status_display', read_only=True)
@@ -617,9 +739,10 @@ class DashboardArticleSerializer(serializers.ModelSerializer):
         model = Article
         fields = [
             'id', 'title_id', 'title_en', 'content_id', 'content_en',
-            'summary_id', 'summary_en', 'image', 'image_url', 'files', 'tags', 'category', 'category_name', 'author',
+            'summary_id', 'summary_en', 'image', 'image_url', 'files', 'tags', 'category', 'category_name',
+            'author', 'uploader_name', 'creator_type', 'creator_name', 'creator_user_id', 'creators_data',
             'status', 'status_display', 'view_count', 'like_count', 'liked_by_user', 'is_published',
-            'created_at', 'updated_at', 'rejection_reason', 'approval_comment', 'version_type', 
+            'created_at', 'updated_at', 'published_at', 'rejection_reason', 'approval_comment', 'version_type', 
             'draft_article_id', 'published_version_id', 'slug'
         ]
         read_only_fields = fields
@@ -629,9 +752,26 @@ class DashboardArticleSerializer(serializers.ModelSerializer):
         if obj.author:
             return {
                 'id': obj.author.id,
-                'username': obj.author.username
+                'username': obj.author.username,
+                'name': f"{obj.author.first_name} {obj.author.last_name}".strip() or obj.author.username
             }
         return None
+    
+    def get_uploader_name(self, obj):
+        """Return uploader name."""
+        if obj.author:
+            return f"{obj.author.first_name} {obj.author.last_name}".strip() or obj.author.username
+        return "Admin KM"
+    
+    def get_creator_name(self, obj):
+        """Return creator name with fallback."""
+        if obj.creator_name and obj.creator_name.strip():
+            return obj.creator_name.strip()
+        if obj.creator_user:
+            return obj.creator_user.get_full_name() or obj.creator_user.username
+        if obj.author:
+            return f"{obj.author.first_name} {obj.author.last_name}".strip() or obj.author.username
+        return "Setjen DPD RI"
     
     def get_category(self, obj):
         """Return category information."""
