@@ -626,7 +626,9 @@ function CategoryManagementPage({ onLogout }) {
                         <img 
                           src={imagePreview} 
                           alt="Preview" 
-                          style={{ maxWidth: '100%', maxHeight: '200px', marginBottom: '10px' }}
+                          loading="lazy"
+                          decoding="async"
+                          style={{ maxWidth: '100%', maxHeight: '200px', marginBottom: '10px', objectFit: 'cover' }}
                         />
                         <p>{t('categories.change_image')}</p>
                       </div>

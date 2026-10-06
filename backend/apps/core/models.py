@@ -299,6 +299,16 @@ class User(AbstractUser):
         """Check if user can manage users (admin only)."""
         return self.is_admin()
     
+    def save(self, *args, **kwargs):
+        """Auto-optimize avatar image on upload before saving."""
+        if self.avatar and not getattr(self.avatar, '_committed', True):
+            try:
+                from shared.utils.image_optimizer import optimize_image_file, MAX_SIZE_AVATAR
+                self.avatar = optimize_image_file(self.avatar, max_size=MAX_SIZE_AVATAR)
+            except Exception:
+                pass
+        super().save(*args, **kwargs)
+
     def delete(self, *args, **kwargs):
         """
         Delete user and clean up avatar file from storage.

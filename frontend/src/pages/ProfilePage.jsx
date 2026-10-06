@@ -281,6 +281,13 @@ const ProfilePage = () => {
                                   src={avatarPreview} 
                                   alt="Avatar Preview" 
                                   className="avatar-image"
+                                  loading="lazy"
+                                  decoding="async"
+                                  width="120"
+                                  height="120"
+                                  onError={() => {
+                                    setAvatarPreview(null);
+                                  }}
                                 />
                               </div>
                             ) : (

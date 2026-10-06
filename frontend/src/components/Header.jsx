@@ -56,6 +56,10 @@ const Header = () => {
           <img
             src={images.LOGO}
             alt="KMS Logo"
+            loading="eager"
+            decoding="async"
+            width="40"
+            height="40"
             style={{ height: '2.5rem', width: '2.5rem', objectFit: 'contain' }}
           />
           <strong>KMSetjen</strong> DPD RI
@@ -156,6 +160,13 @@ const Header = () => {
                       alt={user?.username || "User"}
                       className="navbar-avatar"
                       title={user?.username || "User"}
+                      loading="lazy"
+                      decoding="async"
+                      width="32"
+                      height="32"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
                     />
                   ) : (
                     <FaUser className="navbar-avatar-icon" />

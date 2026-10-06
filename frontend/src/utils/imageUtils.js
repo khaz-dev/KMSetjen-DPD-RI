@@ -49,7 +49,10 @@ export const getDefaultImages = () => {
     ARTICLE: `${basePath}/default-article-image.svg`,
     CATEGORY: `${basePath}/default-category-image.svg`,
     LOGO: `${basePath}/logo.png`,
-    LOGO_NUSA: `${basePath}/logo_nusa.png`
+    LOGO_NUSA: `${basePath}/logo_nusa.png`,
+    LOGO_SETJEN: `${basePath}/logo-setjen-dpd.webp`,
+    LOGO_OKK: `${basePath}/logo-okk.webp`,
+    LOGO_SDM: `${basePath}/logo-sdm.webp`
   };
 };
 
@@ -61,7 +64,10 @@ export const DEFAULT_IMAGES = {
   ARTICLE: `${basePath}/default-article-image.svg`,
   CATEGORY: `${basePath}/default-category-image.svg`,
   LOGO: `${basePath}/logo.png`,
-  LOGO_NUSA: `${basePath}/logo_nusa.png`
+  LOGO_NUSA: `${basePath}/logo_nusa.png`,
+  LOGO_SETJEN: `${basePath}/logo-setjen-dpd.webp`,
+  LOGO_OKK: `${basePath}/logo-okk.webp`,
+  LOGO_SDM: `${basePath}/logo-sdm.webp`
 };
 
 /**

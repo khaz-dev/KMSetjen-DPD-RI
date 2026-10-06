@@ -75,6 +75,10 @@ const LoginPage = () => {
               src={images.LOGO}
               alt="KMS Logo"
               className="auth-logo"
+              loading="eager"
+              decoding="async"
+              width="80"
+              height="80"
             />
             <h1>{t("login.title")}</h1>
             <p>{t("header.welcome")}</p>
@@ -116,6 +120,10 @@ const LoginPage = () => {
                 <img
                   src={images.LOGO_NUSA}
                   alt="Nusa Logo"
+                  loading="lazy"
+                  decoding="async"
+                  width="24"
+                  height="24"
                   style={{
                     height: "1.5rem",
                     width: "1.5rem",

@@ -392,3 +392,29 @@
     font-size: 0.65rem;
   }
 }
+
+/* Footer Logos Group */
+.footer-logos-group {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.footer-logos-group picture {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.footer-logos-group picture:hover {
+  transform: translateY(-2px);
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.12));
+}
+
+.footer-dark .footer-logos-group picture:hover {
+  filter: drop-shadow(0 4px 8px rgba(255, 255, 255, 0.18));
+}
+

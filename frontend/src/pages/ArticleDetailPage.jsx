@@ -619,6 +619,8 @@ const ArticleDetailPage = () => {
                                   src={file.file}
                                   alt={file.original_filename}
                                   className="file-preview-image"
+                                  loading="lazy"
+                                  decoding="async"
                                   onError={(e) => {
                                     console.error('[FilePreview] Image failed to load:', file.file);
                                     e.target.style.display = 'none';
@@ -927,6 +929,8 @@ const ArticleDetailPage = () => {
                   src={fullscreenFile.file}
                   alt={fullscreenFile.original_filename}
                   className="fullscreen-file-image"
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => {
                     console.error('[FullscreenPreview] Image failed to load:', fullscreenFile.file);
                     e.target.style.display = 'none';

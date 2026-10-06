@@ -224,6 +224,7 @@ APP_SUBPATH = app_subpath
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+WHITENOISE_MAX_AGE = 31536000  # 1 year caching for immutable static assets
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # ============================================================================

@@ -1340,6 +1340,8 @@ const ArticleEditor = () => {
                 <img 
                   src={formData.featured_image} 
                   alt="Featured Preview"
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => {
                     console.error('Featured image preview failed to load');
                     e.target.src = '/default-article-image.svg';
@@ -1483,6 +1485,8 @@ const ArticleEditor = () => {
                                 src={previewUrl} 
                                 alt={file.original_filename}
                                 className="file-preview-image"
+                                loading="lazy"
+                                decoding="async"
                                 onError={(e) => {
                                   console.error('[FilePreview] Image failed to load:', previewUrl);
                                   e.target.style.display = 'none';

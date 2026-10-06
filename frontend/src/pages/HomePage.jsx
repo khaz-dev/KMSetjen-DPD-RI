@@ -321,6 +321,11 @@ const HomePage = () => {
                   src={images.LOGO}
                   alt="KMS Logo"
                   className="hero-logo"
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
+                  width="200"
+                  height="200"
                 />
                 <svg viewBox="0 0 500 500" className="hero-svg">
                   <circle cx="250" cy="250" r="250" fill="rgba(255,255,255,0.1)" />
@@ -579,10 +584,14 @@ const HomePage = () => {
               <Card className="repository-card h-100" style={{ borderLeft: '4px solid #f39c12' }}>
                 <div className="repository-image-container">
                   <ImageWithFallback 
-                    src={getAssetPath('perpustakaan.jpg')} 
+                    src={getAssetPath('perpustakaan.webp')} 
                     alt={t('home.perpustakaan_title')}
                     className="repository-image"
                     type="repository"
+                    loading="lazy"
+                    decoding="async"
+                    width="400"
+                    height="240"
                   />
                   <div className="repository-image-overlay"></div>
                   <div className="repository-icon-badge" style={{ backgroundColor: '#f39c12' }}>
@@ -611,10 +620,14 @@ const HomePage = () => {
               <Card className="repository-card h-100" style={{ borderLeft: '4px solid #3498db' }}>
                 <div className="repository-image-container">
                   <ImageWithFallback 
-                    src={getAssetPath('jdih.png')} 
+                    src={getAssetPath('jdih.webp')} 
                     alt={t('home.jdih_title')}
                     className="repository-image"
                     type="repository"
+                    loading="lazy"
+                    decoding="async"
+                    width="400"
+                    height="240"
                   />
                   <div className="repository-image-overlay"></div>
                   <div className="repository-icon-badge" style={{ backgroundColor: '#3498db' }}>
@@ -644,10 +657,14 @@ const HomePage = () => {
               <Card className="repository-card h-100" style={{ borderLeft: '4px solid #e74c3c' }}>
                 <div className="repository-image-container">
                   <ImageWithFallback 
-                    src={getAssetPath('ppid.jpg')} 
+                    src={getAssetPath('ppid.webp')} 
                     alt={t('home.ppid_title')}
                     className="repository-image"
                     type="repository"
+                    loading="lazy"
+                    decoding="async"
+                    width="400"
+                    height="240"
                   />
                   <div className="repository-image-overlay"></div>
                   <div className="repository-icon-badge" style={{ backgroundColor: '#e74c3c' }}>

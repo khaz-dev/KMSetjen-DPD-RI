@@ -3,7 +3,7 @@ import { Container, Row, Col } from "react-bootstrap";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../contexts/ThemeContext";
-import { getDefaultImages } from "../utils/imageUtils";
+import { getDefaultImages, getAssetPath } from "../utils/imageUtils";
 import "./Footer.css";
 
 /**
@@ -36,6 +36,10 @@ const Footer = () => {
               <img
                 src={images.LOGO}
                 alt="KMS Logo"
+                loading="lazy"
+                decoding="async"
+                width="40"
+                height="40"
                 style={{
                   height: "2.5rem",
                   width: "2.5rem",
@@ -45,6 +49,44 @@ const Footer = () => {
               {t("site_name")}
             </h5>
             <p>{t("footer.description")}</p>
+            <div className="footer-logos-group" aria-label="Logo Institusi dan Unit Kerja">
+              <picture>
+                <source srcSet={images.LOGO_SETJEN} type="image/webp" />
+                <img
+                  src={getAssetPath("Logo Setjen DPD.png")}
+                  alt="Logo Setjen DPD RI"
+                  height="40"
+                  width="44"
+                  loading="lazy"
+                  decoding="async"
+                  style={{ height: "40px", width: "auto", objectFit: "contain" }}
+                />
+              </picture>
+              <picture>
+                <source srcSet={images.LOGO_OKK} type="image/webp" />
+                <img
+                  src={getAssetPath("logo-okk.png")}
+                  alt="Logo Biro OKK"
+                  height="35"
+                  width="69"
+                  loading="lazy"
+                  decoding="async"
+                  style={{ height: "35px", width: "auto", objectFit: "contain" }}
+                />
+              </picture>
+              <picture>
+                <source srcSet={images.LOGO_SDM} type="image/webp" />
+                <img
+                  src={getAssetPath("Logo SDM.png")}
+                  alt="Logo Bagian Pengembangan SDM"
+                  height="40"
+                  width="40"
+                  loading="lazy"
+                  decoding="async"
+                  style={{ height: "40px", width: "auto", objectFit: "contain" }}
+                />
+              </picture>
+            </div>
           </Col>
 
           <Col md={3} className="mb-4 mb-md-0">

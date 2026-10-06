@@ -134,9 +134,15 @@ class Category(models.Model):
         return self.name_id
     
     def save(self, *args, **kwargs):
-        """Auto-generate slug from name_en if not provided."""
+        """Auto-generate slug from name_en if not provided, and auto-optimize image."""
         if not self.slug:
             self.slug = slugify(self.name_en)
+        if self.image and not getattr(self.image, '_committed', True):
+            try:
+                from shared.utils.image_optimizer import optimize_image_file, MAX_SIZE_CATEGORY
+                self.image = optimize_image_file(self.image, max_size=MAX_SIZE_CATEGORY)
+            except Exception:
+                pass
         super().save(*args, **kwargs)
     
     def delete(self, *args, **kwargs):
@@ -457,9 +463,15 @@ class Article(models.Model):
         return f"{self.title_id} ({self.status})"
     
     def save(self, *args, **kwargs):
-        """Auto-generate slug if not provided."""
+        """Auto-generate slug if not provided, and auto-optimize featured image."""
         if not self.slug:
             self.slug = slugify(self.title_id)
+        if self.image and not getattr(self.image, '_committed', True):
+            try:
+                from shared.utils.image_optimizer import optimize_image_file, MAX_SIZE_ARTICLE
+                self.image = optimize_image_file(self.image, max_size=MAX_SIZE_ARTICLE)
+            except Exception:
+                pass
         super().save(*args, **kwargs)
     
     def delete(self, *args, **kwargs):
