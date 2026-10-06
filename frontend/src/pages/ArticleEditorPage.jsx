@@ -159,15 +159,6 @@ const ArticleEditor = () => {
         const filesResponse = await internalAPI.getArticleFiles(id);
         const filesList = filesResponse.data || filesResponse;
         const filesArray = Array.isArray(filesList) ? filesList : (filesList.results || []);
-        console.log('[ArticleEditor] Loaded files:', filesArray.length);
-        filesArray.forEach((f, i) => {
-          console.log(`[ArticleEditor] File ${i}:`, {
-            id: f.id,
-            filename: f.original_filename,
-            file_field: f.file,
-            mime_type: f.mime_type
-          });
-        });
         setFiles(filesArray);
         setInitialFiles(filesArray.map(f => ({ id: f.id })));
       } catch (filesErr) {
@@ -185,30 +176,19 @@ const ArticleEditor = () => {
 
   const saveDraft = useCallback(async () => {
     try {
-      console.log('[SAVE_DRAFT] Starting save process...');
-      console.log('[SAVE_DRAFT] Current form state:', {
-        id: formData.id,
-        slug: formData.slug,
-        title_id: formData.title_id,
-        slugValidation: slugValidation
-      });
-      
       // Validate required fields (Indonesian is required, English is optional)
       if (!formData.title_id || !formData.title_id.trim()) {
-        console.log('[SAVE_DRAFT] Validation failed: No Indonesian title');
         setError('t:errors.title_required');
         throw new Error('title_required');
       }
 
       if (!formData.category_id) {
-        console.log('[SAVE_DRAFT] Validation failed: No category');
         setError('t:errors.category_required');
         throw new Error('category_required');
       }
 
       // Validate slug if present
       if (formData.slug && slugValidation.isAvailable === false) {
-        console.log('[SAVE_DRAFT] Validation failed: Slug marked as unavailable');
         setError(t('errors.slug_duplicate'));
         throw new Error('slug_validation_failed');
       }
@@ -249,21 +229,12 @@ const ArticleEditor = () => {
         payload.access_level = formData.access_level;
         payload.slug = formData.slug;
         
-        // DEBUG: Log the exact values being sent
-        console.log('[SAVE_DRAFT_DEBUG] Payload being sent:');
-        console.log(`  - status: ${JSON.stringify(payload.status)} (type: ${typeof payload.status})`);
-        console.log(`  - access_level: ${JSON.stringify(payload.access_level)} (type: ${typeof payload.access_level})`);
-        console.log(`  - formData.status: ${JSON.stringify(formData.status)} (type: ${typeof formData.status})`);
-        console.log(`  - formData.access_level: ${JSON.stringify(formData.access_level)} (type: ${typeof formData.access_level})`);
-        console.log('[SAVE_DRAFT_DEBUG] Full payload:', payload);
-        
         // ALWAYS send image_url (even if empty) to allow clearing the featured image
         payload.image_url = formData.featured_image_url || null;
         
         // CRITICAL FIX: Send image: null when featured_image is cleared
         if (formData.featured_image === null || formData.featured_image === '') {
           payload.image = null;
-          console.log('[SAVE_DRAFT_DEBUG] Image being cleared - sending image: null to backend');
         }
       }
 
@@ -284,19 +255,8 @@ const ArticleEditor = () => {
         throw new Error('No response data from server');
       }
 
-      console.log('[SAVE_DRAFT] Save successful! Response data:', {
-        id: data.id,
-        slug: data.slug,
-        status: data.status
-      });
-      
       setLastSaved(new Date());
       success(t('editor.draft_saved_success'));
-      
-      // Update form data with returned ID and slug
-      console.log('[SAVE_DRAFT] Updating form data with response...');
-      console.log('[SAVE_DRAFT] Before setFormData - formData.id:', formData.id, ', formData.slug:', formData.slug);
-      console.log('[SAVE_DRAFT] After response - data.id:', data.id, ', data.slug:', data.slug);
       
       setFormData(prev => ({
         ...prev,
@@ -328,19 +288,14 @@ const ArticleEditor = () => {
         access_level: formData.access_level
       };
       setInitialFormData(newInitialState);
-      console.log('[SAVE_DRAFT] Updated initialFormData to newly saved state');
-      console.log('[SAVE_DRAFT] New featured_image:', newInitialState.featured_image);
-      console.log('[SAVE_DRAFT] New featured_image_file:', newInitialState.featured_image_file);
       
       // Update initialSelectedTags to the currently selected tags
       // This ensures the change detection compares against the saved tags
       setInitialSelectedTags([...selectedTags]);
-      console.log('[SAVE_DRAFT] Updated initialSelectedTags to:', selectedTags);
       
       // Update initialFiles to the currently uploaded files
       // This ensures the change detection compares against the saved files
       setInitialFiles(files.map(f => ({ id: f.id })));
-      console.log('[SAVE_DRAFT] Updated initialFiles to:', files.length, 'files');
 
       
       // Update URL if creating new article
@@ -438,11 +393,8 @@ const ArticleEditor = () => {
 
   // Check slug availability when slug changes (debounced)
   useEffect(() => {
-    console.log(`[SLUG_VALIDATION_EFFECT] Triggered - slug: "${formData.slug}", id: ${formData.id}`);
-    
     // Don't check if slug is empty
     if (!formData.slug) {
-      console.log(`[SLUG_VALIDATION_EFFECT] Slug is empty, clearing validation`);
       setSlugValidation({
         isChecking: false,
         isAvailable: null,
@@ -454,7 +406,6 @@ const ArticleEditor = () => {
     // Check format first
     const formatValidation = validateSlugFormat(formData.slug);
     if (!formatValidation.valid) {
-      console.log(`[SLUG_VALIDATION_EFFECT] Format validation failed: ${formatValidation.messageKey}`);
       const messageKey = formatValidation.messageKey;
       setSlugValidation({
         isChecking: false,
@@ -465,11 +416,8 @@ const ArticleEditor = () => {
       return;
     }
 
-    console.log(`[SLUG_VALIDATION_EFFECT] Format valid, debouncing checkSlug call (500ms)`);
-    
     // Debounce the slug check (500ms)
     const timeoutId = setTimeout(async () => {
-      console.log(`[SLUG_VALIDATION_EFFECT] Calling checkSlug with: slug="${formData.slug}", excludeId=${formData.id}, version='draft'`);
       try {
         setSlugValidation(prev => ({
           ...prev,
@@ -478,13 +426,6 @@ const ArticleEditor = () => {
 
         const response = await internalAPI.checkSlug(formData.slug, formData.id, 'draft');
         const data = response.data || response;
-        
-        console.log(`[SLUG_VALIDATION_EFFECT] checkSlug response:`, {
-          available: data.available,
-          slug: data.slug,
-          version_type: data.version_type,
-          message: data.message
-        });
         
         setSlugValidation({
           isChecking: false,
@@ -504,7 +445,6 @@ const ArticleEditor = () => {
     }, 500);
 
     return () => {
-      console.log(`[SLUG_VALIDATION_EFFECT] Cleanup: clearing timeout`);
       clearTimeout(timeoutId);
     };
   }, [formData.slug, formData.id]);
@@ -709,7 +649,6 @@ const ArticleEditor = () => {
     if (!articleId) {
       // Auto-save the article first
       try {
-        console.log('[FileUpload] No article ID, auto-saving first...');
         const savedData = await saveDraft();
         articleId = savedData?.id;
         if (!articleId) {
@@ -717,7 +656,6 @@ const ArticleEditor = () => {
           e.target.value = '';
           return;
         }
-        console.log('[FileUpload] Article auto-saved with ID:', articleId);
       } catch (err) {
         console.error('[FileUpload] Auto-save failed:', err);
         // saveDraft already sets error, so just return
@@ -894,13 +832,11 @@ const ArticleEditor = () => {
         console.error('[FilePreview] Invalid file URL: empty or root only', file.file);
         return null;
       }
-      console.debug('[FilePreview] Using file URL:', file.file);
       return file.file;
     }
     // If it's a File object, create a blob URL
     if (file.file instanceof File || file.file instanceof Blob) {
       const blobUrl = URL.createObjectURL(file.file);
-      console.debug('[FilePreview] Created blob URL:', blobUrl);
       return blobUrl;
     }
     console.warn('[FilePreview] Unhandled file.file type:', typeof file.file, file.file);

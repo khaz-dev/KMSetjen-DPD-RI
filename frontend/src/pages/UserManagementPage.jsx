@@ -510,7 +510,6 @@ function UserManagementPage({ onLogout }) {
       if (response.data.healthy) {
         setSyncStatus('success');
         setSyncMessage('✅ External API is healthy and accessible');
-        console.log('API Diagnostic:', response.data.diagnostic);
       } else {
         setSyncStatus('error');
         let errorMsg = `❌ API Health Check Failed: ${response.data.error}`;

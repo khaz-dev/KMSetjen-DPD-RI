@@ -78,7 +78,6 @@ const exchangeCodeWithRetry = async (
 ) => {
   // If code was already exchanged, return cached promise
   if (exchangedCodes.has(code)) {
-    console.debug(`[GoogleService] Code already being exchanged, waiting for pending exchange...`);
     if (pendingCodeExchange) {
       return pendingCodeExchange;
     }
@@ -92,7 +91,6 @@ const exchangeCodeWithRetry = async (
     pendingCodeExchange = promise;
     
     const response = await promise;
-    console.debug(`[GoogleService] Code exchange successful on attempt ${attempt}`);
     return response;
   } catch (error) {
     // Clear pending promise on error
@@ -107,10 +105,6 @@ const exchangeCodeWithRetry = async (
     // Retry on transient errors (network issues, temporary server errors)
     if (attempt < maxRetries) {
       const delayMs = Math.pow(2, attempt - 1) * 1000; // Exponential backoff: 1s, 2s, 4s
-      console.debug(
-        `[GoogleService] Retrying code exchange (attempt ${attempt}/${maxRetries}) after ${delayMs}ms...`
-      );
-
       await new Promise(resolve => setTimeout(resolve, delayMs));
       return exchangeCodeWithRetry(
         code,
@@ -146,11 +140,6 @@ export const handleGoogleCallback = async (code, state, authService) => {
     // Note: Backend uses its configured redirect_uri (must match Google's registered URI)
     const appSubpath = getAppSubpath();
     const redirectUri = `${window.location.origin}${appSubpath}/google/callback/`;
-    console.debug('[GoogleService] Calling googleCallback with:');
-    console.debug('[GoogleService] - redirectUri:', redirectUri);
-    console.debug('[GoogleService] - code:', code.substring(0, 20) + '...');
-    console.debug('[GoogleService] - state:', state.substring(0, 20) + '...');
-    
     const response = await exchangeCodeWithRetry(code, state, redirectUri, authService);
 
     // Clear stored state and caches

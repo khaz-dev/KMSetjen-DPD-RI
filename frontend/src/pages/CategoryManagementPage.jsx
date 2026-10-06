@@ -269,13 +269,10 @@ function CategoryManagementPage({ onLogout }) {
   };
 
   const handleDeleteItem = (id) => {
-    console.log('[CategoryManagement DELETE] Button clicked for categoryId:', id);
-    
     // Find the category name for display in confirmation modal
     const category = items.find(item => item.id === id);
     const categoryName = category ? category.name_en : `Category ${id}`;
     
-    console.log('[CategoryManagement DELETE] Opening confirmation modal for category:', categoryName);
     setDeleteCategoryId(id);
     setDeleteCategoryName(categoryName);
     setShowDeleteModal(true);
@@ -325,14 +322,10 @@ function CategoryManagementPage({ onLogout }) {
 
   const handleConfirmDelete = async () => {
     const categoryId = deleteCategoryId;
-    console.log('[CategoryManagement DELETE] User confirmed, sending DELETE request...');
     
     try {
       const apiUrl = `${import.meta.env.VITE_API_URL}/api/v1/admin/categories/${categoryId}/`;
       const token = localStorage.getItem('access_token');
-      
-      console.log('[CategoryManagement DELETE] API URL:', apiUrl);
-      console.log('[CategoryManagement DELETE] Has token:', !!token);
       
       const response = await axios.delete(apiUrl, {
         headers: {
@@ -340,14 +333,11 @@ function CategoryManagementPage({ onLogout }) {
         },
       });
 
-      console.log('[CategoryManagement DELETE] Success! Response:', response.status, response.data);
-      
       // Show success notification
       success(response.data.detail || t('categories.category_deleted_successfully'));
       
       setError(null);
       loadItems();
-      console.log('[CategoryManagement DELETE] Categories reloaded');
       setShowDeleteModal(false);
       setDeleteCategoryId(null);
       setDeleteCategoryName('');
@@ -385,7 +375,6 @@ function CategoryManagementPage({ onLogout }) {
   };
 
   const handleCancelDelete = () => {
-    console.log('[CategoryManagement DELETE] User cancelled delete');
     setShowDeleteModal(false);
     setDeleteCategoryId(null);
     setDeleteCategoryName('');

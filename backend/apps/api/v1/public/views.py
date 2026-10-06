@@ -1,5 +1,8 @@
 """Views for public API endpoints."""
+import logging
 from rest_framework import viewsets, status
+
+logger = logging.getLogger(__name__)
 from rest_framework.decorators import action, api_view, permission_classes, renderer_classes
 from rest_framework.renderers import BaseRenderer
 from rest_framework.response import Response
@@ -193,7 +196,7 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
                         pass
             except Exception as e:
                 # Don't fail the request if view count increment fails
-                print(f"Warning: Could not increment view count: {str(e)}")
+                logger.warning(f"Could not increment view count: {str(e)}")
         
         return response
     

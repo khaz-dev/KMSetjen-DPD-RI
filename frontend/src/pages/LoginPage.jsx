@@ -28,9 +28,6 @@ const LoginPage = () => {
   // Redirect to dashboard if user is already authenticated
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
-      console.debug(
-        "[LoginPage] User already authenticated, redirecting to dashboard",
-      );
       navigate("/dashboard", { replace: true });
     }
   }, [isAuthenticated, authLoading, navigate]);
@@ -38,9 +35,7 @@ const LoginPage = () => {
   const handleSSOLogin = () => {
     try {
       setLoading(true);
-      console.debug("[LoginPage] Initiating SSO flow");
       const ssoUrl = getSSOAuthorizationUrl();
-      console.debug("[LoginPage] Redirecting to SSO authorization URL");
       window.location.href = ssoUrl;
     } catch (err) {
       console.error("[LoginPage] SSO login error:", err);
@@ -52,12 +47,7 @@ const LoginPage = () => {
   const handleGoogleLogin = () => {
     try {
       setLoading(true);
-      console.debug("[LoginPage] Initiating Google OAuth flow");
       const googleUrl = getGoogleAuthorizationUrl();
-      console.debug(
-        "[LoginPage] Redirecting to Google authorization URL:",
-        googleUrl.substring(0, 50) + "...",
-      );
       window.location.href = googleUrl;
     } catch (err) {
       console.error("[LoginPage] Google login error:", err);

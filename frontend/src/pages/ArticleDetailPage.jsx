@@ -167,19 +167,10 @@ const ArticleDetailPage = () => {
           const articleData = response.data;
           if (articleData.is_published && articleData.status === 'published' && !isDraftRequest) {
             // Use public API for all users (both authenticated and anonymous can view articles)
-            publicAPI.recordView(idOrSlug).catch((err) => {
-              // Only log if not a "not found" error (article might not be visible to anonymous)
-              if (err.response?.status !== 404) {
-                console.debug('View recording failed, but continuing...');
-              }
-            });
-          } else {
-            // Article is not published or this is a draft view - view tracking disabled
-            console.debug(`View tracking disabled for unpublished article or draft view (status: ${articleData.status}, isDraft: ${isDraftRequest})`);
+            publicAPI.recordView(idOrSlug).catch(() => {});
           }
-        } catch (viewErr) {
+        } catch {
           // Silently fail
-          console.debug('View recording error:', viewErr);
         }
 
         // Load related articles after main article is loaded
@@ -243,14 +234,12 @@ const ArticleDetailPage = () => {
 
     // CRITICAL: Only allow likes on published articles by AUTHENTICATED users
     if (!article.is_published || article.status !== 'published') {
-      console.debug('Like disabled: Article must be published');
       return;
     }
 
     // CRITICAL: Only authenticated users can like articles
     const token = localStorage.getItem('access_token');
     if (!token && !user) {
-      console.debug('Like disabled: User must be authenticated');
       alert(t('auth.login_required_to_like') || 'Please log in to like articles');
       return;
     }
@@ -468,12 +457,6 @@ const ArticleDetailPage = () => {
                   {/* Category Badge - Custom Styled Span */}
                   {(() => {
                     const catColor = article.category?.color;
-                    console.log('[ArticleDetail] Category color from API:', {
-                      category: article.category?.name_id,
-                      color: catColor,
-                      fallback: '#0d6efd',
-                      applied: catColor || '#0d6efd'
-                    });
                     return (
                       <span
                         className="article-badge-custom me-2"
@@ -497,12 +480,6 @@ const ArticleDetailPage = () => {
                   {/* Tag Badges - Custom Styled Spans */}
                   {article.tags?.map((tag) => {
                     const tagColor = tag.color;
-                    console.log('[ArticleDetail] Tag color from API:', {
-                      tag: tag.name_id,
-                      color: tagColor,
-                      fallback: '#6c757d',
-                      applied: tagColor || '#6c757d'
-                    });
                     return (
                       <span
                         key={tag.id}

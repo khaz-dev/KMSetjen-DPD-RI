@@ -21,10 +21,6 @@ const SSOCallbackPage = () => {
       try {
         const { code, state, error: callbackError, error_description } = getCallbackParams();
 
-        console.debug('[SSOCallback] Processing callback...');
-        console.debug('[SSOCallback] Code:', code ? `${code.substring(0, 20)}...` : 'MISSING');
-        console.debug('[SSOCallback] State:', state ? `${state.substring(0, 20)}...` : 'MISSING');
-
         // Check for errors from SSO provider
         if (callbackError) {
           throw new Error(
@@ -39,22 +35,16 @@ const SSOCallbackPage = () => {
         }
 
         // Exchange code for tokens
-        console.debug('[SSOCallback] Exchanging code for tokens...');
         const response = await handleSSOCallback(code, state, authService);
-        console.debug('[SSOCallback] Token exchange successful');
         
         // Store tokens
         localStorage.setItem('access_token', response.access);
         localStorage.setItem('refresh_token', response.refresh);
-        console.debug('[SSOCallback] Tokens stored in localStorage');
 
         // Verify tokens by calling getMe() - this ensures tokens are valid and user is authenticated
-        console.debug('[SSOCallback] Verifying tokens with /api/auth/me/...');
         const meResponse = await authService.getMe();
-        console.debug('[SSOCallback] User verified:', meResponse.data);
         
         // Tokens are valid and user is authenticated, now redirect to dashboard
-        console.debug('[SSOCallback] Redirecting to dashboard');
         setTimeout(() => {
           navigate('/dashboard');
         }, 500);

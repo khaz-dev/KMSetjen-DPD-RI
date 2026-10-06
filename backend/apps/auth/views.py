@@ -504,10 +504,10 @@ def google_callback(request):
         state = request.data.get('state')
         redirect_uri_from_frontend = request.data.get('redirect_uri')
         
-        logger.info(f'[GoogleCallback] Request received:')
-        logger.info(f'[GoogleCallback] - redirect_uri from frontend: {redirect_uri_from_frontend}')
-        logger.info(f'[GoogleCallback] - code received: {code[:20] if code else "MISSING"}...')
-        logger.info(f'[GoogleCallback] - state received: {state[:20] if state else "MISSING"}...')
+        logger.debug(f'[GoogleCallback] Request received:')
+        logger.debug(f'[GoogleCallback] - redirect_uri from frontend: {redirect_uri_from_frontend}')
+        logger.debug(f'[GoogleCallback] - code received: {code[:20] if code else "MISSING"}...')
+        logger.debug(f'[GoogleCallback] - state received: {state[:20] if state else "MISSING"}...')
         
         # Validate required parameters
         if not code:
@@ -534,10 +534,10 @@ def google_callback(request):
         # ====================================================================
         # IMPORTANT: Use backend's configured redirect_uri, not frontend's
         # This must match the redirect_uri registered with Google
-        logger.info(f'[GoogleCallback] Exchanging code with parameters:')
-        logger.info(f'[GoogleCallback] - client_id: {google_client_id[:20]}...')
-        logger.info(f'[GoogleCallback] - redirect_uri: {google_redirect_uri}')
-        logger.info(f'[GoogleCallback] - code: {code[:20]}...')
+        logger.debug(f'[GoogleCallback] Exchanging code with parameters:')
+        logger.debug(f'[GoogleCallback] - client_id: {google_client_id[:20]}...')
+        logger.debug(f'[GoogleCallback] - redirect_uri: {google_redirect_uri}')
+        logger.debug(f'[GoogleCallback] - code: {code[:20]}...')
         
         token_response = requests.post(
             'https://oauth2.googleapis.com/token',
@@ -639,11 +639,11 @@ def google_callback(request):
             
             if user:
                 # User found by email
-                logger.info(f'[GoogleCallback] Found existing user by email: {email}')
+                logger.debug(f'[GoogleCallback] Found existing user by email: {email}')
             else:
                 # User not found, try to create
                 try:
-                    logger.info(f'[GoogleCallback] User not found by email, creating new user: {email}')
+                    logger.debug(f'[GoogleCallback] User not found by email, creating new user: {email}')
                     
                     # Check if this email belongs to an existing Pegawai user (staff)
                     # Users from Pegawai sync will have is_staff=True set
@@ -660,14 +660,14 @@ def google_callback(request):
                         password='',  # No password for OAuth users (auth via Google)
                     )
                     created = True
-                    logger.info(f'[GoogleCallback] Created new user: {email}')
+                    logger.debug(f'[GoogleCallback] Created new user: {email}')
                     
                 except Exception as e:
                     logger.error(f'[GoogleCallback] Error creating user: {str(e)}', exc_info=True)
                     # If creation fails, try one more time to find the user (race condition)
                     user = User.objects.filter(email=email).first()
                     if user:
-                        logger.info(f'[GoogleCallback] User exists (race condition), using existing user: {email}')
+                        logger.debug(f'[GoogleCallback] User exists (race condition), using existing user: {email}')
                         created = False
                     else:
                         raise
@@ -691,11 +691,11 @@ def google_callback(request):
                     if is_pegawai_user and not user.is_staff:
                         user.is_staff = True
                         updated = True
-                        logger.info(f'[GoogleCallback] Updated user {email} to is_staff=True (found in Pegawai data)')
+                        logger.debug(f'[GoogleCallback] Updated user {email} to is_staff=True (found in Pegawai data)')
                     
                     if updated:
                         user.save()
-                        logger.info(f'[GoogleCallback] Updated user: {email}')
+                        logger.debug(f'[GoogleCallback] Updated user: {email}')
                 
             except User.MultipleObjectsReturned:
                 # This should not happen if data is clean, but handle it gracefully
@@ -812,7 +812,7 @@ def sso_callback(request):
                 # Split full name using intelligent logic: first 2 words = first_name, rest = last_name
                 first_name, last_name = split_full_name(full_name)
         
-        logger.info(f'[SSOCallback] SSO login attempt for NIP: {nip}')
+        logger.debug(f'[SSOCallback] SSO login attempt for NIP: {nip}')
         
         # Validate required parameters
         if not nip or not email:
@@ -879,9 +879,9 @@ def sso_callback(request):
                 
                 if updated:
                     user.save()
-                    logger.info(f'[SSOCallback] Updated SSO user: {nip}')
+                    logger.debug(f'[SSOCallback] Updated SSO user: {nip}')
             else:
-                logger.info(f'[SSOCallback] Created new SSO user: {nip}')
+                logger.debug(f'[SSOCallback] Created new SSO user: {nip}')
             
             # Generate JWT tokens for the user
             refresh = RefreshToken.for_user(user)
@@ -960,7 +960,7 @@ def sso_token_verify(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        logger.info('[SSOTokenVerify] Verifying SSO token')
+        logger.debug('[SSOTokenVerify] Verifying SSO token')
         
         # Decode the JWT token without verification first to extract user data
         # In production, you should verify the signature with the SSO provider's public key
@@ -969,7 +969,7 @@ def sso_token_verify(request):
             # For development, we decode without verification
             # In production, you need the SSO provider's public key to verify the signature
             decoded = jwt.decode(sso_token, options={"verify_signature": False})
-            logger.info(f'[SSOTokenVerify] Token claims available: {list(decoded.keys())}')
+            logger.debug(f'[SSOTokenVerify] Token claims available: {list(decoded.keys())}')
             logger.debug(f'[SSOTokenVerify] Full token payload: {decoded}')
         except jwt.DecodeError as e:
             logger.error(f'[SSOTokenVerify] Invalid JWT token: {str(e)}')
@@ -999,7 +999,7 @@ def sso_token_verify(request):
             existing_user = User.objects.filter(nip=nip).first()
             if existing_user:
                 email = existing_user.email
-                logger.info(f'[SSOTokenVerify] Email not in token, using existing user email: {email}')
+                logger.debug(f'[SSOTokenVerify] Email not in token, using existing user email: {email}')
             else:
                 # Use NIP as a fallback identifier for email (only for new users)
                 email = f"user_{nip}@dpd.go.id"
@@ -1017,7 +1017,7 @@ def sso_token_verify(request):
         
         department = decoded.get('department') or decoded.get('org_unit') or ''
         
-        logger.info(f'[SSOTokenVerify] Extracted user info - NIP: {nip}, Email: {email}')
+        logger.debug(f'[SSOTokenVerify] Extracted user info - NIP: {nip}, Email: {email}')
         
         if not nip or not email:
             logger.error('[SSOTokenVerify] NIP and email not found in token')
@@ -1038,7 +1038,7 @@ def sso_token_verify(request):
             # If not found by email, try to find by NIP (in case NIP already exists from previous login)
             if not user and nip:
                 user = User.objects.filter(nip=nip).first()
-                logger.info(f'[SSOTokenVerify] User not found by email, found by NIP: {nip}')
+                logger.debug(f'[SSOTokenVerify] User not found by email, found by NIP: {nip}')
             
             # If still not found, create new user
             if not user:
@@ -1057,14 +1057,14 @@ def sso_token_verify(request):
                     user.department = department
                     user.save()
                     created = True
-                    logger.info(f'[SSOTokenVerify] Created new SSO user: {nip}')
+                    logger.debug(f'[SSOTokenVerify] Created new SSO user: {nip}')
                 except Exception as e:
                     logger.error(f'[SSOTokenVerify] Error creating user: {str(e)}')
                     # If user creation fails, try one more fallback: maybe NIP exists with different email
                     if nip:
                         user = User.objects.filter(nip=nip).first()
                         if user:
-                            logger.info(f'[SSOTokenVerify] User exists with this NIP, using existing user')
+                            logger.debug(f'[SSOTokenVerify] User exists with this NIP, using existing user')
                         else:
                             raise
             
@@ -1104,12 +1104,12 @@ def sso_token_verify(request):
                 
                 if updated:
                     user.save()
-                    logger.info(f'[SSOTokenVerify] Updated SSO user: {nip}')
+                    logger.debug(f'[SSOTokenVerify] Updated SSO user: {nip}')
             else:
                 # For new users, set last_sso_login timestamp
                 user.last_sso_login = timezone.now()
                 user.save()
-                logger.info(f'[SSOTokenVerify] Created new SSO user: {nip}')
+                logger.debug(f'[SSOTokenVerify] Created new SSO user: {nip}')
             
             # Generate JWT tokens for the user
             refresh = RefreshToken.for_user(user)

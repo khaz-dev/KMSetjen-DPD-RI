@@ -22,7 +22,6 @@ const GoogleCallbackPage = () => {
   useEffect(() => {
     // Prevent double execution in React StrictMode (development)
     if (processedRef.current) {
-      console.debug('[GoogleCallback] Callback already processed, skipping duplicate execution');
       return;
     }
     processedRef.current = true;
@@ -30,10 +29,6 @@ const GoogleCallbackPage = () => {
     const processGoogleCallback = async () => {
       try {
         const { code, state, error: callbackError, error_description } = getGoogleCallbackParams();
-
-        console.debug('[GoogleCallback] Processing callback...');
-        console.debug('[GoogleCallback] Code:', code ? `${code.substring(0, 20)}...` : 'MISSING');
-        console.debug('[GoogleCallback] State:', state ? `${state.substring(0, 20)}...` : 'MISSING');
 
         // Check for errors from Google
         if (callbackError) {
@@ -49,34 +44,23 @@ const GoogleCallbackPage = () => {
         }
 
         // Exchange code for tokens
-        console.debug('[GoogleCallback] Exchanging code for tokens...');
         const response = await handleGoogleCallback(code, state, authService);
-        console.debug('[GoogleCallback] Token exchange successful');
-        console.debug('[GoogleCallback] Response:', response);
 
         // Store tokens
         localStorage.setItem('access_token', response.access);
         localStorage.setItem('refresh_token', response.refresh);
-        console.debug('[GoogleCallback] Tokens stored in localStorage');
         
         // Verify tokens by calling getMe() - this ensures tokens are valid and user is authenticated
-        console.debug('[GoogleCallback] Verifying tokens with /api/auth/me/...');
         const meResponse = await authService.getMe();
-        console.debug('[GoogleCallback] User verified:', meResponse.data);
         
         // Update AuthContext with user data - this triggers navbar update
-        console.debug('[GoogleCallback] Updating AuthContext with user data...');
         setAuthUser(meResponse.data);
-        console.debug('[GoogleCallback] AuthContext updated, navbar should now show user profile');
         
         // Stop loading spinner so page content becomes visible
         setLoading(false);
-        console.debug('[GoogleCallback] Loading state set to false, spinner hidden');
         
         // Tokens are valid and user is authenticated, now redirect to home
-        console.debug('[GoogleCallback] Redirecting to home page...');
         setTimeout(() => {
-          console.debug('[GoogleCallback] Navigating to /');
           navigate('/', { replace: true });
           // Also reload the page to ensure all components get auth state update
           window.location.href = '/';

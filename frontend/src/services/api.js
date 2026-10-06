@@ -84,13 +84,11 @@ apiClient.interceptors.request.use(
     const token = localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.debug(`[API] Added Authorization header for: ${config.method.toUpperCase()} ${config.url}`);
     }
     
     // CRITICAL FIX: For FormData uploads, delete Content-Type header so browser sets multipart/form-data with boundary
     if (config.data instanceof FormData) {
       delete config.headers['Content-Type'];
-      console.debug(`[API] FormData detected - Content-Type header deleted to allow multipart/form-data for: ${config.url}`);
     }
     
     // For internal article GET requests, allow 404 responses so axios doesn't log them as errors
@@ -111,7 +109,6 @@ publicClient.interceptors.request.use(
     const token = localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.debug(`[API] Added Authorization header to publicClient for: ${config.method.toUpperCase()} ${config.url}`);
     }
     return config;
   },
@@ -126,20 +123,17 @@ publicClient.interceptors.response.use(
 
     // Handle 401: attempt token refresh and retry
     if (error.response?.status === 401 && !originalRequest?._retry) {
-      console.warn(`[API] 401 Unauthorized on publicClient for: ${originalRequest.method.toUpperCase()} ${originalRequest.url}`);
       originalRequest._retry = true;
 
       try {
         const refreshToken = localStorage.getItem('refresh_token');
         if (refreshToken) {
-          console.debug('[API] Attempting token refresh from publicClient 401...');
           const response = await axios.post(`${API_BASE_URL}/auth/token/refresh/`, {
             refresh: refreshToken,
           });
           const { access } = response.data;
           localStorage.setItem('access_token', access);
           originalRequest.headers.Authorization = `Bearer ${access}`;
-          console.debug('[API] Token refreshed, retrying publicClient request...');
           return publicClient(originalRequest);
         }
       } catch (refreshError) {
@@ -170,10 +164,6 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest?._retry) {
-      // Only log as warning if not the /auth/me/ endpoint (which is checked on app init)
-      if (!originalRequest.url.includes('/auth/me/')) {
-        console.warn(`[API] 401 Unauthorized for: ${originalRequest.method.toUpperCase()} ${originalRequest.url}`);
-      }
       originalRequest._retry = true;
 
       try {
@@ -192,7 +182,6 @@ apiClient.interceptors.response.use(
           localStorage.removeItem('refresh_token');
           // Only redirect if not already on login page or auth-related endpoints
           if (window.location.pathname !== '/login' && !originalRequest.url.includes('/auth/')) {
-            console.debug('[API] Redirecting to login due to authentication failure');
             window.location.href = '/login';
           }
         }
@@ -202,7 +191,6 @@ apiClient.interceptors.response.use(
         localStorage.removeItem('refresh_token');
         // Only redirect if not already on login page or auth-related endpoints
         if (window.location.pathname !== '/login' && !originalRequest.url.includes('/auth/')) {
-          console.debug('[API] Redirecting to login due to token refresh failure');
           window.location.href = '/login';
         }
       }
@@ -345,7 +333,6 @@ export const internalAPI = {
       // Also handle string IDs that are numeric
       params.exclude_id = String(excludeId);
     }
-    console.log('[API_checkSlug] Calling with params:', params);
     return apiClient.get('/v1/internal/articles/check-slug/', { params });
   },
 

@@ -323,7 +323,7 @@ const HomePage = () => {
                   className="hero-logo"
                   loading="eager"
                   decoding="async"
-                  fetchPriority="high"
+                  fetchpriority="high"
                   width="200"
                   height="200"
                 />

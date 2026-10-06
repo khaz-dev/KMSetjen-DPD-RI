@@ -33,42 +33,24 @@ const SSOTokenPage = () => {
           throw new Error(t('sso.invalid_callback_params'));
         }
 
-        console.debug('[SSOToken] Processing SSO token from URL');
-        console.debug('[SSOToken] Token:', token.substring(0, 20) + '...');
-        
         // Send the SSO provider token to the backend for verification
-        // Backend will:
-        // 1. Decode the SSO token
-        // 2. Extract user information
-        // 3. Create/update user in Django
-        // 4. Generate and return Django JWT tokens
-        console.debug('[SSOToken] Sending token to backend for verification');
         const tokenResponse = await publicClient.post('/auth/sso/token/', {
           token: token
         });
-        
-        console.debug('[SSOToken] Token verified successfully');
         
         // Store the Django JWT tokens in localStorage
         const { access, refresh, user } = tokenResponse.data;
         localStorage.setItem('access_token', access);
         localStorage.setItem('refresh_token', refresh);
         
-        console.debug('[SSOToken] Tokens stored, authenticated user:', user.email);
-        
         // Update AuthContext with user data - this triggers navbar update
-        console.debug('[SSOToken] Updating AuthContext with user data...');
         setAuthUser(user);
-        console.debug('[SSOToken] AuthContext updated, navbar should now show user profile');
         
         // Stop loading spinner so page content becomes visible
         setLoading(false);
-        console.debug('[SSOToken] Loading state set to false, spinner hidden');
         
         // Redirect to home page and reload to ensure navbar updates
-        console.debug('[SSOToken] Redirecting to home page...');
         setTimeout(() => {
-          console.debug('[SSOToken] Navigating to /');
           navigate('/', { replace: true });
           // Also reload the page to ensure all components get auth state update
           window.location.href = '/';

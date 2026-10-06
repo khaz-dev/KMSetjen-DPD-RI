@@ -31,35 +31,47 @@ export function ArticleCountProvider({ children }) {
         `${import.meta.env.VITE_API_URL}/api/v1/internal/articles/?status=review&page=1&page_size=1`,
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
-      setPendingReviewCount(pendingResponse.data.count || 0);
-      console.log('[ArticleCountContext] Pending count fetched:', pendingResponse.data.count);
+      setPendingReviewCount(pendingResponse.data?.count || 0);
 
       // Fetch rejected articles count
       const rejectedResponse = await axios.get(
         `${import.meta.env.VITE_API_URL}/api/v1/internal/articles/?status=rejected&page=1&page_size=1`,
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
-      setRejectedArticleCount(rejectedResponse.data.count || 0);
-      console.log('[ArticleCountContext] Rejected count fetched:', rejectedResponse.data.count);
+      setRejectedArticleCount(rejectedResponse.data?.count || 0);
     } catch (err) {
       // Handle auth errors gracefully
       if (err.response?.status === 401) {
-        console.debug('[ArticleCountContext] User not authenticated, counts reset to 0');
         setPendingReviewCount(0);
         setRejectedArticleCount(0);
-      } else {
-        console.debug('[ArticleCountContext] Failed to fetch counts:', err.message);
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch on mount and set up polling every 30 seconds
+  // Fetch on mount and poll when tab is active (every 60s)
   useEffect(() => {
     fetchCounts();
-    const interval = setInterval(fetchCounts, 30000);
-    return () => clearInterval(interval);
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchCounts();
+      }
+    };
+
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        fetchCounts();
+      }
+    }, 60000);
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   return (

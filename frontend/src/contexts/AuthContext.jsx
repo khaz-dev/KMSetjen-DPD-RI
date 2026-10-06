@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 import { authService } from '../services/api';
 
 const AuthContext = createContext(null);
@@ -19,14 +20,10 @@ export const AuthProvider = ({ children }) => {
           // Try to get user with current token
           const response = await authService.getMe();
           setUser(response.data);
-          console.debug('[AuthContext] ✅ Token valid, user loaded');
         } catch (err) {
           // Token might be expired, try to refresh it
           if (err.response?.status === 401 && refreshToken) {
-            console.debug('[AuthContext] ⚠️ Token invalid/expired, attempting refresh...');
             try {
-              // Import axios to make refresh request
-              const axios = require('axios').default;
               const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002/api';
               
               const refreshResponse = await axios.post(`${API_BASE_URL}/auth/token/refresh/`, {
@@ -35,29 +32,24 @@ export const AuthProvider = ({ children }) => {
               
               const { access } = refreshResponse.data;
               localStorage.setItem('access_token', access);
-              console.debug('[AuthContext] ✅ Token refreshed successfully');
               
               // Now try to load user with refreshed token
               try {
                 const userResponse = await authService.getMe();
                 setUser(userResponse.data);
-                console.debug('[AuthContext] ✅ User loaded after token refresh');
               } catch (userErr) {
-                console.debug('[AuthContext] Failed to load user after refresh, clearing auth');
                 localStorage.removeItem('access_token');
                 localStorage.removeItem('refresh_token');
                 setUser(null);
               }
             } catch (refreshErr) {
               // Refresh failed, clear tokens
-              console.debug('[AuthContext] ❌ Token refresh failed, clearing authentication');
               localStorage.removeItem('access_token');
               localStorage.removeItem('refresh_token');
               setUser(null);
             }
           } else {
             // Not a 401 or no refresh token, clear auth
-            console.debug('[AuthContext] ❌ Failed to verify token, clearing authentication');
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
             setUser(null);
@@ -65,7 +57,6 @@ export const AuthProvider = ({ children }) => {
         }
       } else {
         // No token available, user is not authenticated
-        console.debug('[AuthContext] No token found in localStorage, user is unauthenticated');
       }
       setLoading(false);
     };
@@ -140,7 +131,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   const setAuthUser = (userData) => {
-    console.debug('[AuthContext] setAuthUser() called with user:', userData?.username);
     setUser(userData);
   };
 

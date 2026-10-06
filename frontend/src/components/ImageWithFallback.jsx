@@ -85,7 +85,7 @@ const ImageWithFallback = ({
       height={height}
       loading={loading}
       decoding={decoding}
-      fetchPriority={fetchPriority}
+      fetchpriority={fetchPriority && fetchPriority !== 'auto' ? fetchPriority : undefined}
       crossOrigin={crossOrigin}
       onLoad={handleImageLoad}
       onError={handleImageError}

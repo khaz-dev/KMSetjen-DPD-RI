@@ -50,13 +50,6 @@ function RoleManagementPage({ onLogout }) {
         lookup[perm.id] = perm.codename;
       });
     }
-    console.log('[RoleManagement] LOOKUP BUILD:', {
-      permissionsArraySize: permissions.length,
-      lookupSize: Object.keys(lookup).length,
-      firstPermission: permissions[0],
-      samplePermissions: permissions.slice(0, 3),
-      lookupEntries: lookup,
-    });
     return lookup;
   }, [permissions]);
 
@@ -123,12 +116,6 @@ function RoleManagementPage({ onLogout }) {
 
       const rolesList = response.data.results || [];
       
-      console.log('[RoleManagement LOAD] Roles loaded:', rolesList.length);
-      console.log('[RoleManagement LOAD] Full roles response:', response.data);
-      rolesList.forEach((role, idx) => {
-        console.log(`[RoleManagement LOAD] Role ${idx}: Code=${role.code}, ID=${role.id}, UserCount=${role.user_count}, Type=${typeof role.user_count}, Keys=${Object.keys(role)}`);
-      });
-      
       setRoles(rolesList);
       setTotalPages(Math.ceil((response.data.count || 0) / 20));
     } catch (err) {
@@ -141,18 +128,8 @@ function RoleManagementPage({ onLogout }) {
 
   const loadPermissions = useCallback(async () => {
     try {
-      console.log('[RoleManagement] Loading permissions...');
-      const response = await adminAPI.getPermissions({
-        page_size: 100,
-      });
-
       // Extract results from paginated response
       const permissionsList = response.data.results || response.data || [];
-      console.log('[RoleManagement] Permissions loaded:', permissionsList.length, 'items');
-      console.log('[RoleManagement] First permission:', permissionsList[0]);
-      console.log('[RoleManagement] Sample of loaded permissions (IDs 29-31):',
-        permissionsList.filter(p => [29, 30, 31].includes(p.id))
-      );
       
       // Ensure we have an array of objects with id property
       if (Array.isArray(permissionsList) && permissionsList.length > 0) {
@@ -169,7 +146,6 @@ function RoleManagementPage({ onLogout }) {
 
   // Load permissions once when component mounts
   useEffect(() => {
-    console.log('[RoleManagement] Component mounted - loading permissions');
     loadPermissions();
   }, [loadPermissions]);
 
@@ -192,41 +168,13 @@ function RoleManagementPage({ onLogout }) {
 
   // Load roles when currentPage changes
   useEffect(() => {
-    console.log('[RoleManagement] Page changed or loadRoles updated - loading roles');
     loadRoles();
   }, [loadRoles]);
-
-  // Diagnostic effect to track permissions updates
-  useEffect(() => {
-    if (permissions.length > 0) {
-      const lookupKeys = Object.keys(permissionsLookup);
-      const allIds = permissions.map(p => p.id);
-      const hasId29 = allIds.includes(29);
-      const hasId30 = allIds.includes(30);
-      const hasId31 = allIds.includes(31);
-      
-      console.log('[RoleManagement DIAGNOSTIC]:', {
-        permissionsLoaded: permissions.length,
-        lookupBuilt: lookupKeys.length,
-        allPermissionIds: allIds.slice(0, 10),
-        hasPermission29: hasId29,
-        hasPermission30: hasId30,
-        hasPermission31: hasId31,
-        permissionsStructure: permissions[0],
-        lookupStructure: { '29': permissionsLookup[29], '30': permissionsLookup[30], '31': permissionsLookup[31] },
-      });
-    }
-  }, [permissions, permissionsLookup]);
 
   const handleOpenModal = (role = null) => {
     if (role) {
       setModalMode('edit');
       setSelectedRole(role);
-      
-      // Debug logging
-      console.log('[RoleManagement] Opening edit modal for role:', role.code);
-      console.log('[RoleManagement] Role permissions data:', role.permissions);
-      console.log('[RoleManagement] Available permissions count:', permissions.length);
       
       // Convert permission IDs to numbers for proper comparison
       // Handle both direct IDs and objects with id property
@@ -250,8 +198,6 @@ function RoleManagementPage({ onLogout }) {
           return item;
         });
       }
-      
-      console.log('[RoleManagement] Extracted permission IDs:', permissionIds);
       
       setFormData({
         code: role.code,
@@ -308,23 +254,10 @@ function RoleManagementPage({ onLogout }) {
         permissions: formData.permissions,
       };
 
-      console.log('[RoleManagement FORM] Submitting:', {
-        mode: modalMode,
-        formData: {
-          code: formData.code,
-          name_id: formData.name,
-          name_en: formData.name,
-          description_id: formData.description,
-          description_en: formData.description,
-          permissions_count: formData.permissions.length,
-        }
-      });
-
       const response = modalMode === 'create'
         ? await adminAPI.createRole(roleData)
         : await adminAPI.updateRole(selectedRole.id, roleData);
 
-      console.log('[RoleManagement FORM] Success:', response.status, response.data);
       setError(null);
       loadRoles();
       handleCloseModal();
@@ -358,7 +291,6 @@ function RoleManagementPage({ onLogout }) {
         }
       }
       
-      console.log('[RoleManagement FORM] Final error message:', errorDetail);
       setError(errorDetail);
     } finally {
       setSubmitting(false);
@@ -366,13 +298,10 @@ function RoleManagementPage({ onLogout }) {
   };
 
   const handleDeleteRole = (roleId) => {
-    console.log('[RoleManagement DELETE] Button clicked for roleId:', roleId);
-    
     // Find the role name for display in confirmation modal
     const role = roles.find(r => r.id === roleId);
     const roleName = role ? role.code : `Role ${roleId}`;
     
-    console.log('[RoleManagement DELETE] Opening confirmation modal for role:', roleName);
     setDeleteRoleId(roleId);
     setDeleteRoleName(roleName);
     setShowDeleteModal(true);
@@ -380,21 +309,15 @@ function RoleManagementPage({ onLogout }) {
 
   const handleConfirmDelete = async () => {
     const roleId = deleteRoleId;
-    console.log('[RoleManagement DELETE] User confirmed, sending DELETE request...');
     
     try {
-      console.log('[RoleManagement DELETE] Deleting role ID:', roleId);
-      
       const response = await adminAPI.deleteRole(roleId);
-
-      console.log('[RoleManagement DELETE] Success! Response:', response.status, response.data);
       
       // Show success alert
       alert(`Success: ${response.data.detail || 'Role deleted successfully'}`);
       
       setError(null);
       await loadRoles();
-      console.log('[RoleManagement DELETE] Roles reloaded');
       setShowDeleteModal(false);
       setDeleteRoleId(null);
       setDeleteRoleName('');
@@ -432,7 +355,6 @@ function RoleManagementPage({ onLogout }) {
   };
 
   const handleCancelDelete = () => {
-    console.log('[RoleManagement DELETE] User cancelled delete');
     setShowDeleteModal(false);
     setDeleteRoleId(null);
     setDeleteRoleName('');
@@ -497,21 +419,6 @@ function RoleManagementPage({ onLogout }) {
                     <tbody>
                       {roles.map((role) => {
                         // Log table state when rendering roles
-                        if (role.code === 'admin') {
-                          console.log('[RoleManagement TABLE RENDER STATE]:', {
-                            roleCode: role.code,
-                            rolePermissionsArray: role.permissions,
-                            rolePermissionsArrayType: Array.isArray(role.permissions) ? 'array' : typeof role.permissions,
-                            permissionsStateSize: permissions.length,
-                            permissionsStateSample: permissions.slice(0, 3).map(p => ({ id: p.id, codename: p.codename })),
-                            lookupSize: Object.keys(permissionsLookup).length,
-                            lookupKeys: Object.keys(permissionsLookup).slice(0, 5),
-                            lookupFor29: permissionsLookup[29],
-                            lookupFor30: permissionsLookup[30],
-                            lookupFor31: permissionsLookup[31],
-                          });
-                        }
-                        
                         return (
                         <tr key={role.id}>
                           <td>
@@ -528,11 +435,6 @@ function RoleManagementPage({ onLogout }) {
                                   // Convert permission ID to codename using lookup
                                   const codename = getPermissionCodename(permId);
                                   const label = codename ? getPermissionLabel(codename) : `Permission ${permId}`;
-                                  
-                                  // Debug logging for first role only
-                                  if (role.code === 'admin' && idx < 3) {
-                                    console.log(`[RoleManagement Table] Row ${idx}: PermID=${permId}, Codename=${codename}, Label=${label}, LookupHasID=${permId in permissionsLookup}, LookupValue=${permissionsLookup[permId]}`);
-                                  }
                                   
                                   return (
                                     <Badge
@@ -570,15 +472,11 @@ function RoleManagementPage({ onLogout }) {
                               </Button>
                               {(() => {
                                 const isDisabled = role.user_count > 0;
-                                console.log(`[RoleManagement DELETE BTN] Role: ${role.code}, UserCount: ${role.user_count}, Type: ${typeof role.user_count}, Disabled: ${isDisabled}`);
                                 return (
                                   <Button
                                     variant="outline-danger"
                                     size="sm"
-                                    onClick={() => {
-                                      console.log(`[RoleManagement DELETE BTN CLICK] Clicked delete for role: ${role.code} (ID: ${role.id})`);
-                                      handleDeleteRole(role.id);
-                                    }}
+                                    onClick={() => handleDeleteRole(role.id)}
                                     disabled={isDisabled}
                                     title={
                                       isDisabled
@@ -701,11 +599,6 @@ function RoleManagementPage({ onLogout }) {
                     // Ensure we can extract ID from permission object
                     const permissionId = permission.id || permission.permission_id;
                     const isChecked = formData.permissions.includes(permissionId);
-                    
-                    // Debug first few checkboxes
-                    if (permissions.indexOf(permission) < 3) {
-                      console.log(`[RoleManagement] Permission: ID=${permissionId}, Codename=${permission.codename}, Checked=${isChecked}`);
-                    }
                     
                     return (
                       <Form.Check

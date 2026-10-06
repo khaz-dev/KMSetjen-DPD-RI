@@ -54,12 +54,10 @@ function ArticleModerationPage({ onLogout }) {
           );
           counts[key] = response.data.count || 0;
         } catch (err) {
-          console.debug(`Failed to load ${key} count:`, err.message);
           counts[key] = 0;
         }
       }
       setStatusCounts(counts);
-      console.log('[ArticleModeration] Status counts loaded:', counts);
     } catch (err) {
       console.error('Failed to load status counts:', err);
     }

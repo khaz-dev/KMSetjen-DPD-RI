@@ -165,7 +165,7 @@ class SecurityAuditMiddleware(MiddlewareMixin):
         """Log incoming request."""
         # Log authentication attempts
         if '/auth/' in request.path:
-            logger.info(
+            logger.debug(
                 f'Auth request: {request.method} {request.path} '
                 f'from {self.get_client_ip(request)}'
             )
