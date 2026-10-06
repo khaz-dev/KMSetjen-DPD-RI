@@ -44,7 +44,13 @@ const Header = () => {
   };
 
   return (
-    <Navbar bg="light" expand="lg" sticky="top" className="navbar-custom">
+    <Navbar 
+      data-bs-theme={theme} 
+      variant={theme === 'dark' ? 'dark' : 'light'} 
+      expand="lg" 
+      sticky="top" 
+      className="navbar-custom"
+    >
       <Container>
         <Navbar.Brand as={Link} to="/" className="brand-logo">
           <img

@@ -42,8 +42,28 @@
   color: #ffffff;
 }
 
-.policy-header .text-muted {
-  color: rgba(255, 255, 255, 0.8) !important;
+/* Header Text Muted / Subtitle Meta - High specificity to override theme & utility overrides */
+.policy-page .policy-header .text-muted,
+.policy-header .text-muted,
+.policy-header .policy-header-muted,
+:root[data-theme="light"] .policy-page .policy-header .text-muted,
+:root[data-theme="dark"] .policy-page .policy-header .text-muted,
+.policy-page.dark-mode .policy-header .text-muted,
+.policy-page.light-mode .policy-header .text-muted {
+  color: #e6fffa !important;
+  opacity: 0.95;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+:root[data-theme="dark"] .policy-page .policy-header .text-muted,
+.policy-page.dark-mode .policy-header .text-muted,
+:root[data-theme="dark"] .policy-header .policy-header-muted,
+.policy-page.dark-mode .policy-header .policy-header-muted {
+  color: #ccfbf1 !important;
+  opacity: 0.95;
 }
 
 /* Content Section */
@@ -191,14 +211,14 @@
   border-top-color: #3a3a3a;
 }
 
-/* Text Muted */
-.text-muted {
+/* Text Muted (Content Area) */
+.policy-content .text-muted {
   color: #6c757d;
 }
 
-.policy-page.dark-mode .text-muted,
-[data-theme="dark"] .policy-page .text-muted {
-  color: #888 !important;
+.policy-page.dark-mode .policy-content .text-muted,
+[data-theme="dark"] .policy-page .policy-content .text-muted {
+  color: #adb5bd !important;
 }
 
 /* Small Text */

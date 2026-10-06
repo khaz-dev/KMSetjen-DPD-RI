@@ -24,7 +24,7 @@ const PrivacyPage = () => {
               <p className="lead mb-3">
                 {t('privacy.subtitle', 'How we collect, use, and protect your information')}
               </p>
-              <p className="text-muted">
+              <p className="text-muted policy-header-muted">
                 {t('privacy.last_updated', 'Last updated: January 2024')}
               </p>
             </Col>
@@ -165,7 +165,7 @@ const PrivacyPage = () => {
               <hr className="my-5" />
 
               <p className="text-muted small">
-                &copy; {currentYear} BPSDM. {t('privacy.copyright', 'All rights reserved.')}
+                &copy; {currentYear} BPSDM, OKK, Setjen DPD RI. {t('privacy.copyright', 'All rights reserved.')}
               </p>
             </Col>
           </Row>

@@ -805,7 +805,7 @@
     "email_us": "Email Kami",
     "dpdri_website": "Situs Web DPD RI",
     "copyright": "Semua hak dilindungi.",
-    "kms_version": "Sistem Manajemen Pengetahuan v1.0",
+    "kms_version": "KMSetjen DPD RI v1.0",
     "email": "sdm@dpd.go.id"
   },
   "search": {
@@ -911,7 +911,8 @@
     "failed_toggle_user_status": "Gagal mengubah status pengguna",
     "failed_load_audit_logs": "Gagal memuat log audit",
     "failed_fetch_category": "Gagal mengambil kategori"
-  },  "about": {
+  },
+  "about": {
     "title": "Tentang DPD RI KMS",
     "subtitle": "Sistem Manajemen Pengetahuan untuk Dewan Perwakilan Daerah Republik Indonesia",
     "mission": "Misi Kami",

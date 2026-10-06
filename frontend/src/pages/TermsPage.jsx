@@ -24,7 +24,7 @@ const TermsPage = () => {
               <p className="lead mb-3">
                 {t('terms.subtitle', 'Please read these terms carefully before using the Knowledge Management System')}
               </p>
-              <p className="text-muted">
+              <p className="text-muted policy-header-muted">
                 {t('terms.last_updated', 'Last updated: January 2024')}
               </p>
             </Col>
