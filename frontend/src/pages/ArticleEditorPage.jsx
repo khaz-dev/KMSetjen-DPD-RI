@@ -1477,7 +1477,7 @@ const ArticleEditor = () => {
                         {item.type === 'employee' ? '👤' : item.type === 'work_unit' ? '🏛️' : '🌐'}
                       </div>
                       <div className="dropdown-item-text">
-                        <div className="dropdown-item-title">{item.name}</div>
+                        <div className="dropdown-item-title" title={item.name}>{item.name}</div>
                         <div className="dropdown-item-meta text-muted small">
                           {item.type === 'employee' && (
                             <>
@@ -1550,7 +1550,7 @@ const ArticleEditor = () => {
                       <span className="creator-chip-icon">
                         {isInternal ? (isWorkUnit ? '🏛️' : '👤') : '🌐'}
                       </span>
-                      <span className="creator-chip-name">{c.name}</span>
+                      <span className="creator-chip-name" title={c.name}>{c.name}</span>
                       <span className="creator-chip-tag">
                         {isInternal ? (isWorkUnit ? 'Unit Kerja' : 'Internal') : 'Eksternal'}
                       </span>

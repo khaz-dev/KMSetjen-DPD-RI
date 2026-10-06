@@ -104,12 +104,20 @@ const CategoryDetailPage = () => {
             {articles.map((article) => (
               <div key={article.id} className="article-list-item">
                 <div className="article-content">
-                  <h3 className="article-title">
-                    {isIndonesian ? article.title_id : article.title_en}
-                  </h3>
-                  <p className="article-summary">
-                    {isIndonesian ? article.summary_id : article.summary_en}
-                  </p>
+                  {(() => {
+                    const artTitle = isIndonesian ? article.title_id : article.title_en;
+                    const artSummary = isIndonesian ? article.summary_id : article.summary_en;
+                    return (
+                      <>
+                        <h3 className="article-title" title={artTitle}>
+                          {artTitle}
+                        </h3>
+                        <p className="article-summary" title={artSummary}>
+                          {artSummary}
+                        </p>
+                      </>
+                    );
+                  })()}
                   <div className="article-info d-flex align-items-center flex-wrap gap-2">
                     <ArticleMetaLine article={article} compact={true} />
                     <span className="separator">•</span>

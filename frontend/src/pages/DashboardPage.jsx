@@ -462,30 +462,49 @@ const DashboardPage = () => {
                         <div className="article-bottom-section">
                           <div className="article-content">
                             <div className="dashboard-article-info">
-                              <h6 className="article-title">
-                                {isIndonesian 
+                              {(() => {
+                                const articleTitle = isIndonesian 
                                   ? (article.title_id || article.title_en) 
-                                  : (article.title_en || article.title_id)}
-                              </h6>
+                                  : (article.title_en || article.title_id);
+                                return (
+                                  <h6 className="article-title" title={articleTitle}>
+                                    {articleTitle}
+                                  </h6>
+                                );
+                              })()}
                               <div className="article-tags-section">
                                 {article.category && (
                                   <div className="category-badge-wrapper">
-                                    <span className="dashboard-category-badge">
-                                      {isIndonesian 
+                                    {(() => {
+                                      const catName = isIndonesian 
                                         ? (article.category.name_id || article.category.name_en)
-                                        : (article.category.name_en || article.category.name_id)}
-                                    </span>
+                                        : (article.category.name_en || article.category.name_id);
+                                      return (
+                                        <span className="dashboard-category-badge" title={catName} style={{ cursor: 'help' }}>
+                                          {catName}
+                                        </span>
+                                      );
+                                    })()}
                                   </div>
                                 )}
                                 {article.tags && article.tags.length > 0 && (
                                   <div className="tags-badges-wrapper">
-                                    {article.tags.slice(0, 3).map((tag) => (
-                                      <span key={tag.id} className="tag-badge">
-                                        {isIndonesian ? (tag.name_id || tag.name_en) : (tag.name_en || tag.name_id)}
-                                      </span>
-                                    ))}
+                                    {article.tags.slice(0, 3).map((tag) => {
+                                      const tagName = isIndonesian ? (tag.name_id || tag.name_en) : (tag.name_en || tag.name_id);
+                                      return (
+                                        <span key={tag.id} className="tag-badge" title={tagName} style={{ cursor: 'help' }}>
+                                          {tagName}
+                                        </span>
+                                      );
+                                    })}
                                     {article.tags.length > 3 && (
-                                      <span className="tag-badge tag-more">+{article.tags.length - 3}</span>
+                                      <span 
+                                        className="tag-badge tag-more"
+                                        title={article.tags.slice(3).map(t => isIndonesian ? (t.name_id || t.name_en) : (t.name_en || t.name_id)).join(', ')}
+                                        style={{ cursor: 'help' }}
+                                      >
+                                        +{article.tags.length - 3}
+                                      </span>
                                     )}
                                   </div>
                                 )}

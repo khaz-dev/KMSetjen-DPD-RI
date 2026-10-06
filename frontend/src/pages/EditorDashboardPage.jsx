@@ -214,7 +214,7 @@ const EditorDashboard = () => {
                   <div key={article.id} className="article-item">
                     <div className="article-header">
                       <div className="article-info">
-                        <h5 className="article-title">{article.title}</h5>
+                        <h5 className="article-title" title={article.title}>{article.title}</h5>
                         <div className="article-meta">
                           <small className="text-muted">
                             ✍️ {article.creator_name || article.author?.first_name || article.author?.username || 'Setjen DPD RI'} | 🌐 {article.uploader_name || article.author?.first_name || article.author?.username || 'Admin KM'} •
@@ -230,7 +230,17 @@ const EditorDashboard = () => {
                     </div>
 
                     <div className="article-excerpt">
-                      <p>{article.description || article.content.substring(0, 200)}...</p>
+                      {(() => {
+                        const rawText = article.description || article.content || '';
+                        const cleanText = rawText.replace(/<[^>]*>/g, '').trim();
+                        const isTruncated = cleanText.length > 200;
+                        const displayText = isTruncated ? `${cleanText.substring(0, 200)}...` : cleanText;
+                        return (
+                          <p title={cleanText || undefined} style={{ cursor: isTruncated ? 'help' : 'default' }}>
+                            {displayText}
+                          </p>
+                        );
+                      })()}
                     </div>
 
                     <div className="article-footer">

@@ -427,7 +427,9 @@ function RoleManagementPage({ onLogout }) {
                           <td>
                             <strong>{role.name_id || role.name_en || '-'}</strong>
                           </td>
-                          <td>{role.description_id || role.description_en || '-'}</td>
+                          <td title={role.description_id || role.description_en || undefined}>
+                            {role.description_id || role.description_en || '-'}
+                          </td>
                           <td>
                             <div className="permission-badges">
                               {role.permissions && Array.isArray(role.permissions) && role.permissions.length > 0 ? (
@@ -451,7 +453,15 @@ function RoleManagementPage({ onLogout }) {
                                 <span className="text-muted">No permissions</span>
                               )}
                               {role.permissions && Array.isArray(role.permissions) && role.permissions.length > 3 && (
-                                <Badge bg="secondary" className="permission-badge">
+                                <Badge 
+                                  bg="secondary" 
+                                  className="permission-badge"
+                                  title={role.permissions.slice(3).map(permId => {
+                                    const codename = getPermissionCodename(permId);
+                                    return codename ? getPermissionLabel(codename) : `Permission ${permId}`;
+                                  }).join(', ')}
+                                  style={{ cursor: 'help' }}
+                                >
                                   +{role.permissions.length - 3}
                                 </Badge>
                               )}

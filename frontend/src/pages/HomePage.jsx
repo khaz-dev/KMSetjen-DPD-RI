@@ -539,17 +539,28 @@ const HomePage = () => {
                       </div>
                       
                       <Card.Body className="d-flex flex-column">
-                        <h5 className="category-title">{isIndonesian ? category.name_id : category.name_en}</h5>
+                        <h5 
+                          className="category-title" 
+                          title={isIndonesian ? category.name_id : category.name_en}
+                        >
+                          {isIndonesian ? category.name_id : category.name_en}
+                        </h5>
                         
                         {/* Category Description */}
-                        {(isIndonesian ? category.description_id : category.description_en) && (
-                          <p className="category-description text-muted flex-grow-1 small">
-                            {(() => {
-                              const desc = isIndonesian ? category.description_id : category.description_en;
-                              return desc.length > 100 ? desc.substring(0, 100) + '...' : desc;
-                            })()}
-                          </p>
-                        )}
+                        {(() => {
+                          const desc = isIndonesian ? category.description_id : category.description_en;
+                          if (!desc) return null;
+                          const isTruncated = desc.length > 100;
+                          return (
+                            <p 
+                              className="category-description text-muted flex-grow-1 small"
+                              title={desc}
+                              style={{ cursor: isTruncated ? 'help' : 'default' }}
+                            >
+                              {isTruncated ? `${desc.substring(0, 100)}...` : desc}
+                            </p>
+                          );
+                        })()}
                       </Card.Body>
                     </Card>
                   </Link>

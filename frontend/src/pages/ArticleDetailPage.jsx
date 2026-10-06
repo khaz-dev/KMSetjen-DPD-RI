@@ -374,17 +374,18 @@ const ArticleDetailPage = () => {
     const artSummary = isIndonesian ? art.summary_id : (art.summary_en || art.summary_id);
 
     // Create excerpt from summary or content, max 120 characters
-    const getExcerpt = () => {
-      let excerpt = artSummary || artContent || '';
+    const getCleanFullText = () => {
+      let text = artSummary || artContent || '';
       // Remove HTML tags if present
-      excerpt = excerpt.replace(/<[^>]*>/g, '');
+      text = text.replace(/<[^>]*>/g, '');
       // Remove extra whitespace
-      excerpt = excerpt.replace(/\s+/g, ' ').trim();
-      // Limit to 120 chars
-      return excerpt.length > 120 ? excerpt.substring(0, 120) + '...' : excerpt;
+      text = text.replace(/\s+/g, ' ').trim();
+      return text;
     };
 
-    const excerpt = getExcerpt();
+    const fullExcerpt = getCleanFullText();
+    const isExcerptTruncated = fullExcerpt.length > 120;
+    const displayExcerpt = isExcerptTruncated ? `${fullExcerpt.substring(0, 120)}...` : fullExcerpt;
 
     return (
       <div
@@ -412,12 +413,13 @@ const ArticleDetailPage = () => {
             >
               {artTitle}
             </h6>
-            {excerpt && (
+            {displayExcerpt && (
               <p
                 className="mb-0 article-list-item-excerpt"
-                title={excerpt}
+                title={fullExcerpt}
+                style={{ cursor: isExcerptTruncated ? 'help' : 'pointer' }}
               >
-                {excerpt}
+                {displayExcerpt}
               </p>
             )}
           </div>

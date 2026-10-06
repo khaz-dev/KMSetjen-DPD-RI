@@ -448,12 +448,20 @@ function CategoryManagementPage({ onLogout }) {
                               )}
                             </div>
                           </td>
-                          <td>
-                            {(() => {
-                              const description = item.description_id || item.description_en || '';
-                              return description ? description.substring(0, 50) + (description.length > 50 ? '...' : '') : '-';
-                            })()}
-                          </td>
+                          {(() => {
+                            const description = item.description_id || item.description_en || '';
+                            const isTruncated = description.length > 50;
+                            return (
+                              <td
+                                title={description || undefined}
+                                style={{ cursor: isTruncated ? 'help' : 'default' }}
+                              >
+                                {description
+                                  ? (isTruncated ? `${description.substring(0, 50)}...` : description)
+                                  : '-'}
+                              </td>
+                            );
+                          })()}
                           <td style={{ textAlign: 'center' }}><Badge bg="info">{item.article_count || 0}</Badge></td>
                           <td>
                             <div className="action-buttons">

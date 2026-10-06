@@ -176,6 +176,16 @@ function ArticleModerationPage({ onLogout }) {
     return statusMap[status] || status;
   };
 
+  const renderArticleTitle = (article) => {
+    const fullTitle = (isIndonesian ? article.title_id : article.title_en) || article.title_id || article.title_en || '-';
+    const isTruncated = fullTitle.length > 40;
+    return (
+      <td title={fullTitle} style={{ cursor: isTruncated ? 'help' : 'default' }}>
+        <strong>{isTruncated ? `${fullTitle.substring(0, 40)}...` : fullTitle}</strong>
+      </td>
+    );
+  };
+
   const handleSort = (field) => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -237,7 +247,7 @@ function ArticleModerationPage({ onLogout }) {
                           {articles.map((article, index) => (
                             <tr key={article.id}>
                               <td style={{ textAlign: 'center', fontWeight: '600', color: '#999', width: '50px' }}>{(currentPage - 1) * 20 + index + 1}</td>
-                              <td><strong>{(isIndonesian ? article.title_id : article.title_en).substring(0, 40)}...</strong></td>
+                              {renderArticleTitle(article)}
                               <td>
                                 <div className="d-flex flex-column gap-1">
                                   <span title="Penyusun / Penulis Asli" style={{ fontSize: '0.85rem' }}>
@@ -318,7 +328,7 @@ function ArticleModerationPage({ onLogout }) {
                           {articles.map((article, index) => (
                             <tr key={article.id}>
                               <td style={{ textAlign: 'center', fontWeight: '600', color: '#999', width: '50px' }}>{(currentPage - 1) * 20 + index + 1}</td>
-                              <td><strong>{(isIndonesian ? article.title_id : article.title_en).substring(0, 40)}...</strong></td>
+                              {renderArticleTitle(article)}
                               <td>{article.author?.username || t('moderation.empty_value')}</td>
                               <td>{(isIndonesian ? article.category?.name_id : article.category?.name_en) || t('moderation.empty_value')}</td>
                               <td><Badge bg={getStatusBadge(article.status)}>{getStatusLabel(article.status)}</Badge></td>
@@ -385,7 +395,7 @@ function ArticleModerationPage({ onLogout }) {
                           {articles.map((article, index) => (
                             <tr key={article.id}>
                               <td style={{ textAlign: 'center', fontWeight: '600', color: '#999', width: '50px' }}>{(currentPage - 1) * 20 + index + 1}</td>
-                              <td><strong>{(isIndonesian ? article.title_id : article.title_en).substring(0, 40)}...</strong></td>
+                              {renderArticleTitle(article)}
                               <td>{article.author?.username || t('moderation.empty_value')}</td>
                               <td>{(isIndonesian ? article.category?.name_id : article.category?.name_en) || t('moderation.empty_value')}</td>
                               <td><Badge bg={getStatusBadge(article.status)}>{getStatusLabel(article.status)}</Badge></td>
@@ -451,7 +461,7 @@ function ArticleModerationPage({ onLogout }) {
                           {articles.map((article, index) => (
                             <tr key={article.id}>
                               <td style={{ textAlign: 'center', fontWeight: '600', color: '#999', width: '50px' }}>{(currentPage - 1) * 20 + index + 1}</td>
-                              <td><strong>{(isIndonesian ? article.title_id : article.title_en).substring(0, 40)}...</strong></td>
+                              {renderArticleTitle(article)}
                               <td>{article.author?.username || t('moderation.empty_value')}</td>
                               <td>{(isIndonesian ? article.category?.name_id : article.category?.name_en) || t('moderation.empty_value')}</td>
                               <td><Badge bg={getStatusBadge(article.status)}>{getStatusLabel(article.status)}</Badge></td>

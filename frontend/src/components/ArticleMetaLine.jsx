@@ -87,14 +87,14 @@ const ArticleMetaLine = ({
           <span className="meta-label">
             {t('articles.created_and_published_by', 'Dibuat dan Diterbitkan oleh')}:
           </span>{' '}
-          <strong className="meta-name">{creatorName}</strong>
+          <strong className="meta-name" title={creatorName}>{creatorName}</strong>
         </span>
       ) : (
         <>
           <span className="meta-part meta-creator">
             <span className="meta-icon">✍️</span>{' '}
             <span className="meta-label">{t('articles.created_by', 'Dibuat oleh')}:</span>{' '}
-            <strong className="meta-name">{creatorName}</strong>
+            <strong className="meta-name" title={creatorName}>{creatorName}</strong>
           </span>
           <span className="meta-separator-pipe">|</span>
           <span className="meta-part meta-uploader">
@@ -102,7 +102,7 @@ const ArticleMetaLine = ({
             <span className="meta-label">
               {t('articles.published_by', 'Diterbitkan oleh')}:
             </span>{' '}
-            <strong className="meta-name">{uploaderName}</strong>
+            <strong className="meta-name" title={uploaderName}>{uploaderName}</strong>
           </span>
         </>
       )}
