@@ -1,7 +1,7 @@
 """Django admin configuration for content models."""
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
-from .models import Article, Category, Tag, File, ArticleVersion, ExternalAuthor
+from .models import Article, Category, Tag, File, InfographicImage, ArticleVersion, ExternalAuthor, ArticleShare
 
 
 @admin.register(ExternalAuthor)
@@ -53,6 +53,14 @@ class FileInline(admin.TabularInline):
     readonly_fields = ('file_size', 'mime_type')
 
 
+class InfographicImageInline(admin.TabularInline):
+    """Inline editor for InfographicImage model (gambar berantai)."""
+    model = InfographicImage
+    extra = 1
+    fields = ('order_index', 'image', 'image_url', 'caption', 'created_at')
+    readonly_fields = ('created_at',)
+
+
 class ArticleVersionInline(admin.TabularInline):
     """Inline editor for ArticleVersion model."""
     model = ArticleVersion
@@ -65,12 +73,12 @@ class ArticleVersionInline(admin.TabularInline):
 @admin.register(Article)
 class ArticleAdmin(admin.ModelAdmin):
     """Admin for Article model."""
-    list_display = ('title_id', 'category', 'creator_name', 'creator_type', 'version_type', 'status', 'access_level', 'author', 'is_published', 'view_count', 'created_at')
+    list_display = ('title_id', 'category', 'creator_name', 'creator_type', 'version_type', 'status', 'access_level', 'author', 'is_published', 'view_count', 'like_count', 'share_count', 'created_at')
     list_filter = ('version_type', 'status', 'creator_type', 'access_level', 'is_published', 'is_bilingual', 'category', 'created_at')
     search_fields = ('title_id', 'title_en', 'content_id', 'content_en', 'creator_name', 'slug')
-    readonly_fields = ('uuid', 'slug', 'view_count', 'created_at', 'updated_at', 'published_at', 'version_type')
+    readonly_fields = ('uuid', 'slug', 'view_count', 'like_count', 'share_count', 'created_at', 'updated_at', 'published_at', 'version_type')
     filter_horizontal = ('tags', 'allowed_roles')
-    inlines = [FileInline, ArticleVersionInline]
+    inlines = [InfographicImageInline, FileInline, ArticleVersionInline]
     
     fieldsets = (
         (_('Title & Content (Indonesian)'), {'fields': ('title_id', 'content_id', 'summary_id')}),
@@ -96,7 +104,7 @@ class ArticleAdmin(admin.ModelAdmin):
             'description': _('Akun yang mengunggah artikel ke sistem KM (Diterbitkan oleh)')
         }),
         (_('Statistics'), {
-            'fields': ('view_count',),
+            'fields': ('view_count', 'like_count', 'share_count'),
             'classes': ('collapse',)
         }),
         (_('Timestamps'), {
@@ -133,3 +141,14 @@ class FileAdmin(admin.ModelAdmin):
         if not change:
             obj.uploaded_by = request.user
         super().save_model(request, obj, form, change)
+
+
+@admin.register(ArticleShare)
+class ArticleShareAdmin(admin.ModelAdmin):
+    """Admin for ArticleShare model to monitor share activity and anti-spam audit."""
+    list_display = ('article', 'user', 'ip_address', 'platform', 'shared_at')
+    list_filter = ('platform', 'shared_at')
+    search_fields = ('article__title_id', 'article__title_en', 'user__username', 'ip_address')
+    readonly_fields = ('article', 'user', 'ip_address', 'platform', 'user_agent', 'shared_at')
+    ordering = ('-shared_at',)
+

@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Form, InputGroup, Button } from 'react-bootstrap';
-import { FiSearch } from 'react-icons/fi';
+import { FiSearch, FiFileText } from 'react-icons/fi';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../hooks/useLanguage';
 import TagFilter from './TagFilter';
+import { KNOWLEDGE_CLUSTERS, KNOWLEDGE_TYPES } from '../constants/knowledgeTypes';
 import './SearchFilter.css';
 
 /**
  * SearchFilter Component
- * Displays search input with filters (category, tags, sort, access level, etc.)
+ * Displays search input with filters (category, knowledge type, tags, sort, access level, etc.)
  * 
  * Note: Access level filter is hidden for PUBLIC role users since they
  * can only see 'public' access level articles anyway
@@ -19,6 +20,8 @@ const SearchFilter = ({
   selectedCategory = '',
   onCategoryChange,
   categories = [],
+  selectedKnowledgeType = '',
+  onKnowledgeTypeChange = () => {},
   selectedAccessLevel = '',
   onAccessLevelChange,
   selectedTags = [],
@@ -119,6 +122,31 @@ const SearchFilter = ({
             <option key={cat.id} value={cat.id}>
               {isIndonesian ? cat.name_id : cat.name_en}
             </option>
+          ))}
+        </Form.Select>
+
+        {/* Knowledge Type (Persekjen DPD RI No. 8/2026 Bab II Pasal 7) */}
+        <Form.Select
+          value={selectedKnowledgeType}
+          onChange={(e) => onKnowledgeTypeChange(e.target.value)}
+          className="filter-select knowledge-type-filter"
+          title={t('articles.filter_by_knowledge_type')}
+        >
+          <option value="">📋 {t('articles.all_types')}</option>
+          {KNOWLEDGE_CLUSTERS.map((cluster) => (
+            <optgroup 
+              key={cluster.code} 
+              label={isIndonesian ? cluster.title_id : cluster.title_en}
+            >
+              {cluster.types.map((typeKey) => {
+                const typeInfo = KNOWLEDGE_TYPES[typeKey];
+                return (
+                  <option key={typeKey} value={typeKey}>
+                    {typeInfo ? `${typeInfo.emoji} ${isIndonesian ? typeInfo.name_id : typeInfo.name_en}` : typeKey}
+                  </option>
+                );
+              })}
+            </optgroup>
           ))}
         </Form.Select>
 

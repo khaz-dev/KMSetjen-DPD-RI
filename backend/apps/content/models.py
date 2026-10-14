@@ -7,6 +7,12 @@ from django.db.models import F
 from django.utils.text import slugify
 from django.conf import settings
 from django.core.validators import FileExtensionValidator
+from apps.content.constants import (
+    KNOWLEDGE_TYPE_CHOICES,
+    KNOWLEDGE_TYPE_ARTIKEL,
+    KNOWLEDGE_TYPE_DETAILS,
+    KNOWLEDGE_CLUSTER_MAP,
+)
 
 
 # ============================================================================
@@ -358,6 +364,12 @@ class Article(models.Model):
         null=True,
         help_text='External image URL (used if local image not available)'
     )
+    media_url = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text='External media URL (YouTube, Vimeo, Google Drive, direct video/audio) untuk Produk Audiovisual'
+    )
     
     # Metadata
     language = models.CharField(
@@ -432,6 +444,14 @@ class Article(models.Model):
         related_name='articles',
         help_text='Kategori artikel'
     )
+    # Bentuk Pengetahuan sesuai Peraturan Sekretaris Jenderal DPD RI No. 8 Tahun 2026 Bab II Pasal 7
+    knowledge_type = models.CharField(
+        max_length=30,
+        choices=KNOWLEDGE_TYPE_CHOICES,
+        default=KNOWLEDGE_TYPE_ARTIKEL,
+        db_index=True,
+        help_text='Bentuk Pengetahuan sesuai Persekjen DPD RI No. 8/2026 Bab II Pasal 7'
+    )
     tags = models.ManyToManyField(
         Tag,
         blank=True,
@@ -504,6 +524,7 @@ class Article(models.Model):
     # Metrics
     view_count = models.IntegerField(default=0, db_index=True, help_text='Total views')
     like_count = models.IntegerField(default=0, db_index=True, help_text='Total likes')
+    share_count = models.IntegerField(default=0, db_index=True, help_text='Total shares')
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -523,6 +544,8 @@ class Article(models.Model):
             models.Index(fields=['creator_user']),
             models.Index(fields=['-published_at']),
             models.Index(fields=['access_level']),
+            models.Index(fields=['knowledge_type']),
+            models.Index(fields=['is_published', 'knowledge_type']),
         ]
         constraints = [
             # Slug must be unique per version_type (draft can have same slug as published)
@@ -534,6 +557,34 @@ class Article(models.Model):
     
     def __str__(self):
         return f"{self.title_id} ({self.status})"
+
+    def get_knowledge_type_display_id(self):
+        """Get Indonesian display name for knowledge type."""
+        details = KNOWLEDGE_TYPE_DETAILS.get(self.knowledge_type, {})
+        return details.get('name_id', self.get_knowledge_type_display())
+
+    def get_knowledge_type_display_en(self):
+        """Get English display name for knowledge type."""
+        details = KNOWLEDGE_TYPE_DETAILS.get(self.knowledge_type, {})
+        return details.get('name_en', self.get_knowledge_type_display())
+
+    def get_knowledge_cluster(self):
+        """Get cluster code ('a', 'b', 'c', 'd') based on Pasal 7."""
+        details = KNOWLEDGE_TYPE_DETAILS.get(self.knowledge_type, {})
+        return details.get('cluster', 'c')
+
+    def get_knowledge_cluster_display_id(self):
+        """Get cluster title in Indonesian."""
+        cluster_code = self.get_knowledge_cluster()
+        cluster_info = KNOWLEDGE_CLUSTER_MAP.get(cluster_code, {})
+        return cluster_info.get('title_id', '')
+
+    def get_knowledge_cluster_display_en(self):
+        """Get cluster title in English."""
+        cluster_code = self.get_knowledge_cluster()
+        cluster_info = KNOWLEDGE_CLUSTER_MAP.get(cluster_code, {})
+        return cluster_info.get('title_en', '')
+
     
     def save(self, *args, **kwargs):
         """Auto-generate slug if not provided, ensure creator_name fallback, and auto-optimize featured image."""
@@ -775,6 +826,102 @@ class Article(models.Model):
             'error': 'User or IP address required to like'
         }
 
+    def increment_share_count(self, user=None, ip_address=None, platform='copy_link', user_agent=''):
+        """
+        Increment share count with anti-abuse / rate-limiting protection:
+        1. Only published articles can be shared (status='published' AND is_published=True).
+        2. Cooldown check: Prevents over share count (spam/hack) by checking if the same user
+           or IP has shared this article recently (cooldown window: 24 hours).
+        3. Rate-limit check: Limits global burst requests from a single IP (max 30 shares per hour).
+        4. Platform logging: Records which platform was used (whatsapp, facebook, twitter, email, copy_link).
+        
+        Args:
+            user: User object (optional, for authenticated users)
+            ip_address: IP address string (optional, for tracking and anonymous users)
+            platform: String platform name (default 'copy_link')
+            user_agent: User-Agent string
+            
+        Returns:
+            dict: {
+                'shared': bool,
+                'share_count': int,
+                'share_recorded': bool,
+                'message': str,
+                'error': str (optional)
+            }
+        """
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        # 1. CRITICAL: Only count shares for published articles
+        if self.status != Article.STATUS_PUBLISHED or not self.is_published:
+            return {
+                'shared': False,
+                'share_count': self.share_count,
+                'share_recorded': False,
+                'error': 'Article must be published to share'
+            }
+        
+        # 2. Rate limit check: Maximum 30 shares per hour from the same IP (across all articles)
+        if ip_address:
+            one_hour_ago = timezone.now() - timedelta(hours=1)
+            recent_shares_from_ip = ArticleShare.objects.filter(
+                ip_address=ip_address,
+                shared_at__gte=one_hour_ago
+            ).count()
+            if recent_shares_from_ip >= 30:
+                return {
+                    'shared': True,
+                    'share_count': self.share_count,
+                    'share_recorded': False,
+                    'message': 'Rate limit exceeded. Please wait before sharing again.'
+                }
+        
+        # 3. Cooldown check per article (24 hours window to prevent spamming share button)
+        cooldown_window = timezone.now() - timedelta(hours=24)
+        
+        already_shared = False
+        if user and user.is_authenticated:
+            already_shared = ArticleShare.objects.filter(
+                article=self,
+                user=user,
+                shared_at__gte=cooldown_window
+            ).exists()
+        elif ip_address:
+            already_shared = ArticleShare.objects.filter(
+                article=self,
+                ip_address=ip_address,
+                shared_at__gte=cooldown_window
+            ).exists()
+            
+        if already_shared:
+            return {
+                'shared': True,
+                'share_count': self.share_count,
+                'share_recorded': False,
+                'message': 'Share already recorded recently'
+            }
+            
+        # 4. Valid share: Record to ArticleShare and increment share_count atomically
+        clean_platform = (platform or 'copy_link')[:50].lower()
+        ArticleShare.objects.create(
+            article=self,
+            user=user if (user and user.is_authenticated) else None,
+            ip_address=ip_address,
+            platform=clean_platform,
+            user_agent=(user_agent or '')[:500]
+        )
+        
+        Article.objects.filter(id=self.id).update(share_count=F('share_count') + 1)
+        self.refresh_from_db(fields=['share_count'])
+        
+        return {
+            'shared': True,
+            'share_count': self.share_count,
+            'share_recorded': True,
+            'message': 'Share recorded successfully'
+        }
+
 
 
 # ============================================================================
@@ -839,14 +986,22 @@ class File(models.Model):
     
     file = models.FileField(
         upload_to='articles/%Y/%m/',
+        null=True,
+        blank=True,
         help_text='File upload'
+    )
+    link_url = models.URLField(
+        max_length=1000,
+        null=True,
+        blank=True,
+        help_text='Link tautan file / dokumen eksternal'
     )
     original_filename = models.CharField(
         max_length=255,
-        help_text='Original filename'
+        help_text='Original filename atau judul tautan'
     )
-    file_size = models.BigIntegerField(help_text='Size in bytes')
-    mime_type = models.CharField(max_length=100, help_text='MIME type')
+    file_size = models.BigIntegerField(default=0, help_text='Size in bytes')
+    mime_type = models.CharField(max_length=100, default='', blank=True, help_text='MIME type')
     
     description_id = models.CharField(
         max_length=255,
@@ -876,8 +1031,60 @@ class File(models.Model):
         verbose_name_plural = 'Files'
         ordering = ['order_index']
     
+    @property
+    def is_link(self):
+        return bool(self.link_url and not self.file)
+
     def __str__(self):
         return self.original_filename
+
+# ============================================================================
+# INFOGRAPHIC IMAGE (MULTI-IMAGE / BERANTAI) MODEL
+# ============================================================================
+
+class InfographicImage(models.Model):
+    """
+    Model untuk menyimpan rangkaian gambar infografis berantai (multi-slide/halaman).
+    Mendukung urutan tampilan (order_index) dan keterangan tiap slide.
+    """
+    article = models.ForeignKey(
+        Article,
+        on_delete=models.CASCADE,
+        related_name='infographic_images',
+        help_text='Artikel yang memiliki gambar infografis ini'
+    )
+    image = models.ImageField(
+        upload_to='articles/infographics/%Y/%m/',
+        null=True,
+        blank=True,
+        help_text='File visual infografis'
+    )
+    image_url = models.URLField(
+        max_length=1000,
+        null=True,
+        blank=True,
+        help_text='Tautan URL visual infografis (opsional)'
+    )
+    caption = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+        help_text='Judul atau keterangan slide/halaman infografis'
+    )
+    order_index = models.PositiveIntegerField(
+        default=0,
+        help_text='Urutan slide/halaman infografis (dimulai dari 0)'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'content_infographic_image'
+        verbose_name = 'Infographic Image'
+        verbose_name_plural = 'Infographic Images'
+        ordering = ['order_index', 'id']
+
+    def __str__(self):
+        return f"{self.article.title_id} - Slide {self.order_index + 1}"
 
 # ============================================================================
 # ARTICLE VIEW TRACKING MODEL
@@ -1015,3 +1222,66 @@ class UserLike(models.Model):
     def __str__(self):
         liker = self.user.username if self.user else self.ip_address
         return f"{self.article.title_id} - {liker}"
+
+
+# ============================================================================
+# ARTICLE SHARE MODEL
+# ============================================================================
+
+class ArticleShare(models.Model):
+    """
+    Track shares per user/IP and platform to prevent share count exploitation.
+    Records each valid share event with platform and cooldown checking.
+    Prevents the same user/IP from artificially inflating share counts.
+    """
+    article = models.ForeignKey(
+        Article,
+        on_delete=models.CASCADE,
+        related_name='shares',
+        db_index=True,
+        help_text='Artikel yang dibagikan'
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='article_shares',
+        db_index=True,
+        help_text='User yang membagikan artikel (null untuk anonymous)'
+    )
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True,
+        help_text='IP address dari pembagi'
+    )
+    platform = models.CharField(
+        max_length=50,
+        default='copy_link',
+        help_text='Platform tujuan share (whatsapp, facebook, twitter, email, copy_link, dll)'
+    )
+    user_agent = models.TextField(
+        blank=True,
+        help_text='User agent string untuk identifikasi device'
+    )
+    shared_at = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True,
+        help_text='Waktu share'
+    )
+
+    class Meta:
+        db_table = 'content_article_share'
+        verbose_name = 'Article Share'
+        verbose_name_plural = 'Article Shares'
+        indexes = [
+            models.Index(fields=['article', 'user', 'shared_at']),
+            models.Index(fields=['article', 'ip_address', 'shared_at']),
+            models.Index(fields=['article', 'shared_at']),
+            models.Index(fields=['shared_at']),
+            models.Index(fields=['platform']),
+        ]
+
+    def __str__(self):
+        sharer = self.user.username if self.user else (self.ip_address or 'Anonymous')
+        return f"{self.article.title_id} - {sharer} ({self.platform})"

@@ -20,7 +20,7 @@ Endpoints:
 """
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import ArticleViewSet, CategoryViewSet, TagViewSet, preview_file
+from .views import ArticleViewSet, CategoryViewSet, TagViewSet, KnowledgeTypesView, preview_file
 from .contact import send_contact_email
 
 # Create router and register viewsets
@@ -33,6 +33,7 @@ router.register(r'tags', TagViewSet, basename='tag')
 urlpatterns = [
     # Explicit article action routes must come before router detail routes.
     # Without these, /articles/popular/ and similar paths are captured as pk lookups.
+    path('knowledge-types/', KnowledgeTypesView.as_view(), name='knowledge-types'),
     path('articles/trending/', ArticleViewSet.as_view({'get': 'trending'}), name='article-trending'),
     path('articles/latest/', ArticleViewSet.as_view({'get': 'latest'}), name='article-latest'),
     path('articles/popular/', ArticleViewSet.as_view({'get': 'popular'}), name='article-popular'),

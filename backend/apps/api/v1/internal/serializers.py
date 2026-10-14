@@ -1,7 +1,7 @@
 """Serializers for internal (authenticated) API endpoints."""
 from rest_framework import serializers
 from django.utils import timezone
-from apps.content.models import Article, Category, Tag, File
+from apps.content.models import Article, Category, Tag, File, InfographicImage
 from apps.audit.services import AuditService
 from apps.core.models import Role
 import json
@@ -55,10 +55,10 @@ class InternalArticleCreateSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'uuid',  # Include ID in response so frontend can update form
             'title_id', 'title_en', 'content_id', 'content_en',
-            'summary_id', 'summary_en', 'category', 'tags',
+            'summary_id', 'summary_en', 'category', 'knowledge_type', 'tags',
             'creator_type', 'creator_name', 'creator_user', 'creators_data',
             'status', 'access_level', 'allowed_roles',
-            'is_bilingual', 'language', 'slug', 'image', 'image_url'
+            'is_bilingual', 'language', 'slug', 'image', 'image_url', 'media_url'
         ]
         read_only_fields = ['id', 'uuid']  # ID and UUID are read-only (auto-generated)
         extra_kwargs = {
@@ -69,6 +69,7 @@ class InternalArticleCreateSerializer(serializers.ModelSerializer):
             'summary_id': {'required': False, 'allow_blank': True},
             'summary_en': {'required': False, 'allow_blank': True},
             'category': {'required': True},
+            'knowledge_type': {'required': False, 'default': 'artikel'},
             'creator_type': {'required': False, 'default': 'internal'},
             'creator_name': {'required': False, 'allow_blank': True},
             'creator_user': {'required': False, 'allow_null': True},
@@ -79,6 +80,7 @@ class InternalArticleCreateSerializer(serializers.ModelSerializer):
             'slug': {'required': False},
             'image': {'required': False},
             'image_url': {'required': False, 'allow_blank': True},
+            'media_url': {'required': False, 'allow_blank': True, 'allow_null': True},
         }
     
     def validate_slug(self, value):
@@ -226,10 +228,10 @@ class InternalArticleUpdateSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'uuid',  # Include ID in response for frontend to track updates
             'title_id', 'title_en', 'content_id', 'content_en',
-            'summary_id', 'summary_en', 'category', 'tags',
+            'summary_id', 'summary_en', 'category', 'knowledge_type', 'tags',
             'creator_type', 'creator_name', 'creator_user', 'creators_data',
             'status', 'access_level', 'allowed_roles',
-            'is_bilingual', 'language', 'slug', 'image', 'image_url'
+            'is_bilingual', 'language', 'slug', 'image', 'image_url', 'media_url'
         ]
         read_only_fields = ['id', 'uuid']  # ID and UUID are read-only
         extra_kwargs = {
@@ -239,12 +241,14 @@ class InternalArticleUpdateSerializer(serializers.ModelSerializer):
             'content_en': {'required': False, 'allow_blank': True},
             'summary_id': {'required': False, 'allow_blank': True},
             'summary_en': {'required': False, 'allow_blank': True},
+            'knowledge_type': {'required': False},
             'creator_type': {'required': False},
             'creator_name': {'required': False, 'allow_blank': True},
             'creator_user': {'required': False, 'allow_null': True},
             'slug': {'required': False},
             'image': {'required': False, 'allow_null': True},
             'image_url': {'required': False, 'allow_blank': True, 'allow_null': True},
+            'media_url': {'required': False, 'allow_blank': True, 'allow_null': True},
         }
     
     def validate_slug(self, value):
@@ -472,11 +476,12 @@ class InternalArticleUpdateSerializer(serializers.ModelSerializer):
 
 class InternalArticleDetailSerializer(serializers.ModelSerializer):
     """Serializer for article detail in internal API (with edit status)."""
-    from apps.api.v1.public.serializers import FileSerializer, CategoryDetailSerializer
+    from apps.api.v1.public.serializers import FileSerializer, CategoryDetailSerializer, InfographicImageSerializer
     
     category = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
     files = FileSerializer(many=True, read_only=True)
+    infographic_images = InfographicImageSerializer(many=True, read_only=True)
     image = serializers.SerializerMethodField()
     author_name = serializers.SerializerMethodField()
     uploader_name = serializers.SerializerMethodField()
@@ -489,23 +494,47 @@ class InternalArticleDetailSerializer(serializers.ModelSerializer):
     liked_by_user = serializers.SerializerMethodField()
     draft_article_id = serializers.SerializerMethodField()
     published_version_id = serializers.SerializerMethodField()
+    knowledge_type_display = serializers.SerializerMethodField()
+    knowledge_cluster = serializers.SerializerMethodField()
+    knowledge_cluster_display = serializers.SerializerMethodField()
+    knowledge_details = serializers.SerializerMethodField()
     
     class Meta:
         model = Article
         fields = [
             'id', 'uuid', 'title_id', 'title_en', 'content_id', 'content_en',
-            'summary_id', 'summary_en', 'slug', 'category',
-            'tags', 'files', 'image', 'image_url', 'status', 'is_published', 'access_level', 'is_bilingual', 'language',
+            'summary_id', 'summary_en', 'slug', 'category', 'knowledge_type',
+            'knowledge_type_display', 'knowledge_cluster', 'knowledge_cluster_display', 'knowledge_details',
+            'tags', 'files', 'infographic_images', 'image', 'image_url', 'media_url', 'status', 'is_published', 'access_level', 'is_bilingual', 'language',
             'author_name', 'uploader_name', 'creator_type', 'creator_name', 'creator_user_id', 'creators_data',
-            'author_email', 'view_count', 'like_count', 'liked_by_user',
+            'author_email', 'view_count', 'like_count', 'share_count', 'liked_by_user',
             'published_at', 'scheduled_at', 'created_at', 'updated_at', 'rejection_reason', 'approval_comment',
             'can_edit', 'can_delete', 'can_publish', 'version_type', 'draft_article_id', 'published_version_id'
         ]
         read_only_fields = [
-            'id', 'uuid', 'slug', 'view_count', 'like_count', 'created_at', 'updated_at',
-            'category', 'tags', 'files', 'image_url', 'author_name', 'uploader_name', 'creator_type', 'creator_name', 'creators_data',
-            'version_type', 'draft_article_id', 'published_version_id'
+            'id', 'uuid', 'slug', 'view_count', 'like_count', 'share_count', 'created_at', 'updated_at',
+            'category', 'tags', 'files', 'infographic_images', 'image_url', 'author_name', 'uploader_name', 'creator_type', 'creator_name', 'creators_data',
+            'version_type', 'draft_article_id', 'published_version_id',
+            'knowledge_type_display', 'knowledge_cluster', 'knowledge_cluster_display', 'knowledge_details'
         ]
+
+    def get_knowledge_type_display(self, obj):
+        """Get display name for knowledge type in Indonesian."""
+        return obj.get_knowledge_type_display_id()
+
+    def get_knowledge_cluster(self, obj):
+        """Get Pasal 7 cluster code ('a', 'b', 'c', or 'd')."""
+        return obj.get_knowledge_cluster()
+
+    def get_knowledge_cluster_display(self, obj):
+        """Get Pasal 7 cluster display name."""
+        return obj.get_knowledge_cluster_display_id()
+
+    def get_knowledge_details(self, obj):
+        """Get complete knowledge form metadata (icons, colors, legal references)."""
+        from apps.content.constants import KNOWLEDGE_TYPE_DETAILS
+        return KNOWLEDGE_TYPE_DETAILS.get(obj.knowledge_type, {})
+
     
     def get_category(self, obj):
         """Get category for article with bilingual names."""
@@ -520,7 +549,7 @@ class InternalArticleDetailSerializer(serializers.ModelSerializer):
         return TagSerializer(obj.tags.all(), many=True).data
     
     def get_image(self, obj):
-        """Get image URL for article (uploaded image or external URL)."""
+        """Get image URL for article (uploaded image, external URL, or first infographic slide)."""
         if obj.image:
             request = self.context.get('request')
             if request:
@@ -529,6 +558,15 @@ class InternalArticleDetailSerializer(serializers.ModelSerializer):
         # Fallback to image_url if uploaded image is not available
         if obj.image_url:
             return obj.image_url
+        # Fallback to first infographic slide
+        first_slide = obj.infographic_images.first()
+        if first_slide:
+            if first_slide.image:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(first_slide.image.url)
+                return f'/media/{first_slide.image.name}'
+            return first_slide.image_url or None
         return None
     
     def get_author_name(self, obj):
@@ -652,42 +690,48 @@ class FileSerializer(serializers.ModelSerializer):
     file_size_display = serializers.SerializerMethodField()
     file = serializers.SerializerMethodField()  # Override to get absolute URL with correct protocol
     preview_url = serializers.SerializerMethodField()
+    is_link = serializers.BooleanField(read_only=True)
     
     class Meta:
         model = File
         fields = [
-            'id', 'article', 'file', 'preview_url', 'original_filename', 'file_size',
+            'id', 'article', 'file', 'link_url', 'is_link', 'preview_url', 'original_filename', 'file_size',
             'file_size_display', 'mime_type', 'description_en', 'description_id',
             'uploaded_by', 'order_index', 'created_at'
         ]
-        read_only_fields = ['id', 'article', 'file_size', 'mime_type', 'uploaded_by', 'created_at']
+        read_only_fields = ['id', 'article', 'uploaded_by', 'created_at']
+        extra_kwargs = {
+            'file': {'required': False, 'allow_null': True},
+            'link_url': {'required': False, 'allow_blank': True, 'allow_null': True},
+            'original_filename': {'required': False, 'allow_blank': True},
+            'file_size': {'required': False},
+            'mime_type': {'required': False, 'allow_blank': True},
+        }
     
     def get_file(self, obj):
-        """Get absolute URL for file with correct protocol (HTTPS on staging/production)."""
-        if not obj.file:
-            return None
-        
-        request = self.context.get('request')
-        if request:
-            # Use request to build absolute URL with correct protocol (HTTPS on staging/prod)
-            return request.build_absolute_uri(obj.file.url)
-        
-        # Fallback to relative path if no request context
-        return obj.file.url if obj.file else None
+        """Get absolute URL for file or return external link URL."""
+        if obj.file:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.file.url)
+            return obj.file.url
+        return obj.link_url or None
 
     def get_preview_url(self, obj):
-        """Get absolute URL for inline preview (without .pdf extension to prevent IDM interception)."""
-        if not obj.file:
-            return None
-        url = f'/api/v1/public/files/{obj.id}/preview/'
-        request = self.context.get('request')
-        if request:
-            return request.build_absolute_uri(url)
-        return url
+        """Get preview URL for inline preview or link."""
+        if obj.file:
+            url = f'/api/v1/public/files/{obj.id}/preview/'
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(url)
+            return url
+        return obj.link_url or None
     
     def get_file_size_display(self, obj):
         """Format file size to human-readable format."""
-        size = obj.file_size
+        if obj.is_link:
+            return "Tautan Eksternal"
+        size = obj.file_size or 0
         if size < 1024:
             return f"{size} B"
         elif size < 1024 * 1024:
@@ -700,16 +744,23 @@ class FileSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """
         Create file instance.
-        Set file_size and mime_type from uploaded file.
-        Auto-extract original_filename from file if not provided.
+        Set file_size and mime_type from uploaded file or link.
+        Auto-extract original_filename if not provided.
         """
         file_obj = validated_data.get('file')
+        link_url = validated_data.get('link_url')
+        
         if file_obj:
             validated_data['file_size'] = file_obj.size
             validated_data['mime_type'] = file_obj.content_type or 'application/octet-stream'
-            # Auto-extract original filename if not provided
             if not validated_data.get('original_filename'):
                 validated_data['original_filename'] = file_obj.name
+        elif link_url:
+            validated_data['file_size'] = 0
+            if not validated_data.get('mime_type'):
+                validated_data['mime_type'] = 'link'
+            if not validated_data.get('original_filename'):
+                validated_data['original_filename'] = link_url
         
         validated_data['uploaded_by'] = self.context['request'].user
         return super().create(validated_data)
@@ -734,18 +785,42 @@ class DashboardArticleSerializer(serializers.ModelSerializer):
     slug = serializers.CharField(read_only=True)
     view_count = serializers.SerializerMethodField()
     like_count = serializers.SerializerMethodField()
+    share_count = serializers.SerializerMethodField()
+    knowledge_type_display = serializers.SerializerMethodField()
+    knowledge_cluster = serializers.SerializerMethodField()
+    knowledge_cluster_display = serializers.SerializerMethodField()
+    knowledge_details = serializers.SerializerMethodField()
     
     class Meta:
         model = Article
         fields = [
             'id', 'title_id', 'title_en', 'content_id', 'content_en',
             'summary_id', 'summary_en', 'image', 'image_url', 'files', 'tags', 'category', 'category_name',
+            'knowledge_type', 'knowledge_type_display', 'knowledge_cluster', 'knowledge_cluster_display', 'knowledge_details',
             'author', 'uploader_name', 'creator_type', 'creator_name', 'creator_user_id', 'creators_data',
-            'status', 'status_display', 'view_count', 'like_count', 'liked_by_user', 'is_published',
+            'status', 'status_display', 'view_count', 'like_count', 'share_count', 'liked_by_user', 'is_published',
             'created_at', 'updated_at', 'published_at', 'rejection_reason', 'approval_comment', 'version_type', 
             'draft_article_id', 'published_version_id', 'slug'
         ]
         read_only_fields = fields
+
+    def get_knowledge_type_display(self, obj):
+        """Get display name for knowledge type in Indonesian."""
+        return obj.get_knowledge_type_display_id()
+
+    def get_knowledge_cluster(self, obj):
+        """Get Pasal 7 cluster code ('a', 'b', 'c', or 'd')."""
+        return obj.get_knowledge_cluster()
+
+    def get_knowledge_cluster_display(self, obj):
+        """Get Pasal 7 cluster display name."""
+        return obj.get_knowledge_cluster_display_id()
+
+    def get_knowledge_details(self, obj):
+        """Get complete knowledge form metadata (icons, colors, legal references)."""
+        from apps.content.constants import KNOWLEDGE_TYPE_DETAILS
+        return KNOWLEDGE_TYPE_DETAILS.get(obj.knowledge_type, {})
+
     
     def get_author(self, obj):
         """Return author information."""
@@ -817,3 +892,27 @@ class DashboardArticleSerializer(serializers.ModelSerializer):
             return obj.published_version.like_count
         # Fallback to draft's like count
         return obj.like_count
+
+    def get_share_count(self, obj):
+        """Get share count from published version if it exists, otherwise from draft."""
+        # Get stats from published version (where public shares occur)
+        if hasattr(obj, 'published_version') and obj.published_version:
+            return obj.published_version.share_count
+        # Fallback to draft's share count
+        return obj.share_count
+
+
+class InfographicImageCreateSerializer(serializers.ModelSerializer):
+    """Serializer for uploading / creating infographic image slides in internal API."""
+    class Meta:
+        model = InfographicImage
+        fields = ['id', 'image', 'image_url', 'caption', 'order_index', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+    def validate(self, attrs):
+        image = attrs.get('image')
+        image_url = attrs.get('image_url')
+        if not image and not image_url:
+            raise serializers.ValidationError('Harap unggah berkas gambar atau cantumkan URL gambar.')
+        return attrs
+

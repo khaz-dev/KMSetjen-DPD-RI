@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from apps.content.models import Article, Category, Tag, AuditLog
+from apps.content.models import Article, Category, Tag
+from apps.audit.models import AuditLog
 
 User = get_user_model()
 

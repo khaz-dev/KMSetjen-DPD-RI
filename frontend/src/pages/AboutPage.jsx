@@ -57,6 +57,55 @@ const AboutPage = () => {
             </Col>
           </Row>
 
+          {/* Bentuk Pengetahuan di KMSetjen DPD RI */}
+          <Row className="mb-5">
+            <Col lg={8} className="mx-auto">
+              <div className="knowledge-overview-card p-4 rounded border shadow-sm" style={{ background: 'linear-gradient(135deg, rgba(13, 148, 136, 0.05) 0%, rgba(37, 99, 235, 0.05) 100%)', borderColor: '#0d9488' }}>
+                <div className="d-flex align-items-center gap-2 mb-3">
+                  <span className="badge bg-primary px-3 py-2">
+                    {isIndonesian ? 'Bentuk Pengetahuan' : 'Knowledge Forms'}
+                  </span>
+                  <span className="text-secondary small fw-semibold">
+                    KMSetjen DPD RI
+                  </span>
+                </div>
+                <h3 className="h4 fw-bold mb-3 text-primary">
+                  {isIndonesian ? 'Ragam Format & Dokumentasi Pengetahuan' : 'Documentation & Knowledge Formats'}
+                </h3>
+                <p className="text-muted mb-3">
+                  {isIndonesian 
+                    ? 'Platform KMSetjen DPD RI memfasilitasi dokumentasi, publikasi, dan pencarian berbagai format pengetahuan untuk menunjang aktivitas kesekretariatan dan perumusan kebijakan:'
+                    : 'KMSetjen DPD RI platform facilitates documentation, publication, and discovery across various knowledge formats to support secretariat activities and policymaking:'}
+                </p>
+                <div className="p-3 bg-white rounded border mb-3">
+                  <Row className="g-3">
+                    <Col sm={6}>
+                      <div className="fw-semibold text-dark mb-1">📚 {isIndonesian ? 'Buku & Kajian' : 'Books & Studies'}</div>
+                      <div className="small text-muted">{isIndonesian ? 'Buku referensi, regulasi kelembagaan, hasil riset kajian, dan jurnal ilmiah.' : 'Reference books, regulations, research studies, and scholarly journals.'}</div>
+                    </Col>
+                    <Col sm={6}>
+                      <div className="fw-semibold text-dark mb-1">💼 {isIndonesian ? 'Ringkasan Kebijakan' : 'Policy Briefs'}</div>
+                      <div className="small text-muted">{isIndonesian ? 'Policy brief dan ringkasan eksekutif strategis berbasis data riset.' : 'Policy briefs and evidence-based executive summaries.'}</div>
+                    </Col>
+                    <Col sm={6}>
+                      <div className="fw-semibold text-dark mb-1">📄 {isIndonesian ? 'Laporan & Artikel' : 'Reports & Articles'}</div>
+                      <div className="small text-muted">{isIndonesian ? 'Laporan kedinasan resmi, buletin periodik, dan artikel pengetahuan ASN.' : 'Official reports, periodic bulletins, and ASN knowledge articles.'}</div>
+                    </Col>
+                    <Col sm={6}>
+                      <div className="fw-semibold text-dark mb-1">📊 {isIndonesian ? 'Infografis & Multimedia' : 'Infographics & Media'}</div>
+                      <div className="small text-muted">{isIndonesian ? 'Infografis visual, podcast audio, dan dokumentasi video edukatif.' : 'Data infographics, audio podcasts, and informative video productions.'}</div>
+                    </Col>
+                  </Row>
+                </div>
+                <p className="small text-muted mb-0">
+                  {isIndonesian
+                    ? 'Seluruh bentuk pengetahuan terintegrasi langsung dengan fitur pencarian cepat, filter terarah, serta formulir pembuatan konten di portal ini.'
+                    : 'All knowledge formats are integrated directly with quick search filtering and content publishing workflows across this portal.'}
+                </p>
+              </div>
+            </Col>
+          </Row>
+
           {/* Features Section */}
           <Row className="mb-5">
             <Col lg={8} className="mx-auto">

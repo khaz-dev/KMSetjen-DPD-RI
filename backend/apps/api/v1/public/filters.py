@@ -64,6 +64,25 @@ class ArticleFilter(django_filters.FilterSet):
         ],
         label='Access Level'
     )
+
+    # Bentuk Pengetahuan filter (Persekjen No. 8/2026 Bab II Pasal 7)
+    knowledge_type = django_filters.CharFilter(
+        field_name='knowledge_type',
+        lookup_expr='iexact',
+        label='Bentuk Pengetahuan'
+    )
+
+    # Klaster Bentuk Pengetahuan filter (Klaster a, b, c, d)
+    knowledge_cluster = django_filters.ChoiceFilter(
+        choices=[
+            ('a', 'Klaster a: Buku, Peraturan, Kajian, Jurnal'),
+            ('b', 'Klaster b: Ringkasan Kebijakan / Policy Brief'),
+            ('c', 'Klaster c: Laporan Resmi, Buletin, Artikel Pengetahuan'),
+            ('d', 'Klaster d: Infografis dan Produk Audiovisual'),
+        ],
+        method='filter_knowledge_cluster',
+        label='Klaster Bentuk Pengetahuan (Pasal 7)'
+    )
     
     # Ordering
     ordering = django_filters.OrderingFilter(
@@ -74,24 +93,39 @@ class ArticleFilter(django_filters.FilterSet):
             ('-view_count', '-view_count'),
             ('like_count', 'like_count'),
             ('-like_count', '-like_count'),
+            ('share_count', 'share_count'),
+            ('-share_count', '-share_count'),
         ),
         label='Order by'
     )
     
     class Meta:
         model = Article
-        fields = ['search', 'category', 'tags', 'tags_logic', 'published_after', 'published_before', 'language', 'access_level']
+        fields = [
+            'search', 'category', 'knowledge_type', 'knowledge_cluster',
+            'tags', 'tags_logic', 'published_after', 'published_before',
+            'language', 'access_level'
+        ]
     
     def filter_search(self, queryset, name, value):
         """Full-text search across title, content, summary, creator, author, date, category, tags, and attachments."""
         return search_articles_queryset(queryset, value)
     
+    def filter_knowledge_cluster(self, queryset, name, value):
+        """Filter articles belonging to Pasal 7 cluster (a, b, c, or d)."""
+        from apps.content.constants import KNOWLEDGE_CLUSTER_MAP
+        cluster_info = KNOWLEDGE_CLUSTER_MAP.get(value)
+        if cluster_info and 'types' in cluster_info:
+            return queryset.filter(knowledge_type__in=cluster_info['types'])
+        return queryset
+
     def filter_tags_logic(self, queryset, name, value):
         """
         This is a placeholder filter - actual tag filtering is handled by the
         tags field with dynamic conjoined value based on tags_logic parameter.
         """
         return queryset
+
 
 
 class CategoryFilter(django_filters.FilterSet):

@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from apps.content.models import Article, Category, Tag, AuditLog
+from apps.content.models import Article, Category, Tag, File, InfographicImage
+from apps.audit.models import AuditLog
 from datetime import datetime, timedelta
 import json
 
@@ -26,12 +27,11 @@ class CategoryModelTest(TestCase):
 
     def test_category_str(self):
         """Test category string representation"""
-        self.assertEqual(str(self.category), "Technology")
+        self.assertEqual(str(self.category), "Teknologi")
 
-    def test_category_absolute_url(self):
-        """Test category absolute URL"""
-        url = self.category.get_absolute_url()
-        self.assertIn("technology", url)
+    def test_category_slug(self):
+        """Test category slug"""
+        self.assertEqual(self.category.slug, "technology")
 
     def test_category_duplicate_slug(self):
         """Test category with duplicate slug is rejected"""
@@ -108,7 +108,58 @@ class ArticleModelTest(TestCase):
 
     def test_article_str(self):
         """Test article string representation"""
-        self.assertIn("Test Article", str(self.article))
+        self.assertIn("Artikel Uji", str(self.article))
+
+    def test_article_knowledge_type_persekjen(self):
+        """Test article knowledge_type compliant with Persekjen No. 8/2026"""
+        # Default is 'artikel'
+        self.assertEqual(self.article.knowledge_type, 'artikel')
+        self.assertEqual(self.article.get_knowledge_cluster(), 'c')
+        self.assertEqual(self.article.get_knowledge_type_display_id(), 'Artikel Pengetahuan')
+        self.assertEqual(self.article.get_knowledge_type_display_en(), 'Knowledge Article')
+
+        # Test cluster a: kajian
+        kajian_art = Article.objects.create(
+            title_en="Strategic Study",
+            title_id="Kajian Strategis",
+            author=self.user,
+            category=self.category,
+            knowledge_type="kajian",
+            content_en="Content",
+            content_id="Konten",
+            status="published"
+        )
+        self.assertEqual(kajian_art.knowledge_type, 'kajian')
+        self.assertEqual(kajian_art.get_knowledge_cluster(), 'a')
+        self.assertEqual(kajian_art.get_knowledge_type_display_id(), 'Kajian')
+
+        # Test cluster b: policy_brief
+        policy_art = Article.objects.create(
+            title_en="Policy Brief 2026",
+            title_id="Policy Brief 2026",
+            author=self.user,
+            category=self.category,
+            knowledge_type="policy_brief",
+            content_en="Content",
+            content_id="Konten",
+            status="published"
+        )
+        self.assertEqual(policy_art.get_knowledge_cluster(), 'b')
+        self.assertEqual(policy_art.get_knowledge_type_display_id(), 'Ringkasan Kebijakan (Policy Brief)')
+
+        # Test cluster d: infografis
+        info_art = Article.objects.create(
+            title_en="Infographic 2026",
+            title_id="Infografis 2026",
+            author=self.user,
+            category=self.category,
+            knowledge_type="infografis",
+            content_en="Content",
+            content_id="Konten",
+            status="published"
+        )
+        self.assertEqual(info_art.get_knowledge_cluster(), 'd')
+        self.assertEqual(info_art.get_knowledge_type_display_id(), 'Infografis')
 
     def test_article_status_choices(self):
         """Test article status choices"""
@@ -205,3 +256,101 @@ class AuditLogModelTest(TestCase):
         )
         self.assertEqual(create_log.action, "create")
         self.assertEqual(delete_log.action, "delete")
+
+
+class FileModelTest(TestCase):
+    """Test cases for File model including link attachment functionality"""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="filetestuser",
+            email="filetest@test.com",
+            password="testpass123"
+        )
+        self.category = Category.objects.create(
+            name_en="General",
+            name_id="Umum",
+            slug="general"
+        )
+        self.article = Article.objects.create(
+            title_en="Article with Attachments",
+            title_id="Artikel dengan Lampiran",
+            author=self.user,
+            category=self.category,
+            content_en="Content",
+            content_id="Konten",
+            media_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        )
+
+    def test_article_media_url_field(self):
+        """Test Article media_url field for audiovisual knowledge"""
+        self.assertEqual(self.article.media_url, "https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+
+    def test_file_link_attachment(self):
+        """Test File model as external link attachment (no physical file uploaded)"""
+        link_file = File.objects.create(
+            article=self.article,
+            link_url="https://drive.google.com/file/d/12345/view",
+            original_filename="Bahan Paparan Rapat Sidang",
+            mime_type="link",
+            description_id="Dokumen Google Drive",
+            uploaded_by=self.user
+        )
+        self.assertTrue(link_file.is_link)
+        self.assertEqual(link_file.link_url, "https://drive.google.com/file/d/12345/view")
+        self.assertEqual(link_file.file_size, 0)
+        self.assertEqual(link_file.original_filename, "Bahan Paparan Rapat Sidang")
+
+
+class InfographicImageModelTest(TestCase):
+    """Test cases for InfographicImage multi-slide model"""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="infouser",
+            email="info@test.com",
+            password="testpass123"
+        )
+        self.category = Category.objects.create(
+            name_en="Infographic",
+            name_id="Infografis",
+            slug="infografis"
+        )
+        self.article = Article.objects.create(
+            title_en="Sequential Infographic 2026",
+            title_id="Infografis Berantai 2026",
+            author=self.user,
+            category=self.category,
+            knowledge_type="infografis",
+            content_en="Content",
+            content_id="Konten"
+        )
+
+    def test_infographic_slides_order(self):
+        """Test creating multiple slides with sequential ordering"""
+        slide1 = InfographicImage.objects.create(
+            article=self.article,
+            image_url="https://example.com/slide1.png",
+            caption="Halaman 1: Latar Belakang",
+            order_index=0
+        )
+        slide2 = InfographicImage.objects.create(
+            article=self.article,
+            image_url="https://example.com/slide2.png",
+            caption="Halaman 2: Data dan Metrik",
+            order_index=1
+        )
+        slide3 = InfographicImage.objects.create(
+            article=self.article,
+            image_url="https://example.com/slide3.png",
+            caption="Halaman 3: Kesimpulan & Rekomendasi",
+            order_index=2
+        )
+
+        slides = list(self.article.infographic_images.all())
+        self.assertEqual(len(slides), 3)
+        self.assertEqual(slides[0].caption, "Halaman 1: Latar Belakang")
+        self.assertEqual(slides[1].caption, "Halaman 2: Data dan Metrik")
+        self.assertEqual(slides[2].caption, "Halaman 3: Kesimpulan & Rekomendasi")
+
+

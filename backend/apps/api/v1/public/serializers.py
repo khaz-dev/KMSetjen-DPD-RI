@@ -1,7 +1,7 @@
 """Serializers for public API endpoints."""
 from rest_framework import serializers
 from apps.core.models import Language
-from apps.content.models import Article, Category, Tag, File
+from apps.content.models import Article, Category, Tag, File, InfographicImage
 
 
 class CategorySimpleSerializer(serializers.ModelSerializer):
@@ -121,40 +121,58 @@ class FileSerializer(serializers.ModelSerializer):
     file_size_display = serializers.SerializerMethodField()
     file = serializers.SerializerMethodField()  # Override to get absolute URL with correct protocol
     preview_url = serializers.SerializerMethodField()
+    is_link = serializers.BooleanField(read_only=True)
     
     class Meta:
         model = File
-        fields = ['id', 'original_filename', 'file', 'preview_url', 'file_size', 'file_size_display',
+        fields = ['id', 'original_filename', 'file', 'link_url', 'is_link', 'preview_url', 'file_size', 'file_size_display',
                   'mime_type', 'description_id', 'description_en', 'order_index', 'created_at']
         read_only_fields = ['id', 'file_size', 'created_at']
     
     def get_file(self, obj):
-        """Get absolute URL for file with correct protocol (HTTPS on staging/production)."""
-        if not obj.file:
-            return None
-        
-        request = self.context.get('request')
-        if request:
-            # Use request to build absolute URL with correct protocol (HTTPS on staging/prod)
-            return request.build_absolute_uri(obj.file.url)
-        
-        # Fallback to relative path if no request context
-        return obj.file.url if obj.file else None
+        """Get absolute URL for file or return external link URL."""
+        if obj.file:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.file.url)
+            return obj.file.url
+        return obj.link_url or None
 
     def get_preview_url(self, obj):
-        """Get absolute URL for inline preview (without .pdf extension to prevent IDM interception)."""
-        if not obj.file:
-            return None
-        url = f'/api/v1/public/files/{obj.id}/preview/'
-        request = self.context.get('request')
-        if request:
-            return request.build_absolute_uri(url)
-        return url
+        """Get absolute URL for inline preview or external link."""
+        if obj.file:
+            url = f'/api/v1/public/files/{obj.id}/preview/'
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(url)
+            return url
+        return obj.link_url or None
     
     def get_file_size_display(self, obj):
         """Format file size in human-readable format."""
+        if obj.is_link:
+            return "Tautan Eksternal"
         from shared.utils.formatters import format_file_size
-        return format_file_size(obj.file_size) if obj.file_size else '0B'
+        return format_file_size(obj.file_size) if obj.file_size else '0 B'
+
+
+class InfographicImageSerializer(serializers.ModelSerializer):
+    """Serializer for InfographicImage model (gambar berantai)."""
+    image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = InfographicImage
+        fields = ['id', 'image', 'image_url', 'caption', 'order_index', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+    def get_image(self, obj):
+        """Get absolute URL for image or return external image URL."""
+        if obj.image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return f'/media/{obj.image.name}'
+        return obj.image_url or None
 
 
 class ArticleListSerializer(serializers.ModelSerializer):
@@ -167,15 +185,37 @@ class ArticleListSerializer(serializers.ModelSerializer):
     creator_user_id = serializers.IntegerField(source='creator_user.id', read_only=True, allow_null=True)
     image = serializers.SerializerMethodField()
     liked_by_user = serializers.SerializerMethodField()
+    knowledge_type_display = serializers.SerializerMethodField()
+    knowledge_cluster = serializers.SerializerMethodField()
+    knowledge_cluster_display = serializers.SerializerMethodField()
+    knowledge_details = serializers.SerializerMethodField()
     
     class Meta:
         model = Article
-        fields = ['id', 'uuid', 'title_id', 'title_en', 'summary_id', 'summary_en', 'image',
-                  'slug', 'category', 'tags', 'author_name', 'uploader_name', 'creator_type', 'creator_name', 'creator_user_id', 'creators_data',
+        fields = ['id', 'uuid', 'title_id', 'title_en', 'summary_id', 'summary_en', 'image', 'media_url',
+                  'slug', 'category', 'knowledge_type', 'knowledge_type_display', 'knowledge_cluster', 'knowledge_cluster_display', 'knowledge_details',
+                  'tags', 'author_name', 'uploader_name', 'creator_type', 'creator_name', 'creator_user_id', 'creators_data',
                   'is_bilingual', 'status', 'is_published',
-                  'view_count', 'like_count', 'liked_by_user', 'published_at', 'updated_at', 'created_at']
-        read_only_fields = ['id', 'uuid', 'view_count', 'like_count', 'published_at', 'updated_at', 'created_at']
+                  'view_count', 'like_count', 'share_count', 'liked_by_user', 'published_at', 'updated_at', 'created_at']
+        read_only_fields = ['id', 'uuid', 'view_count', 'like_count', 'share_count', 'published_at', 'updated_at', 'created_at']
     
+    def get_knowledge_type_display(self, obj):
+        """Get display name for knowledge type in Indonesian."""
+        return obj.get_knowledge_type_display_id()
+
+    def get_knowledge_cluster(self, obj):
+        """Get Pasal 7 cluster code ('a', 'b', 'c', or 'd')."""
+        return obj.get_knowledge_cluster()
+
+    def get_knowledge_cluster_display(self, obj):
+        """Get Pasal 7 cluster display name."""
+        return obj.get_knowledge_cluster_display_id()
+
+    def get_knowledge_details(self, obj):
+        """Get complete knowledge form metadata (icons, colors, legal references)."""
+        from apps.content.constants import KNOWLEDGE_TYPE_DETAILS
+        return KNOWLEDGE_TYPE_DETAILS.get(obj.knowledge_type, {})
+
     def get_author_name(self, obj):
         """Get full name of uploader/author."""
         return self.get_uploader_name(obj)
@@ -197,7 +237,7 @@ class ArticleListSerializer(serializers.ModelSerializer):
         return "Setjen DPD RI"
     
     def get_image(self, obj):
-        """Get image URL for article (uploaded image or external URL)."""
+        """Get image URL for article (uploaded image, external URL, or first infographic slide)."""
         if obj.image:
             request = self.context.get('request')
             if request:
@@ -206,6 +246,15 @@ class ArticleListSerializer(serializers.ModelSerializer):
         # Fallback to image_url if uploaded image is not available
         if obj.image_url:
             return obj.image_url
+        # Fallback to first infographic slide
+        first_slide = obj.infographic_images.first()
+        if first_slide:
+            if first_slide.image:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(first_slide.image.url)
+                return f'/media/{first_slide.image.name}'
+            return first_slide.image_url or None
         return None
     
     def get_liked_by_user(self, obj):
@@ -228,6 +277,7 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
     category = CategoryDetailSerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
     files = FileSerializer(many=True, read_only=True)
+    infographic_images = InfographicImageSerializer(many=True, read_only=True)
     author_name = serializers.SerializerMethodField()
     uploader_name = serializers.SerializerMethodField()
     creator_name = serializers.SerializerMethodField()
@@ -236,16 +286,40 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
     allowed_roles_display = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
     liked_by_user = serializers.SerializerMethodField()
+    knowledge_type_display = serializers.SerializerMethodField()
+    knowledge_cluster = serializers.SerializerMethodField()
+    knowledge_cluster_display = serializers.SerializerMethodField()
+    knowledge_details = serializers.SerializerMethodField()
     
     class Meta:
         model = Article
         fields = ['id', 'uuid', 'title_id', 'title_en', 'content_id', 'content_en',
-                  'summary_id', 'summary_en', 'image', 'slug', 'category', 'tags', 'files',
+                  'summary_id', 'summary_en', 'image', 'media_url', 'slug', 'category', 'knowledge_type',
+                  'knowledge_type_display', 'knowledge_cluster', 'knowledge_cluster_display', 'knowledge_details',
+                  'tags', 'files', 'infographic_images',
                   'status', 'is_published', 'access_level', 'allowed_roles_display',
                   'author_name', 'uploader_name', 'creator_type', 'creator_name', 'creator_user_id', 'creators_data',
-                  'author_email', 'is_bilingual', 'language', 'view_count', 'like_count',
+                  'author_email', 'is_bilingual', 'language', 'view_count', 'like_count', 'share_count',
                   'liked_by_user', 'published_at', 'scheduled_at', 'created_at', 'updated_at', 'rejection_reason', 'approval_comment']
-        read_only_fields = ['id', 'uuid', 'view_count', 'like_count', 'published_at', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'uuid', 'view_count', 'like_count', 'share_count', 'published_at', 'created_at', 'updated_at']
+
+    def get_knowledge_type_display(self, obj):
+        """Get display name for knowledge type in Indonesian."""
+        return obj.get_knowledge_type_display_id()
+
+    def get_knowledge_cluster(self, obj):
+        """Get Pasal 7 cluster code ('a', 'b', 'c', or 'd')."""
+        return obj.get_knowledge_cluster()
+
+    def get_knowledge_cluster_display(self, obj):
+        """Get Pasal 7 cluster display name."""
+        return obj.get_knowledge_cluster_display_id()
+
+    def get_knowledge_details(self, obj):
+        """Get complete knowledge form metadata (icons, colors, legal references)."""
+        from apps.content.constants import KNOWLEDGE_TYPE_DETAILS
+        return KNOWLEDGE_TYPE_DETAILS.get(obj.knowledge_type, {})
+
     
     def get_author_name(self, obj):
         """Get full name of author/uploader."""
@@ -279,7 +353,7 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
         return []
     
     def get_image(self, obj):
-        """Get image URL for article (uploaded image or external URL)."""
+        """Get image URL for article (uploaded image, external URL, or first infographic slide)."""
         if obj.image:
             request = self.context.get('request')
             if request:
@@ -288,6 +362,15 @@ class ArticleDetailSerializer(serializers.ModelSerializer):
         # Fallback to image_url if uploaded image is not available
         if obj.image_url:
             return obj.image_url
+        # Fallback to first infographic slide
+        first_slide = obj.infographic_images.first()
+        if first_slide:
+            if first_slide.image:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(first_slide.image.url)
+                return f'/media/{first_slide.image.name}'
+            return first_slide.image_url or None
         return None
     
     def get_liked_by_user(self, obj):

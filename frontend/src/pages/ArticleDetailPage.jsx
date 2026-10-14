@@ -9,10 +9,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale, enUS } from 'date-fns/locale';
 import { FiShare2, FiPrinter, FiCheck, FiFacebook, FiTwitter, FiMail, FiEye, FiHeart } from 'react-icons/fi';
+import { FaWhatsapp } from 'react-icons/fa';
 import ImageWithFallback from '../components/ImageWithFallback';
 import PptxViewer from '../components/PptxViewer';
 import PdfViewer from '../components/PdfViewer';
 import ArticleMetaLine from '../components/ArticleMetaLine';
+import { getKnowledgeTypeInfo } from '../constants/knowledgeTypes';
+import { getMediaEmbedInfo, extractDomain } from '../utils/mediaUtils';
 import './ArticleDetailPage.css';
 
 /**
@@ -38,12 +41,21 @@ const ArticleDetailPage = () => {
   const [expandedFilePreview, setExpandedFilePreview] = useState({});
   const [liked, setLiked] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
   const [fullscreenFile, setFullscreenFile] = useState(null);
+  const [showInfographicModal, setShowInfographicModal] = useState(false);
+  const [infographicZoom, setInfographicZoom] = useState(1);
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const [infographicViewMode, setInfographicViewMode] = useState('slides'); // 'slides' or 'continuous'
   const articleRef = React.useRef(null);
+
+  const handleZoomIn = () => setInfographicZoom(prev => Math.min(Number((prev + 0.25).toFixed(2)), 3));
+  const handleZoomOut = () => setInfographicZoom(prev => Math.max(Number((prev - 0.25).toFixed(2)), 0.5));
+  const handleResetZoom = () => setInfographicZoom(1);
 
   // Helper function to get file preview type based on MIME type
   const getPreviewType = (mimeType) => {
-    if (!mimeType) return null;
+    if (!mimeType || mimeType === 'link') return null;
     if (mimeType.startsWith('image/')) return 'image';
     if (mimeType === 'application/pdf') return 'pdf';
     if (mimeType.startsWith('video/')) return 'video';
@@ -55,6 +67,7 @@ const ArticleDetailPage = () => {
   // Helper function to get Bootstrap icon for file type
   const getFileIcon = (mimeType) => {
     if (!mimeType) return 'bi-file';
+    if (mimeType === 'link') return 'bi-link-45deg';
     if (mimeType.startsWith('image/')) return 'bi-image';
     if (mimeType === 'application/pdf') return 'bi-file-pdf';
     if (mimeType.startsWith('video/')) return 'bi-film';
@@ -315,11 +328,57 @@ const ArticleDetailPage = () => {
 
   const articleUrl = `${window.location.origin}${getArticleUrl(article)}`;
 
-  const handleShare = (platform) => {
+  const isInfografis = article.knowledge_type === 'infografis';
+  const isAudiovisual = article.knowledge_type === 'audiovisual';
+  const mediaEmbed = article.media_url ? getMediaEmbedInfo(article.media_url) : null;
+  const firstMediaFile = (!article.media_url && article.files)
+    ? article.files.find(f => f.mime_type?.startsWith('video/') || f.mime_type?.startsWith('audio/'))
+    : null;
+  const infographicImageSrc = article.image || article.image_url;
+
+  const infographicSlides = (article?.infographic_images && Array.isArray(article.infographic_images) && article.infographic_images.length > 0)
+    ? article.infographic_images
+    : (infographicImageSrc ? [{
+        id: 'main',
+        image: infographicImageSrc,
+        image_url: article.image_url,
+        caption: title
+      }] : []);
+
+  const currentSlide = infographicSlides[activeSlideIndex] || infographicSlides[0];
+  const currentSlideSrc = currentSlide ? (currentSlide.image || currentSlide.image_url) : null;
+
+  const handleShare = async (platform) => {
     const encodedUrl = encodeURIComponent(articleUrl);
     const encodedTitle = encodeURIComponent(title);
 
+    // Record share on backend with cooldown & anti-abuse protection
+    if (article?.id && !shareLoading) {
+      setShareLoading(true);
+      try {
+        const response = await publicAPI.recordShare(article.id, { platform });
+        if (response.data?.success) {
+          if (response.data.share_count !== undefined) {
+            setArticle(prev => ({
+              ...prev,
+              share_count: response.data.share_count
+            }));
+          }
+        }
+      } catch (err) {
+        console.error('Error recording share:', err);
+      } finally {
+        setShareLoading(false);
+      }
+    }
+
     switch (platform) {
+      case 'whatsapp':
+        window.open(
+          `https://api.whatsapp.com/send?text=${encodedTitle}%0A%0A${encodedUrl}`,
+          '_blank'
+        );
+        break;
       case 'facebook':
         window.open(
           `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
@@ -432,6 +491,9 @@ const ArticleDetailPage = () => {
           <span>•</span>
           <FiHeart size={12} />
           <span>{art.like_count || 0}</span>
+          <span>•</span>
+          <FiShare2 size={12} />
+          <span>{art.share_count || 0}</span>
         </div>
       </div>
     );
@@ -443,15 +505,454 @@ const ArticleDetailPage = () => {
         <Row>
           <Col lg={8}>
             <article ref={articleRef}>
-              <div className="article-featured-image">
-                <ImageWithFallback
-                  src={article.image || article.image_url}
-                  alt={title}
-                  className="img-fluid rounded"
-                  style={{ maxHeight: '400px', objectFit: 'cover', width: '100%' }}
-                  type="article"
-                />
-              </div>
+              {/* Infografis Hero Showcase (Mendukung Gambar Berantai / Multi-Slide) */}
+              {isInfografis && (
+                <div className="infografis-hero-showcase mb-4">
+                  <div className="card border-0 shadow-sm overflow-hidden infografis-showcase-card">
+                    <div className="infografis-card-header d-flex justify-content-between align-items-center px-3 py-2 border-bottom flex-wrap gap-2">
+                      <div className="d-flex align-items-center gap-2 flex-wrap">
+                        <span className="badge bg-warning text-dark px-2 py-1">
+                          <i className="bi bi-pie-chart-fill me-1"></i>
+                          {isIndonesian ? 'Bentuk Infografis' : 'Infographic Format'}
+                        </span>
+                        {infographicSlides.length > 1 && (
+                          <span className="badge bg-primary text-white px-2 py-1">
+                            {isIndonesian
+                              ? `Slide ${activeSlideIndex + 1} dari ${infographicSlides.length}`
+                              : `Slide ${activeSlideIndex + 1} of ${infographicSlides.length}`}
+                          </span>
+                        )}
+                        {/* Switcher Mode Tampilan jika slide lebih dari 1 */}
+                        {infographicSlides.length > 1 && (
+                          <div className="infographic-mode-switcher ms-sm-2" role="group">
+                            <button
+                              type="button"
+                              className={`infographic-mode-btn ${infographicViewMode === 'slides' ? 'active' : ''}`}
+                              onClick={() => setInfographicViewMode('slides')}
+                              title={isIndonesian ? 'Tampilkan satu per satu dengan penampil slide interaktif' : 'Display one by one with interactive slide viewer'}
+                            >
+                              <i className="bi bi-collection-play me-1"></i> {isIndonesian ? 'Mode Slide' : 'Slide Mode'}
+                            </button>
+                            <button
+                              type="button"
+                              className={`infographic-mode-btn ${infographicViewMode === 'continuous' ? 'active' : ''}`}
+                              onClick={() => setInfographicViewMode('continuous')}
+                              title={isIndonesian ? 'Tampilkan seluruh lembar ke bawah secara utuh bersambung' : 'Display all sheets continuously'}
+                            >
+                              <i className="bi bi-view-stacked me-1"></i> {isIndonesian ? 'Mode Bersambung' : 'Continuous Mode'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="d-flex align-items-center gap-2">
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          className="infographic-zoom-btn"
+                          onClick={() => {
+                            setInfographicZoom(1);
+                            setShowInfographicModal(true);
+                          }}
+                          title={isIndonesian ? 'Perbesar Tampilan / Zoom Lightbox' : 'Enlarge View / Zoom Lightbox'}
+                        >
+                          <i className="bi bi-arrows-fullscreen me-1"></i>
+                          {isIndonesian ? 'Perbesar Visual' : 'Enlarge Visual'}
+                        </Button>
+                        {currentSlideSrc && (
+                          <a
+                            href={currentSlideSrc}
+                            download={`${title || 'infografis'}-slide-${activeSlideIndex + 1}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-sm btn-primary"
+                            title={isIndonesian ? 'Unduh visual asli resolusi penuh' : 'Download original full-resolution visual'}
+                          >
+                            <i className="bi bi-download me-1"></i>
+                            {isIndonesian ? 'Unduh' : 'Download'}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+
+                    {infographicSlides.length > 0 ? (
+                      infographicViewMode === 'slides' || infographicSlides.length === 1 ? (
+                        /* MODE SLIDE / CAROUSEL */
+                        <div className="infografis-slide-view p-3">
+                          <div
+                            className="infografis-image-container p-2 text-center rounded position-relative shadow-sm"
+                            style={{ cursor: 'zoom-in', minHeight: '320px' }}
+                            onClick={() => {
+                              setInfographicZoom(1);
+                              setShowInfographicModal(true);
+                            }}
+                            title={isIndonesian ? 'Klik gambar untuk memperbesar (Interactive Lightbox)' : 'Click image to enlarge (Interactive Lightbox)'}
+                          >
+                            {/* Previous Slide Floating Button */}
+                            {infographicSlides.length > 1 && (
+                              <button
+                                type="button"
+                                className="infographic-float-nav-btn prev position-absolute top-50 start-0 translate-middle-y ms-2 btn btn-dark bg-opacity-75 text-white rounded-circle p-0 d-flex align-items-center justify-content-center shadow"
+                                style={{ width: '42px', height: '42px', zIndex: 5 }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveSlideIndex(prev => Math.max(0, prev - 1));
+                                }}
+                                disabled={activeSlideIndex === 0}
+                                title={isIndonesian ? 'Slide Sebelumnya' : 'Previous Slide'}
+                              >
+                                <i className="bi bi-chevron-left fs-5"></i>
+                              </button>
+                            )}
+
+                            {/* Main Active Slide Image */}
+                            <img
+                              src={currentSlideSrc}
+                              alt={currentSlide?.caption || `${title} - Slide ${activeSlideIndex + 1}`}
+                              className="img-fluid rounded infografis-main-image"
+                              style={{
+                                maxHeight: '750px',
+                                width: 'auto',
+                                maxWidth: '100%',
+                                objectFit: 'contain',
+                                display: 'inline-block',
+                                transition: 'opacity 0.2s ease-in-out'
+                              }}
+                              onError={(e) => {
+                                e.target.src = '/default-article-image.svg';
+                              }}
+                            />
+
+                            {/* Next Slide Floating Button */}
+                            {infographicSlides.length > 1 && (
+                              <button
+                                type="button"
+                                className="infographic-float-nav-btn next position-absolute top-50 end-0 translate-middle-y me-2 btn btn-dark bg-opacity-75 text-white rounded-circle p-0 d-flex align-items-center justify-content-center shadow"
+                                style={{ width: '42px', height: '42px', zIndex: 5 }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveSlideIndex(prev => Math.min(infographicSlides.length - 1, prev + 1));
+                                }}
+                                disabled={activeSlideIndex === infographicSlides.length - 1}
+                                title={isIndonesian ? 'Slide Berikutnya' : 'Next Slide'}
+                              >
+                                <i className="bi bi-chevron-right fs-5"></i>
+                              </button>
+                            )}
+
+                            {/* Zoom Badge Hint */}
+                            <div className="position-absolute bottom-0 end-0 m-3 px-3 py-1 bg-dark bg-opacity-75 text-white rounded-pill small shadow-sm pointer-events-none">
+                              <i className="bi bi-zoom-in me-1"></i> {isIndonesian ? 'Klik untuk memperbesar / zoom' : 'Click to enlarge / zoom'}
+                            </div>
+                          </div>
+
+                          {/* Caption if provided */}
+                          {currentSlide?.caption && (
+                            <div className="infographic-caption-text text-center small mt-2 fw-medium">
+                              {currentSlide.caption}
+                            </div>
+                          )}
+
+                          {/* Thumbnail Strip for Multi-Slide Navigation */}
+                          {infographicSlides.length > 1 && (
+                            <>
+                              <div className="infographic-thumbnails-strip mt-3 d-flex align-items-center justify-content-center gap-2 overflow-auto py-2 px-1">
+                                {infographicSlides.map((slide, idx) => {
+                                  const slideSrc = slide.image || slide.image_url;
+                                  const isActive = idx === activeSlideIndex;
+                                  return (
+                                    <button
+                                      key={slide.id || idx}
+                                      type="button"
+                                      className={`infographic-thumb-btn position-relative rounded overflow-hidden p-0 border ${isActive ? 'border-primary border-3 shadow' : 'border-secondary-subtle opacity-75'}`}
+                                      onClick={() => setActiveSlideIndex(idx)}
+                                      style={{
+                                        width: '84px',
+                                        height: '60px',
+                                        flexShrink: 0,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        outline: 'none'
+                                      }}
+                                      title={slide.caption || (isIndonesian ? `Slide ${idx + 1}` : `Slide ${idx + 1}`)}
+                                    >
+                                      <img
+                                        src={slideSrc}
+                                        alt={`Slide ${idx + 1}`}
+                                        className="w-100 h-100 object-fit-cover"
+                                        onError={(e) => {
+                                          e.target.src = '/default-article-image.svg';
+                                        }}
+                                      />
+                                      <span
+                                        className={`position-absolute bottom-0 end-0 px-1 py-0 ${isActive ? 'bg-primary text-white' : 'bg-dark bg-opacity-75 text-white'}`}
+                                        style={{ fontSize: '0.68rem', borderRadius: '3px 0 0 0' }}
+                                      >
+                                        #{idx + 1}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Bottom Navigation Buttons */}
+                              <div className="d-flex justify-content-between align-items-center mt-2 px-1">
+                                <Button
+                                  variant="outline-secondary"
+                                  size="sm"
+                                  disabled={activeSlideIndex === 0}
+                                  onClick={() => setActiveSlideIndex(prev => Math.max(0, prev - 1))}
+                                >
+                                  <i className="bi bi-chevron-left me-1"></i> {isIndonesian ? 'Slide Sebelumnya' : 'Previous Slide'}
+                                </Button>
+                                <span className="infographic-counter-text small fw-semibold">
+                                  {isIndonesian
+                                    ? `Menampilkan lembar ${activeSlideIndex + 1} dari ${infographicSlides.length}`
+                                    : `Showing sheet ${activeSlideIndex + 1} of ${infographicSlides.length}`}
+                                </span>
+                                <Button
+                                  variant="outline-secondary"
+                                  size="sm"
+                                  disabled={activeSlideIndex === infographicSlides.length - 1}
+                                  onClick={() => setActiveSlideIndex(prev => Math.min(infographicSlides.length - 1, prev + 1))}
+                                >
+                                  {isIndonesian ? 'Slide Berikutnya' : 'Next Slide'} <i className="bi bi-chevron-right ms-1"></i>
+                                </Button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        /* MODE BERSAMBUNG / CONTINUOUS (SEMUA SLIDE TERTAMPIL UTUH BERURUTAN KE BAWAH) */
+                        <div className="infographic-continuous-list d-flex flex-column gap-4 p-3">
+                          {infographicSlides.map((slide, idx) => {
+                            const slideSrc = slide.image || slide.image_url;
+                            return (
+                              <div
+                                key={slide.id || idx}
+                                className="infographic-continuous-item p-3 rounded shadow-sm border"
+                              >
+                                <div className="d-flex justify-content-between align-items-center mb-2 px-1 flex-wrap gap-2">
+                                  <div className="d-flex align-items-center gap-2">
+                                    <span className={`badge ${idx === 0 ? 'bg-warning text-dark' : 'bg-secondary'}`}>
+                                      {isIndonesian
+                                        ? `Lembar #${idx + 1} ${idx === 0 ? '(Sampul Utama)' : ''}`
+                                        : `Sheet #${idx + 1} ${idx === 0 ? '(Main Cover)' : ''}`}
+                                    </span>
+                                    {slide.caption && (
+                                      <span className="fw-semibold small text-truncate">
+                                        {slide.caption}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="d-flex gap-2">
+                                    <Button
+                                      variant="outline-primary"
+                                      size="sm"
+                                      className="py-0 px-2"
+                                      style={{ fontSize: '0.8rem' }}
+                                      onClick={() => {
+                                        setActiveSlideIndex(idx);
+                                        setInfographicZoom(1);
+                                        setShowInfographicModal(true);
+                                      }}
+                                      title={isIndonesian ? 'Perbesar lembar ini' : 'Enlarge this sheet'}
+                                    >
+                                      <i className="bi bi-arrows-fullscreen me-1"></i> {isIndonesian ? 'Perbesar' : 'Enlarge'}
+                                    </Button>
+                                    <a
+                                      href={slideSrc}
+                                      download={`${title || 'infografis'}-slide-${idx + 1}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="btn btn-sm btn-outline-secondary py-0 px-2"
+                                      style={{ fontSize: '0.8rem' }}
+                                      title={isIndonesian ? 'Unduh lembar ini' : 'Download this sheet'}
+                                    >
+                                      <i className="bi bi-download me-1"></i> {isIndonesian ? 'Unduh' : 'Download'}
+                                    </a>
+                                  </div>
+                                </div>
+
+                                <div
+                                  className="infographic-continuous-image-box text-center p-2 rounded"
+                                  style={{ cursor: 'zoom-in' }}
+                                  onClick={() => {
+                                    setActiveSlideIndex(idx);
+                                    setInfographicZoom(1);
+                                    setShowInfographicModal(true);
+                                  }}
+                                  title={isIndonesian ? 'Klik untuk memperbesar lembar ini' : 'Click to enlarge this sheet'}
+                                >
+                                  <img
+                                    src={slideSrc}
+                                    alt={slide.caption || `${title} - Lembar ${idx + 1}`}
+                                    className="img-fluid rounded"
+                                    style={{
+                                      maxHeight: '850px',
+                                      width: 'auto',
+                                      maxWidth: '100%',
+                                      objectFit: 'contain',
+                                      display: 'inline-block',
+                                      boxShadow: '0 4px 14px rgba(0,0,0,0.06)'
+                                    }}
+                                    onError={(e) => {
+                                      e.target.src = '/default-article-image.svg';
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )
+                    ) : (
+                      <div className="infographic-empty-state p-4 text-center">
+                        <i className="bi bi-card-image fs-1 d-block mb-2 text-warning"></i>
+                        <p className="mb-0">
+                          {isIndonesian
+                            ? 'Visual infografis belum dilampirkan pada artikel ini.'
+                            : 'Infographic visuals have not been attached to this article.'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Audiovisual Hero Showcase */}
+              {isAudiovisual && (
+                <div className="audiovisual-hero-showcase mb-4">
+                  <div className="card border-0 shadow-sm overflow-hidden audiovisual-showcase-card">
+                    <div className="audiovisual-card-header d-flex justify-content-between align-items-center px-3 py-2 bg-dark text-white">
+                      <div className="d-flex align-items-center gap-2">
+                        <span className="badge bg-danger px-2 py-1">
+                          <i className="bi bi-play-circle-fill me-1"></i>
+                          Tayangan Audiovisual
+                        </span>
+                        {mediaEmbed?.platform && (
+                          <span className="badge bg-secondary text-capitalize">
+                            {mediaEmbed.platform === 'gdrive' ? 'Google Drive' : mediaEmbed.platform}
+                          </span>
+                        )}
+                      </div>
+                      {article.media_url && (
+                        <a
+                          href={article.media_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-sm btn-outline-light d-flex align-items-center gap-1"
+                          title="Buka tautan tayangan di tab baru"
+                        >
+                          <i className="bi bi-box-arrow-up-right"></i>
+                          <span className="d-none d-sm-inline">Buka Sumber</span>
+                        </a>
+                      )}
+                    </div>
+
+                    <div className="audiovisual-player-body bg-black text-center">
+                      {mediaEmbed?.type === 'embed' && (
+                        <div className="ratio ratio-16x9">
+                          <iframe
+                            src={mediaEmbed.embedUrl}
+                            title={title}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                            className="border-0 w-100 h-100"
+                          ></iframe>
+                        </div>
+                      )}
+
+                      {mediaEmbed?.type === 'video' && (
+                        <div className="audiovisual-direct-video">
+                          <video
+                            controls
+                            className="w-100"
+                            style={{ maxHeight: '520px', backgroundColor: '#000' }}
+                            src={mediaEmbed.originalUrl}
+                            poster={article.image || article.image_url}
+                          >
+                            Browser Anda tidak mendukung pemutar video HTML5.
+                          </video>
+                        </div>
+                      )}
+
+                      {mediaEmbed?.type === 'audio' && (
+                        <div className="p-4 bg-light text-dark text-center">
+                          {article.image && (
+                            <div className="mb-3">
+                              <img
+                                src={article.image || article.image_url}
+                                alt={title}
+                                className="rounded shadow-sm"
+                                style={{ maxHeight: '240px', objectFit: 'cover' }}
+                              />
+                            </div>
+                          )}
+                          <h6 className="fw-bold mb-2">Rekaman Audio / Podcast</h6>
+                          <audio controls className="w-100 mt-2" src={mediaEmbed.originalUrl}>
+                            Browser Anda tidak mendukung pemutar audio HTML5.
+                          </audio>
+                        </div>
+                      )}
+
+                      {!mediaEmbed && firstMediaFile && (
+                        <div className="audiovisual-attached-media">
+                          {firstMediaFile.mime_type?.startsWith('video/') ? (
+                            <video
+                              controls
+                              className="w-100"
+                              style={{ maxHeight: '520px', backgroundColor: '#000' }}
+                              src={firstMediaFile.file}
+                              poster={article.image || article.image_url}
+                            >
+                              Browser Anda tidak mendukung pemutar video HTML5.
+                            </video>
+                          ) : (
+                            <div className="p-4 bg-light text-dark text-center">
+                              <audio controls className="w-100 mt-2" src={firstMediaFile.file}>
+                                Browser Anda tidak mendukung pemutar audio HTML5.
+                              </audio>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {!mediaEmbed && !firstMediaFile && (
+                        <div className="position-relative">
+                          {article.image ? (
+                            <ImageWithFallback
+                              src={article.image || article.image_url}
+                              alt={title}
+                              className="img-fluid w-100"
+                              style={{ maxHeight: '420px', objectFit: 'cover' }}
+                              type="article"
+                            />
+                          ) : (
+                            <div className="p-5 text-center text-light bg-dark">
+                              <i className="bi bi-film fs-1 text-danger d-block mb-2"></i>
+                              <p className="mb-0">Media tayangan belum dilampirkan pada artikel ini.</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Standard Featured Image (Bukan Infografis dan Bukan Audiovisual) */}
+              {!isInfografis && !isAudiovisual && (article.image || article.image_url) && (
+                <div className="article-featured-image">
+                  <ImageWithFallback
+                    src={article.image || article.image_url}
+                    alt={title}
+                    className="img-fluid rounded"
+                    style={{ maxHeight: '400px', objectFit: 'cover', width: '100%' }}
+                    type="article"
+                  />
+                </div>
+              )}
 
               <header className="article-header">
                 <h1 className="display-7 fw-bold">{title}</h1>
@@ -476,6 +977,39 @@ const ArticleDetailPage = () => {
                         }}
                       >
                         {categoryName || t('common.no_results')}
+                      </span>
+                    );
+                  })()}
+
+                  {/* Knowledge Type Badge (Persekjen DPD RI No. 8/2026 Bab II Pasal 7) */}
+                  {article.knowledge_type && (() => {
+                    const typeInfo = getKnowledgeTypeInfo(article.knowledge_type);
+                    return (
+                      <span
+                        className="article-badge-custom me-2"
+                        style={{
+                          backgroundColor: typeInfo?.color || '#0284c7',
+                          borderColor: typeInfo?.color || '#0284c7',
+                          color: '#ffffff',
+                          padding: '0.35rem 0.65rem',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.875rem',
+                          fontWeight: '600',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          border: '1px solid',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => navigate(`/knowledges?knowledge_type=${article.knowledge_type}`)}
+                        title={`Bentuk Pengetahuan: ${isIndonesian ? (typeInfo?.name_id || article.knowledge_type_display) : (typeInfo?.name_en || article.knowledge_type_display)}`}
+                      >
+                        <span>{typeInfo?.emoji || '📋'}</span>
+                        <span>
+                          {isIndonesian 
+                            ? (typeInfo?.name_id || article.knowledge_type_display) 
+                            : (typeInfo?.name_en || article.knowledge_type_display)}
+                        </span>
                       </span>
                     );
                   })()}
@@ -506,7 +1040,7 @@ const ArticleDetailPage = () => {
                 </div>
 
                 <div className="article-detail-info-wrapper mb-3">
-                  <ArticleMetaLine article={article} showViews={true} />
+                  <ArticleMetaLine article={article} showViews={true} showShares={true} />
                 </div>
 
               </header>
@@ -523,57 +1057,87 @@ const ArticleDetailPage = () => {
                   <h5 className="mb-4">{t('articles.file_attachments') || 'File Attachments'}</h5>
                   <div className="attachments-list">
                     {article.files.map((file) => {
-                      const previewType = getPreviewType(file.mime_type);
+                      const isFileLink = Boolean(file.is_link || file.mime_type === 'link' || (!file.file && file.link_url));
+                      const previewType = isFileLink ? null : getPreviewType(file.mime_type);
                       const showPreview = expandedFilePreview[file.id] || false;
+                      const fileTargetUrl = file.link_url || file.file;
+                      const linkDomain = isFileLink ? extractDomain(fileTargetUrl) : null;
 
                       return (
-                        <div key={file.id} className="file-item-wrapper">
+                        <div key={file.id} className={`file-item-wrapper ${isFileLink ? 'link-item-wrapper' : ''}`}>
                           <div className="attachment-item">
-                            <div className="attachment-icon">
-                              <i className={`bi ${getFileIcon(file.mime_type)}`}></i>
+                            <div className={`attachment-icon ${isFileLink ? 'bg-info bg-opacity-10 text-primary' : ''}`}>
+                              <i className={`bi ${isFileLink ? 'bi-link-45deg' : getFileIcon(file.mime_type)}`}></i>
                             </div>
                             <div className="attachment-info">
                               <div
-                                className="attachment-name"
-                                title={file.original_filename}
+                                className="attachment-name d-flex align-items-center gap-2 flex-wrap"
+                                title={file.original_filename || fileTargetUrl}
                               >
-                                {file.original_filename}
+                                {isFileLink && (
+                                  <span className="badge bg-info-subtle text-info border border-info-subtle" style={{ fontSize: '0.72rem' }}>
+                                    Tautan / Link
+                                  </span>
+                                )}
+                                <span className="fw-medium">{file.original_filename || fileTargetUrl}</span>
                               </div>
-                              <small className="attachment-meta">
-                                {file.file_size_display} • {new Date(file.created_at).toLocaleDateString(isIndonesian ? 'id-ID' : 'en-US')}
+                              <small className="attachment-meta text-muted d-flex align-items-center gap-2 mt-1 flex-wrap">
+                                {isFileLink && linkDomain && (
+                                  <span className="badge bg-light text-dark border">
+                                    <i className="bi bi-globe2 me-1"></i>{linkDomain}
+                                  </span>
+                                )}
+                                {!isFileLink && <span>{file.file_size_display}</span>}
+                                {file.description && <span>• {file.description}</span>}
+                                <span>• {new Date(file.created_at).toLocaleDateString(isIndonesian ? 'id-ID' : 'en-US')}</span>
                               </small>
                             </div>
                             <div className="attachment-actions">
-                              {previewType && (
-                                <button
-                                  type="button"
-                                  className="btn btn-sm btn-outline-secondary me-2"
-                                  onClick={() => toggleFilePreview(file.id)}
-                                  title={showPreview ? 'Hide preview' : 'Show preview'}
+                              {isFileLink ? (
+                                <a
+                                  href={fileTargetUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="btn btn-sm btn-outline-primary d-inline-flex align-items-center"
+                                  title="Buka tautan lampiran di tab baru"
                                 >
-                                  <i className={`bi ${showPreview ? 'bi-eye-slash' : 'bi-eye'}`}></i>
-                                  <span className="ms-1">{showPreview ? 'Hide' : 'Preview'}</span>
-                                </button>
+                                  <i className="bi bi-box-arrow-up-right me-1"></i>
+                                  <span>Buka Tautan</span>
+                                </a>
+                              ) : (
+                                <>
+                                  {previewType && (
+                                    <button
+                                      type="button"
+                                      className="btn btn-sm btn-outline-secondary me-2"
+                                      onClick={() => toggleFilePreview(file.id)}
+                                      title={showPreview ? 'Hide preview' : 'Show preview'}
+                                    >
+                                      <i className={`bi ${showPreview ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+                                      <span className="ms-1">{showPreview ? 'Hide' : 'Preview'}</span>
+                                    </button>
+                                  )}
+                                  {previewType && (
+                                    <button
+                                      type="button"
+                                      className="btn btn-sm btn-outline-info me-2"
+                                      onClick={() => setFullscreenFile(file)}
+                                      title="Full screen view"
+                                    >
+                                      <i className="bi bi-fullscreen"></i>
+                                      <span className="ms-1">{t('buttons.fullscreen') || 'Full Screen'}</span>
+                                    </button>
+                                  )}
+                                  <a
+                                    href={file.file}
+                                    download={file.original_filename}
+                                    className="btn btn-sm btn-outline-primary"
+                                  >
+                                    <i className="bi bi-download"></i>
+                                    <span className="ms-1">{t('buttons.download') || 'Download'}</span>
+                                  </a>
+                                </>
                               )}
-                              {previewType && (
-                                <button
-                                  type="button"
-                                  className="btn btn-sm btn-outline-info me-2"
-                                  onClick={() => setFullscreenFile(file)}
-                                  title="Full screen view"
-                                >
-                                  <i className="bi bi-fullscreen"></i>
-                                  <span className="ms-1">{t('buttons.fullscreen') || 'Full Screen'}</span>
-                                </button>
-                              )}
-                              <a
-                                href={file.file}
-                                download={file.original_filename}
-                                className="btn btn-sm btn-outline-primary"
-                              >
-                                <i className="bi bi-download"></i>
-                                <span className="ms-1">{t('buttons.download') || 'Download'}</span>
-                              </a>
                             </div>
                           </div>
 
@@ -678,11 +1242,17 @@ const ArticleDetailPage = () => {
               <div className="article-actions-right">
                 <Button
                   variant="outline-primary"
-                  className="me-2"
+                  className="me-2 d-inline-flex align-items-center"
                   onClick={() => setShowShareModal(true)}
+                  title={t('articles.share')}
                 >
                   <FiShare2 className="me-2" style={{ display: 'inline' }} />
                   {t('articles.share')}
+                  {article.share_count !== undefined && (
+                    <span className="badge bg-primary-subtle text-primary ms-2 px-2 py-1 rounded-pill">
+                      {article.share_count}
+                    </span>
+                  )}
                 </Button>
                 <Button
                   variant="outline-secondary"
@@ -737,6 +1307,35 @@ const ArticleDetailPage = () => {
                         {article.access_level === 'role_based' && t('articles.access_role_based')}
                       </span>
                     </p>
+                    {article.knowledge_type && (() => {
+                      const typeInfo = getKnowledgeTypeInfo(article.knowledge_type);
+                      return (
+                        <div className="knowledge-type-sidebar-box mt-3 p-3 rounded border">
+                          <div className="small text-muted fw-bold mb-1">
+                            {t('articles.knowledge_form')}:
+                          </div>
+                          <div className="d-flex align-items-center gap-2 mb-1">
+                            <span style={{ fontSize: '1.2rem' }}>{typeInfo?.emoji || '📋'}</span>
+                            <span className="fw-bold text-primary">
+                              {isIndonesian 
+                                ? (typeInfo?.name_id || article.knowledge_type_display) 
+                                : (typeInfo?.name_en || article.knowledge_type_display)}
+                            </span>
+                          </div>
+                          <div className="small text-secondary mb-2">
+                            {isIndonesian ? typeInfo?.cluster_title_id : typeInfo?.cluster_title_en}
+                          </div>
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            className="w-100"
+                            onClick={() => navigate(`/knowledges?knowledge_type=${article.knowledge_type}`)}
+                          >
+                            {isIndonesian ? `Semua ${typeInfo?.name_id || ''}` : `All ${typeInfo?.name_en || ''}`}
+                          </Button>
+                        </div>
+                      );
+                    })()}
                     {article.status === 'rejected' && article.rejection_reason && (
                       <div className="alert alert-danger mt-3">
                         <h6 className="alert-heading">
@@ -826,9 +1425,21 @@ const ArticleDetailPage = () => {
         </Modal.Header>
         <Modal.Body>
           <div className="share-options">
+            <div className="d-flex align-items-center justify-content-between mb-3 text-muted small bg-light p-2 rounded">
+              <span><FiShare2 className="me-1 text-primary" /> {t('articles.share')}:</span>
+              <strong className="text-dark">{article.share_count || 0} {t('articles.shares', 'dibagikan')}</strong>
+            </div>
             <div className="mb-3">
               <p className="mb-3">{t('articles.share_article')}</p>
               <div className="d-grid gap-2">
+                <Button
+                  variant="light"
+                  className="text-start"
+                  onClick={() => handleShare('whatsapp')}
+                >
+                  <FaWhatsapp className="me-2" style={{ color: '#25D366' }} />
+                  {t('articles.share_whatsapp')}
+                </Button>
                 <Button
                   variant="light"
                   className="text-start"
@@ -953,6 +1564,143 @@ const ArticleDetailPage = () => {
                 </div>
               )}
             </div>
+          )}
+        </Modal.Body>
+      </Modal>
+
+      {/* Infographic Lightbox Modal with Interactive Zoom & Multi-Slide Navigation */}
+      <Modal
+        show={showInfographicModal}
+        onHide={() => setShowInfographicModal(false)}
+        size="xl"
+        fullscreen={true}
+        className="infographic-lightbox-modal"
+      >
+        <Modal.Header closeButton className="bg-dark text-white border-secondary py-2">
+          <div className="d-flex align-items-center gap-2 flex-wrap">
+            <span className="badge bg-warning text-dark px-2 py-1">
+              <i className="bi bi-pie-chart-fill me-1"></i> {isIndonesian ? 'Infografis' : 'Infographic'}
+            </span>
+            {infographicSlides.length > 1 && (
+              <span className="badge bg-info text-dark px-2 py-1">
+                Slide {activeSlideIndex + 1} / {infographicSlides.length}
+              </span>
+            )}
+            <Modal.Title className="fs-6 text-truncate mb-0" style={{ maxWidth: '350px' }} title={title}>
+              {currentSlide?.caption || title}
+            </Modal.Title>
+          </div>
+          <div className="ms-auto me-3 d-flex align-items-center gap-2 flex-wrap">
+            <div className="btn-group btn-group-sm bg-secondary bg-opacity-25 rounded p-1">
+              <Button
+                variant="dark"
+                size="sm"
+                onClick={handleZoomOut}
+                disabled={infographicZoom <= 0.5}
+                title={isIndonesian ? 'Perkecil (-)' : 'Zoom Out (-)'}
+              >
+                <i className="bi bi-zoom-out"></i>
+              </Button>
+              <span className="px-2 py-1 text-white small font-monospace d-flex align-items-center">
+                {Math.round(infographicZoom * 100)}%
+              </span>
+              <Button
+                variant="dark"
+                size="sm"
+                onClick={handleZoomIn}
+                disabled={infographicZoom >= 3}
+                title={isIndonesian ? 'Perbesar (+)' : 'Zoom In (+)'}
+              >
+                <i className="bi bi-zoom-in"></i>
+              </Button>
+              <Button
+                variant="dark"
+                size="sm"
+                onClick={handleResetZoom}
+                title={isIndonesian ? 'Reset Zoom (100%)' : 'Reset Zoom (100%)'}
+              >
+                <i className="bi bi-arrow-counterclockwise"></i>
+              </Button>
+            </div>
+            {currentSlideSrc && (
+              <a
+                href={currentSlideSrc}
+                download={`${title || 'infografis'}-slide-${activeSlideIndex + 1}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-sm btn-primary d-inline-flex align-items-center"
+                title={isIndonesian ? 'Unduh visual asli resolusi penuh' : 'Download original full-resolution visual'}
+              >
+                <i className="bi bi-download me-1"></i>
+                <span className="d-none d-sm-inline">{isIndonesian ? 'Unduh Visual' : 'Download Visual'}</span>
+              </a>
+            )}
+          </div>
+        </Modal.Header>
+        <Modal.Body className="bg-dark p-0 d-flex align-items-center justify-content-center position-relative overflow-auto" style={{ minHeight: '85vh' }}>
+          {/* Floating Left Button for Previous Slide in Modal */}
+          {infographicSlides.length > 1 && (
+            <button
+              type="button"
+              className="position-fixed top-50 start-0 translate-middle-y ms-3 btn btn-dark bg-opacity-75 text-white rounded-circle p-0 d-flex align-items-center justify-content-center shadow-lg border border-secondary"
+              style={{ width: '48px', height: '48px', zIndex: 1050 }}
+              onClick={() => {
+                setActiveSlideIndex(prev => Math.max(0, prev - 1));
+                setInfographicZoom(1);
+              }}
+              disabled={activeSlideIndex === 0}
+              title={isIndonesian ? 'Slide Sebelumnya (Arrow Left)' : 'Previous Slide (Arrow Left)'}
+            >
+              <i className="bi bi-chevron-left fs-4"></i>
+            </button>
+          )}
+
+          <div
+            className="p-3 text-center position-relative"
+            style={{
+              transform: `scale(${infographicZoom})`,
+              transformOrigin: 'center center',
+              transition: 'transform 0.2s ease-out',
+              maxWidth: '100%',
+              userSelect: 'none'
+            }}
+          >
+            <img
+              src={currentSlideSrc}
+              alt={currentSlide?.caption || `${title} - Slide ${activeSlideIndex + 1}`}
+              style={{
+                maxHeight: '85vh',
+                maxWidth: '100%',
+                objectFit: 'contain',
+                borderRadius: '4px',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.6)'
+              }}
+              onError={(e) => {
+                e.target.src = '/default-article-image.svg';
+              }}
+            />
+            {currentSlide?.caption && (
+              <div className="mt-2 text-white-50 small bg-dark bg-opacity-75 px-3 py-1 rounded-pill d-inline-block">
+                {currentSlide.caption}
+              </div>
+            )}
+          </div>
+
+          {/* Floating Right Button for Next Slide in Modal */}
+          {infographicSlides.length > 1 && (
+            <button
+              type="button"
+              className="position-fixed top-50 end-0 translate-middle-y me-3 btn btn-dark bg-opacity-75 text-white rounded-circle p-0 d-flex align-items-center justify-content-center shadow-lg border border-secondary"
+              style={{ width: '48px', height: '48px', zIndex: 1050 }}
+              onClick={() => {
+                setActiveSlideIndex(prev => Math.min(infographicSlides.length - 1, prev + 1));
+                setInfographicZoom(1);
+              }}
+              disabled={activeSlideIndex === infographicSlides.length - 1}
+              title={isIndonesian ? 'Slide Berikutnya (Arrow Right)' : 'Next Slide (Arrow Right)'}
+            >
+              <i className="bi bi-chevron-right fs-4"></i>
+            </button>
           )}
         </Modal.Body>
       </Modal>

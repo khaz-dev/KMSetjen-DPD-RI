@@ -15,10 +15,15 @@ import './ArticlesPage.css';
 import { formatDistanceToNow } from 'date-fns';
 import { id as idLocale, enUS } from 'date-fns/locale';
 import { 
-  FiEye, FiFolder, FiHeart, FiFileText, FiBell, FiBook, 
+  FiEye, FiFolder, FiHeart, FiShare2, FiFileText, FiBell, FiBook, 
   FiBarChart2, FiRss, FiTag, FiHome, FiUsers,
-  FiLayers, FiActivity, FiTrendingUp
+  FiLayers, FiActivity, FiTrendingUp, FiBookmark, FiAward
 } from 'react-icons/fi';
+import { 
+  KNOWLEDGE_CLUSTERS, 
+  KNOWLEDGE_TYPES, 
+  getKnowledgeTypeInfo 
+} from '../constants/knowledgeTypes';
 
 /**
  * Safe date format helper - handles null/invalid dates gracefully
@@ -154,6 +159,8 @@ const ArticlesPage = () => {
   // Get parameters from URL - use string values as dependencies to keep them stable
   const searchQuery = searchParams.get('search') || '';
   const categoryId = searchParams.get('category') || '';
+  const knowledgeType = searchParams.get('knowledge_type') || '';
+  const knowledgeCluster = searchParams.get('knowledge_cluster') || '';
   const accessLevel = searchParams.get('access_level') || '';
   const selectedTagsString = searchParams.get('tags') || '';
   const tagsLogic = searchParams.get('tags_logic') || 'or';
@@ -194,6 +201,8 @@ const ArticlesPage = () => {
           page_size: itemsPerPage,
           search: searchQuery || undefined,
           category: categoryId || undefined,
+          knowledge_type: knowledgeType || undefined,
+          knowledge_cluster: knowledgeCluster || undefined,
           access_level: accessLevel || undefined,
           tags: selectedTags.length > 0 ? selectedTags : undefined,
           tags_logic: selectedTags.length > 0 ? tagsLogic : undefined,
@@ -235,12 +244,14 @@ const ArticlesPage = () => {
 
     // Cleanup function - only abort on unmount or when effect re-runs with active fetching
     return () => { abortControllerRef.current?.abort(); };
-  }, [searchQuery, categoryId, accessLevel, selectedTagsString, tagsLogic, sortBy, page, itemsPerPage, authLoading]);
+  }, [searchQuery, categoryId, knowledgeType, knowledgeCluster, accessLevel, selectedTagsString, tagsLogic, sortBy, page, itemsPerPage, authLoading]);
 
   const handleSearch = useCallback((query) => {
     const params = new URLSearchParams();
     if (query) params.set('search', query);
     if (categoryId) params.set('category', categoryId);
+    if (knowledgeType) params.set('knowledge_type', knowledgeType);
+    if (knowledgeCluster) params.set('knowledge_cluster', knowledgeCluster);
     if (accessLevel) params.set('access_level', accessLevel);
     if (selectedTags.length > 0) {
       params.set('tags', selectedTags.join(','));
@@ -249,12 +260,14 @@ const ArticlesPage = () => {
     params.set('sort', sortBy);
     params.set('page', '1');
     setSearchParams(params);
-  }, [categoryId, accessLevel, selectedTags, tagsLogic, sortBy]);
+  }, [categoryId, knowledgeType, knowledgeCluster, accessLevel, selectedTags, tagsLogic, sortBy]);
 
   const handleCategoryChange = useCallback((catId) => {
     const params = new URLSearchParams();
     if (searchQuery) params.set('search', searchQuery);
     if (catId) params.set('category', catId);
+    if (knowledgeType) params.set('knowledge_type', knowledgeType);
+    if (knowledgeCluster) params.set('knowledge_cluster', knowledgeCluster);
     if (accessLevel) params.set('access_level', accessLevel);
     if (selectedTags.length > 0) {
       params.set('tags', selectedTags.join(','));
@@ -263,12 +276,55 @@ const ArticlesPage = () => {
     params.set('sort', sortBy);
     params.set('page', '1');
     setSearchParams(params);
-  }, [searchQuery, accessLevel, selectedTags, tagsLogic, sortBy]);
+  }, [searchQuery, knowledgeType, knowledgeCluster, accessLevel, selectedTags, tagsLogic, sortBy]);
+
+  const handleKnowledgeTypeChange = useCallback((type) => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('search', searchQuery);
+    if (categoryId) params.set('category', categoryId);
+    if (type) {
+      params.set('knowledge_type', type);
+      // Auto-set matching cluster if applicable
+      const typeInfo = KNOWLEDGE_TYPES[type];
+      if (typeInfo?.cluster) {
+        params.set('knowledge_cluster', typeInfo.cluster);
+      }
+    }
+    if (accessLevel) params.set('access_level', accessLevel);
+    if (selectedTags.length > 0) {
+      params.set('tags', selectedTags.join(','));
+      params.set('tags_logic', tagsLogic);
+    }
+    params.set('sort', sortBy);
+    params.set('page', '1');
+    setSearchParams(params);
+  }, [searchQuery, categoryId, accessLevel, selectedTags, tagsLogic, sortBy]);
+
+  const handleKnowledgeClusterChange = useCallback((clusterCode) => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('search', searchQuery);
+    if (categoryId) params.set('category', categoryId);
+    // If clicking the currently active cluster, toggle it off
+    if (knowledgeCluster !== clusterCode && clusterCode) {
+      params.set('knowledge_cluster', clusterCode);
+    }
+    // Clear granular knowledge_type so whole cluster shows
+    if (accessLevel) params.set('access_level', accessLevel);
+    if (selectedTags.length > 0) {
+      params.set('tags', selectedTags.join(','));
+      params.set('tags_logic', tagsLogic);
+    }
+    params.set('sort', sortBy);
+    params.set('page', '1');
+    setSearchParams(params);
+  }, [searchQuery, categoryId, knowledgeCluster, accessLevel, selectedTags, tagsLogic, sortBy]);
 
   const handleAccessLevelChange = useCallback((level) => {
     const params = new URLSearchParams();
     if (searchQuery) params.set('search', searchQuery);
     if (categoryId) params.set('category', categoryId);
+    if (knowledgeType) params.set('knowledge_type', knowledgeType);
+    if (knowledgeCluster) params.set('knowledge_cluster', knowledgeCluster);
     if (level) params.set('access_level', level);
     if (selectedTags.length > 0) {
       params.set('tags', selectedTags.join(','));
@@ -277,12 +333,14 @@ const ArticlesPage = () => {
     params.set('sort', sortBy);
     params.set('page', '1');
     setSearchParams(params);
-  }, [searchQuery, categoryId, selectedTags, tagsLogic, sortBy]);
+  }, [searchQuery, categoryId, knowledgeType, knowledgeCluster, selectedTags, tagsLogic, sortBy]);
 
   const handleTagsChange = useCallback((newTags) => {
     const params = new URLSearchParams();
     if (searchQuery) params.set('search', searchQuery);
     if (categoryId) params.set('category', categoryId);
+    if (knowledgeType) params.set('knowledge_type', knowledgeType);
+    if (knowledgeCluster) params.set('knowledge_cluster', knowledgeCluster);
     if (accessLevel) params.set('access_level', accessLevel);
     if (newTags.length > 0) {
       params.set('tags', newTags.join(','));
@@ -291,12 +349,14 @@ const ArticlesPage = () => {
     params.set('sort', sortBy);
     params.set('page', '1');
     setSearchParams(params);
-  }, [searchQuery, categoryId, accessLevel, tagsLogic, sortBy]);
+  }, [searchQuery, categoryId, knowledgeType, knowledgeCluster, accessLevel, tagsLogic, sortBy]);
   
   const handleTagsLogicChange = useCallback((newLogic) => {
     const params = new URLSearchParams();
     if (searchQuery) params.set('search', searchQuery);
     if (categoryId) params.set('category', categoryId);
+    if (knowledgeType) params.set('knowledge_type', knowledgeType);
+    if (knowledgeCluster) params.set('knowledge_cluster', knowledgeCluster);
     if (accessLevel) params.set('access_level', accessLevel);
     if (selectedTags.length > 0) {
       params.set('tags', selectedTags.join(','));
@@ -305,12 +365,14 @@ const ArticlesPage = () => {
     params.set('sort', sortBy);
     params.set('page', '1');
     setSearchParams(params);
-  }, [searchQuery, categoryId, accessLevel, selectedTags, sortBy]);
+  }, [searchQuery, categoryId, knowledgeType, knowledgeCluster, accessLevel, selectedTags, sortBy]);
 
   const handleSortChange = useCallback((sort) => {
     const params = new URLSearchParams();
     if (searchQuery) params.set('search', searchQuery);
     if (categoryId) params.set('category', categoryId);
+    if (knowledgeType) params.set('knowledge_type', knowledgeType);
+    if (knowledgeCluster) params.set('knowledge_cluster', knowledgeCluster);
     if (accessLevel) params.set('access_level', accessLevel);
     if (selectedTags.length > 0) {
       params.set('tags', selectedTags.join(','));
@@ -319,7 +381,7 @@ const ArticlesPage = () => {
     params.set('sort', sort);
     params.set('page', '1');
     setSearchParams(params);
-  }, [searchQuery, categoryId, accessLevel, selectedTags, tagsLogic]);
+  }, [searchQuery, categoryId, knowledgeType, knowledgeCluster, accessLevel, selectedTags, tagsLogic]);
 
   const handleReset = useCallback(() => {
     setItemsPerPage(10);
@@ -332,6 +394,8 @@ const ArticlesPage = () => {
     const params = new URLSearchParams();
     if (searchQuery) params.set('search', searchQuery);
     if (categoryId) params.set('category', categoryId);
+    if (knowledgeType) params.set('knowledge_type', knowledgeType);
+    if (knowledgeCluster) params.set('knowledge_cluster', knowledgeCluster);
     if (accessLevel) params.set('access_level', accessLevel);
     if (selectedTags.length > 0) {
       params.set('tags', selectedTags.join(','));
@@ -340,12 +404,14 @@ const ArticlesPage = () => {
     params.set('sort', sortBy);
     params.set('page', '1');
     setSearchParams(params);
-  }, [searchQuery, categoryId, accessLevel, selectedTags, tagsLogic, sortBy]);
+  }, [searchQuery, categoryId, knowledgeType, knowledgeCluster, accessLevel, selectedTags, tagsLogic, sortBy]);
 
   const handlePageChange = useCallback((newPage) => {
     const params = new URLSearchParams();
     if (searchQuery) params.set('search', searchQuery);
     if (categoryId) params.set('category', categoryId);
+    if (knowledgeType) params.set('knowledge_type', knowledgeType);
+    if (knowledgeCluster) params.set('knowledge_cluster', knowledgeCluster);
     if (accessLevel) params.set('access_level', accessLevel);
     if (selectedTags.length > 0) {
       params.set('tags', selectedTags.join(','));
@@ -355,7 +421,7 @@ const ArticlesPage = () => {
     params.set('page', newPage);
     setSearchParams(params);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [searchQuery, categoryId, accessLevel, selectedTags, tagsLogic, sortBy]);
+  }, [searchQuery, categoryId, knowledgeType, knowledgeCluster, accessLevel, selectedTags, tagsLogic, sortBy]);
 
   const breadcrumbItems = [
     { label: 'nav.home', path: '/' },
@@ -412,12 +478,65 @@ const ArticlesPage = () => {
 
         {error && <ErrorAlert message={error} onDismiss={() => setError(null)} />}
 
+        {/* Bentuk Pengetahuan Filter Bar */}
+        <div className="knowledge-clusters-bar mb-3">
+          <div className="clusters-bar-header d-flex align-items-center justify-content-between mb-2">
+            <span className="clusters-bar-label fw-bold d-flex align-items-center gap-2">
+              <span className="text-secondary small fw-semibold">📑 {t('articles.knowledge_form')}</span>
+            </span>
+            {(knowledgeCluster || knowledgeType) && (
+              <button 
+                type="button"
+                className="btn btn-link btn-sm text-decoration-none p-0 text-muted"
+                onClick={() => {
+                  const params = new URLSearchParams(searchParams);
+                  params.delete('knowledge_cluster');
+                  params.delete('knowledge_type');
+                  params.set('page', '1');
+                  setSearchParams(params);
+                }}
+              >
+                ✕ {t('search.reset')}
+              </button>
+            )}
+          </div>
+          <div className="clusters-tabs-pills">
+            <button
+              type="button"
+              className={`cluster-pill-btn ${!knowledgeCluster && !knowledgeType ? 'active' : ''}`}
+              onClick={() => handleKnowledgeClusterChange('')}
+            >
+              <span className="cluster-pill-icon">🏛️</span>
+              <span className="cluster-pill-title">{t('articles.all_clusters')}</span>
+            </button>
+            {KNOWLEDGE_CLUSTERS.map((cluster) => {
+              const isActive = knowledgeCluster === cluster.code || (knowledgeType && KNOWLEDGE_TYPES[knowledgeType]?.cluster === cluster.code);
+              return (
+                <button
+                  key={cluster.code}
+                  type="button"
+                  className={`cluster-pill-btn ${isActive ? 'active' : ''}`}
+                  style={{
+                    '--cluster-accent': cluster.color,
+                  }}
+                  onClick={() => handleKnowledgeClusterChange(cluster.code)}
+                  title={isIndonesian ? cluster.title_id : cluster.title_en}
+                >
+                  <span className="cluster-pill-title">{isIndonesian ? cluster.short_title_id : cluster.short_title_en}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <SearchFilter
           searchQuery={searchQuery}
           onSearchChange={handleSearch}
           selectedCategory={categoryId}
           onCategoryChange={handleCategoryChange}
           categories={categories}
+          selectedKnowledgeType={knowledgeType}
+          onKnowledgeTypeChange={handleKnowledgeTypeChange}
           selectedAccessLevel={accessLevel}
           onAccessLevelChange={handleAccessLevelChange}
           selectedTags={selectedTags}
@@ -451,31 +570,50 @@ const ArticlesPage = () => {
                   </div>
                 </div>
               )}
-              {articles.map((article) => (
-                <div key={article.id} className="article-card">
-                  <div className="card-image-placeholder">
-                    <ImageWithFallback
-                      src={article.image || article.image_url}
-                      alt={isIndonesian ? article.title_id : article.title_en}
-                      type="article"
-                      className="article-card-image"
-                    />
-                    {article.category && (
-                      <span 
-                        className="article-category-badge"
-                        style={{
-                          backgroundColor: article.category.color || '#0d9488',
-                          color: getContrastColor(article.category.color || '#0d9488')
-                        }}
-                        title={isIndonesian ? article.category.name_id : article.category.name_en}
-                      >
-                        <span className="badge-icon">
-                          {renderCategoryIcon(article.category.icon, 16)}
-                        </span>
-                        <span className="badge-text">{isIndonesian ? article.category.name_id : article.category.name_en}</span>
-                      </span>
-                    )}
-                  </div>
+              {articles.map((article) => {
+                const typeInfo = getKnowledgeTypeInfo(article.knowledge_type);
+                return (
+                  <div key={article.id} className="article-card">
+                    <div className="card-image-placeholder">
+                      <ImageWithFallback
+                        src={article.image || article.image_url}
+                        alt={isIndonesian ? article.title_id : article.title_en}
+                        type="article"
+                        className="article-card-image"
+                      />
+                      <div className="article-badges-container">
+                        {article.category && (
+                          <span 
+                            className="article-category-badge"
+                            style={{
+                              backgroundColor: article.category.color || '#0d9488',
+                              color: getContrastColor(article.category.color || '#0d9488')
+                            }}
+                            title={isIndonesian ? article.category.name_id : article.category.name_en}
+                          >
+                            <span className="badge-icon">
+                              {renderCategoryIcon(article.category.icon, 16)}
+                            </span>
+                            <span className="badge-text">{isIndonesian ? article.category.name_id : article.category.name_en}</span>
+                          </span>
+                        )}
+                        {article.knowledge_type && (
+                          <span
+                            className="article-knowledge-badge"
+                            style={{
+                              backgroundColor: typeInfo?.color || '#3b82f6',
+                              color: '#ffffff'
+                            }}
+                            title={`Bentuk Pengetahuan: ${isIndonesian ? (typeInfo?.name_id || article.knowledge_type_display) : (typeInfo?.name_en || article.knowledge_type_display)}`}
+                          >
+                            <span className="badge-emoji">{typeInfo?.emoji || '📄'}</span>
+                            <span className="badge-text">
+                              {isIndonesian ? (typeInfo?.name_id || article.knowledge_type_display) : (typeInfo?.name_en || article.knowledge_type_display)}
+                            </span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   <div className="article-card-content">
                     <h3 className="article-title" title={isIndonesian ? article.title_id : article.title_en}>
                       <a href={getArticleUrl(article)} onClick={(e) => { e.preventDefault(); navigate(getArticleUrl(article)); }}>
@@ -497,6 +635,10 @@ const ArticlesPage = () => {
                         <FiHeart size={15} />
                         {article.like_count} {t('articles.likes')}
                       </span>
+                      <span className="meta-item">
+                        <FiShare2 size={15} />
+                        {article.share_count || 0} {t('articles.shares', 'dibagikan')}
+                      </span>
                     </div>
                     <button
                       className="read-more-btn"
@@ -506,7 +648,8 @@ const ArticlesPage = () => {
                     </button>
                   </div>
                 </div>
-              ))}
+              );
+            })}
             </div>
 
             <Pagination

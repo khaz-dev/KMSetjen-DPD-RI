@@ -278,6 +278,10 @@ export const publicAPI = {
   getTag: (id) =>
     publicClient.get(`/v1/public/tags/${id}/`),
 
+  // Bentuk Pengetahuan (Persekjen No. 8/2026 Bab II Pasal 7)
+  getKnowledgeTypes: () =>
+    publicClient.get('/v1/public/knowledge-types/'),
+
   // View tracking
   recordView: (id) =>
     publicClient.post(`/v1/public/articles/${id}/view/`),
@@ -285,6 +289,10 @@ export const publicAPI = {
   // Like tracking
   recordLike: (id) =>
     publicClient.post(`/v1/public/articles/${id}/like/`),
+
+  // Share tracking with anti-abuse
+  recordShare: (id, data = {}) =>
+    publicClient.post(`/v1/public/articles/${id}/share/`, data),
 };
 
 // Internal API Service (Authenticated)
@@ -320,6 +328,9 @@ export const internalAPI = {
   
   archiveArticle: (id) =>
     apiClient.post(`/v1/internal/articles/${id}/archive/`),
+
+  recordShare: (id, data = {}) =>
+    apiClient.post(`/v1/internal/articles/${id}/share/`, data),
   
   // Creator Suggestions
   searchInternalCreators: (query = '') =>
@@ -355,6 +366,17 @@ export const internalAPI = {
     });
   },
 
+  addFileLink: (articleId, { link_url, original_filename, description = '' }) => {
+    return apiClient.post(`/v1/internal/articles/${articleId}/files/`, {
+      link_url,
+      original_filename: original_filename || link_url,
+      description_en: description,
+      description_id: description,
+      mime_type: 'link',
+      file_size: 0
+    });
+  },
+
   getArticleFiles: (articleId) =>
     apiClient.get(`/v1/internal/articles/${articleId}/files/`),
 
@@ -366,6 +388,27 @@ export const internalAPI = {
 
   reorderFiles: (articleId, fileIds) =>
     apiClient.post(`/v1/internal/articles/${articleId}/files/reorder/`, { file_ids: fileIds }),
+
+  // Infographic slides (Gambar Berantai)
+  getArticleInfographics: (articleId) =>
+    apiClient.get(`/v1/internal/articles/${articleId}/infographics/`),
+
+  uploadInfographicImage: (articleId, formData) =>
+    apiClient.post(`/v1/internal/articles/${articleId}/infographics/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+
+  addInfographicLink: (articleId, { image_url, caption }) =>
+    apiClient.post(`/v1/internal/articles/${articleId}/infographics/`, {
+      image_url,
+      caption: caption || ''
+    }),
+
+  deleteInfographicImage: (articleId, imageId) =>
+    apiClient.delete(`/v1/internal/articles/${articleId}/infographics/${imageId}/`),
+
+  reorderInfographicImages: (articleId, imageIds) =>
+    apiClient.post(`/v1/internal/articles/${articleId}/infographics/reorder/`, { image_ids: imageIds }),
 
   // Dashboard
   getDashboard: () =>

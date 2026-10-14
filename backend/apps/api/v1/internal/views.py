@@ -4,19 +4,19 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
-from django.db.models import Q
+from django.db.models import Q, Max
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
-from apps.content.models import Article, Category, Tag, File
+from apps.content.models import Article, Category, Tag, File, InfographicImage
 from apps.audit.services import AuditService
 from shared.permissions.base import IsAuthorOrEditor, IsEditor
 from .serializers import (
     InternalArticleCreateSerializer, InternalArticleUpdateSerializer,
     InternalArticleDetailSerializer, SubmitReviewSerializer,
-    DashboardArticleSerializer, FileSerializer
+    DashboardArticleSerializer, FileSerializer, InfographicImageCreateSerializer
 )
 from .filters import InternalArticleFilter
 
@@ -47,7 +47,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
     pagination_class = InternalAPIPagination
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = InternalArticleFilter
-    ordering_fields = ['created_at', 'updated_at', 'published_at', 'view_count']
+    ordering_fields = ['created_at', 'updated_at', 'published_at', 'view_count', 'like_count', 'share_count']
     ordering = ['-updated_at']
     
     def get_queryset(self):
@@ -407,6 +407,86 @@ class ArticleViewSet(viewsets.ModelViewSet):
                 'message': f'Error toggling like: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @action(detail=True, methods=['post'])
+    def share(self, request, pk=None):
+        """
+        Record article share with anti-hack / rate-limiting protection.
+        POST /api/v1/internal/articles/{id}/share/
+        
+        Payload (optional):
+            {
+                "platform": "whatsapp" | "facebook" | "twitter" | "email" | "copy_link"
+            }
+        """
+        article = self.get_object()
+        
+        # If accessing draft with published version, target the published version
+        if hasattr(article, 'published_version') and article.published_version:
+            target_article = article.published_version
+        else:
+            target_article = article
+        
+        if target_article.status != 'published' or not target_article.is_published:
+            return Response({
+                'success': False,
+                'share_count': target_article.share_count,
+                'share_recorded': False,
+                'message': 'Sharing only allowed for published articles'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = request.user if request.user.is_authenticated else None
+            ip_address = self._get_client_ip(request)
+            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            platform = request.data.get('platform', 'copy_link')
+            
+            result = target_article.increment_share_count(
+                user=user,
+                ip_address=ip_address,
+                platform=platform,
+                user_agent=user_agent
+            )
+            
+            if 'error' in result:
+                return Response({
+                    'success': False,
+                    'share_count': target_article.share_count,
+                    'share_recorded': False,
+                    'message': result['error']
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Log in audit trail if share was newly recorded
+            if result.get('share_recorded'):
+                try:
+                    from apps.audit.services import AuditService
+                    AuditService.log_action(
+                        user=user,
+                        action='share',
+                        content_type='Article',
+                        content_id=target_article.id,
+                        content_display=target_article.title_en or target_article.title_id,
+                        changes={'platform': platform},
+                        ip_address=ip_address,
+                        user_agent=user_agent
+                    )
+                except Exception:
+                    pass
+            
+            return Response({
+                'success': True,
+                'share_count': result['share_count'],
+                'share_recorded': result['share_recorded'],
+                'message': result.get('message', 'Share processed successfully')
+            })
+        except Exception as e:
+            return Response({
+                'success': False,
+                'share_count': target_article.share_count,
+                'share_recorded': False,
+                'message': f'Error recording share: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
     
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsEditor])
     def publish(self, request, pk=None):
@@ -445,6 +525,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
             existing_published.summary_id = article.summary_id
             existing_published.summary_en = article.summary_en
             existing_published.category = article.category
+            existing_published.knowledge_type = article.knowledge_type
             existing_published.tags.set(article.tags.all())
             existing_published.creator_type = article.creator_type
             existing_published.creator_name = article.creator_name
@@ -453,6 +534,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
             existing_published.access_level = article.access_level
             existing_published.allowed_roles.set(article.allowed_roles.all())
             existing_published.image_url = article.image_url
+            existing_published.media_url = article.media_url
             existing_published.is_bilingual = article.is_bilingual
             existing_published.language = article.language
             existing_published.reviewer = article.reviewer
@@ -469,6 +551,9 @@ class ArticleViewSet(viewsets.ModelViewSet):
             # Copy file attachments from draft to published (creates independent copies)
             self._copy_article_files(article, existing_published)
             
+            # Copy infographic slide images from draft to published
+            self._copy_infographic_images(article, existing_published)
+            
             published_article = existing_published
         else:
             # Create new published version from draft
@@ -480,12 +565,14 @@ class ArticleViewSet(viewsets.ModelViewSet):
                 summary_id=article.summary_id,
                 summary_en=article.summary_en,
                 category=article.category,
+                knowledge_type=article.knowledge_type,
                 creator_type=article.creator_type,
                 creator_name=article.creator_name,
                 creator_user=article.creator_user,
                 creators_data=article.creators_data,
                 access_level=article.access_level,
                 image_url=article.image_url,
+                media_url=article.media_url,
                 is_bilingual=article.is_bilingual,
                 language=article.language,
                 slug=article.slug,
@@ -507,6 +594,9 @@ class ArticleViewSet(viewsets.ModelViewSet):
             
             # Copy file attachments from draft to published (creates independent copies)
             self._copy_article_files(article, published_article)
+            
+            # Copy infographic slide images from draft to published
+            self._copy_infographic_images(article, published_article)
         
         # CRITICAL: Update draft status to 'published' to reflect that it has been published
         # This ensures:
@@ -908,36 +998,92 @@ class ArticleViewSet(viewsets.ModelViewSet):
         draft_files = File.objects.filter(article=draft_article)
         for file_obj in draft_files:
             try:
-                # Read file content from draft
-                file_content = file_obj.file.read()
-                
-                # Get filename to preserve extension
-                import os
-                original_filename = os.path.basename(file_obj.file.name)
-                
-                # Create new file for published version
-                new_file = File.objects.create(
-                    article=published_article,
-                    original_filename=file_obj.original_filename,
-                    file_size=file_obj.file_size,
-                    mime_type=file_obj.mime_type,
-                    description_id=file_obj.description_id,
-                    description_en=file_obj.description_en,
-                    uploaded_by=file_obj.uploaded_by,
-                    order_index=file_obj.order_index,
-                )
-                
-                # Save file content
-                new_file.file.save(
-                    original_filename,
-                    ContentFile(file_content),
-                    save=True
-                )
+                if file_obj.file:
+                    # Read file content from draft
+                    file_content = file_obj.file.read()
+                    
+                    # Get filename to preserve extension
+                    import os
+                    original_filename = os.path.basename(file_obj.file.name)
+                    
+                    # Create new file for published version
+                    new_file = File.objects.create(
+                        article=published_article,
+                        original_filename=file_obj.original_filename,
+                        file_size=file_obj.file_size,
+                        mime_type=file_obj.mime_type,
+                        link_url=file_obj.link_url,
+                        description_id=file_obj.description_id,
+                        description_en=file_obj.description_en,
+                        uploaded_by=file_obj.uploaded_by,
+                        order_index=file_obj.order_index,
+                    )
+                    
+                    # Save file content
+                    new_file.file.save(
+                        original_filename,
+                        ContentFile(file_content),
+                        save=True
+                    )
+                else:
+                    # Link attachment (without physical file)
+                    File.objects.create(
+                        article=published_article,
+                        original_filename=file_obj.original_filename,
+                        file_size=0,
+                        mime_type=file_obj.mime_type or 'link',
+                        link_url=file_obj.link_url,
+                        description_id=file_obj.description_id,
+                        description_en=file_obj.description_en,
+                        uploaded_by=file_obj.uploaded_by,
+                        order_index=file_obj.order_index,
+                    )
             except Exception as e:
                 # Log but continue with other files
                 import logging
                 logger = logging.getLogger(__name__)
                 logger.error(f'Failed to copy file {file_obj.original_filename} for article {draft_article.id}: {str(e)}')
+
+    def _copy_infographic_images(self, draft_article, published_article):
+        """
+        Copy infographic images from draft to published version.
+        Creates independent copies so each version has its own slides.
+        """
+        from django.core.files.base import ContentFile
+        import os
+
+        # Delete existing infographic images in published version first
+        published_article.infographic_images.all().delete()
+
+        # Copy each slide from draft to published version
+        draft_slides = InfographicImage.objects.filter(article=draft_article).order_by('order_index', 'id')
+        for slide in draft_slides:
+            try:
+                if slide.image:
+                    image_content = slide.image.read()
+                    filename = os.path.basename(slide.image.name)
+                    new_slide = InfographicImage.objects.create(
+                        article=published_article,
+                        image_url=slide.image_url,
+                        caption=slide.caption,
+                        order_index=slide.order_index
+                    )
+                    new_slide.image.save(
+                        filename,
+                        ContentFile(image_content),
+                        save=True
+                    )
+                else:
+                    InfographicImage.objects.create(
+                        article=published_article,
+                        image_url=slide.image_url,
+                        caption=slide.caption,
+                        order_index=slide.order_index
+                    )
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f'Failed to copy infographic slide {slide.id} for article {draft_article.id}: {str(e)}')
 
 
 class FileViewSet(viewsets.ModelViewSet):
@@ -985,9 +1131,12 @@ class FileViewSet(viewsets.ModelViewSet):
     
     def perform_destroy(self, instance):
         """Delete file from storage before removing from DB."""
-        # Delete file from storage
+        # Delete file from storage if physical file exists
         if instance.file:
-            instance.file.delete(save=False)
+            try:
+                instance.file.delete(save=False)
+            except Exception:
+                pass
         instance.delete()
     
     @action(detail=False, methods=['post'])
@@ -1025,4 +1174,102 @@ class FileViewSet(viewsets.ModelViewSet):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+
+class InfographicImageViewSet(viewsets.ModelViewSet):
+    """
+    Internal API for infographic slide images (gambar berantai).
+    
+    - GET /api/v1/internal/articles/{article_id}/infographics/ - List slides
+    - POST /api/v1/internal/articles/{article_id}/infographics/ - Upload/add slide
+    - GET /api/v1/internal/articles/{article_id}/infographics/{id}/ - Slide detail
+    - PATCH /api/v1/internal/articles/{article_id}/infographics/{id}/ - Update caption/order
+    - DELETE /api/v1/internal/articles/{article_id}/infographics/{id}/ - Delete slide
+    - POST /api/v1/internal/articles/{article_id}/infographics/reorder/ - Reorder slides
+    """
+    permission_classes = [IsAuthenticated]
+    queryset = InfographicImage.objects.all()
+    pagination_class = None
+
+    def get_queryset(self):
+        """Return infographic slides for the article ordered by order_index."""
+        article_id = self.kwargs.get('article_id')
+        if article_id:
+            return InfographicImage.objects.filter(article_id=article_id).order_by('order_index', 'id')
+        return InfographicImage.objects.none()
+
+    def get_serializer_class(self):
+        if self.action in ['list', 'retrieve']:
+            from apps.api.v1.public.serializers import InfographicImageSerializer
+            return InfographicImageSerializer
+        return InfographicImageCreateSerializer
+
+    def get_article(self):
+        """Get article from URL parameter and check permissions."""
+        article_id = self.kwargs.get('article_id')
+        article = Article.objects.get(id=article_id)
+        user = self.request.user
+        if article.author != user and not (user.is_editor() or user.is_admin()):
+            self.permission_denied(self.request)
+        return article
+
+    def perform_create(self, serializer):
+        """Set article and auto-assign order_index if not provided."""
+        article = self.get_article()
+        order_index = serializer.validated_data.get('order_index')
+        if order_index is None:
+            max_order = InfographicImage.objects.filter(article=article).aggregate(
+                Max('order_index')
+            )['order_index__max']
+            order_index = (max_order + 1) if max_order is not None else 0
+        instance = serializer.save(article=article, order_index=order_index)
+
+        # Set first slide as article.image / article.image_url if article cover is empty
+        if not article.image and instance.image:
+            article.image = instance.image
+            article.save(update_fields=['image'])
+        elif not article.image and not article.image_url and instance.image_url:
+            article.image_url = instance.image_url
+            article.save(update_fields=['image_url'])
+
+    def perform_destroy(self, instance):
+        """Delete image from storage and remove instance."""
+        if instance.image:
+            try:
+                instance.image.delete(save=False)
+            except Exception:
+                pass
+        instance.delete()
+
+    @action(detail=False, methods=['post'])
+    def reorder(self, request, article_id=None):
+        """
+        Reorder infographic images for an article.
+        Request body: { "image_ids": [3, 1, 2] }
+        """
+        article = self.get_article()
+        image_ids = request.data.get('image_ids', [])
+
+        if not isinstance(image_ids, list):
+            return Response(
+                {'error': 'image_ids must be a list'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        for index, img_id in enumerate(image_ids):
+            try:
+                img_obj = InfographicImage.objects.get(id=img_id, article=article)
+                img_obj.order_index = index
+                img_obj.save(update_fields=['order_index'])
+            except InfographicImage.DoesNotExist:
+                return Response(
+                    {'error': f'Infographic image {img_id} not found or does not belong to this article'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+        from apps.api.v1.public.serializers import InfographicImageSerializer
+        queryset = self.get_queryset()
+        serializer = InfographicImageSerializer(queryset, many=True, context={'request': request})
+        return Response(serializer.data)
+
 

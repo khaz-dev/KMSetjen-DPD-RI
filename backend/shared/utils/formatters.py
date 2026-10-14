@@ -4,6 +4,8 @@ from datetime import datetime
 
 def format_file_size(size_bytes):
     """Format bytes to human-readable file size."""
+    if not size_bytes:
+        return "0 B"
     for unit in ['B', 'KB', 'MB', 'GB']:
         if size_bytes < 1024.0:
             return f"{size_bytes:.1f}{unit}"

@@ -26,7 +26,7 @@ File endpoints:
 """
 from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
-from .views import ArticleViewSet, FileViewSet
+from .views import ArticleViewSet, FileViewSet, InfographicImageViewSet
 
 # Create router and register viewsets
 router = DefaultRouter()
@@ -55,5 +55,21 @@ urlpatterns = [
         r'^articles/(?P<article_id>\d+)/files/reorder/$',
         FileViewSet.as_view({'post': 'reorder'}),
         name='article-files-reorder'
+    ),
+    # Nested infographic slide endpoints (gambar berantai)
+    re_path(
+        r'^articles/(?P<article_id>\d+)/infographics/$',
+        InfographicImageViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='article-infographics-list'
+    ),
+    re_path(
+        r'^articles/(?P<article_id>\d+)/infographics/(?P<pk>\d+)/$',
+        InfographicImageViewSet.as_view({'get': 'retrieve', 'patch': 'partial_update', 'delete': 'destroy'}),
+        name='article-infographics-detail'
+    ),
+    re_path(
+        r'^articles/(?P<article_id>\d+)/infographics/reorder/$',
+        InfographicImageViewSet.as_view({'post': 'reorder'}),
+        name='article-infographics-reorder'
     ),
 ]

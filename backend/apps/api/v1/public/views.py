@@ -350,6 +350,89 @@ class ArticleViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+    @action(detail=True, methods=['post'], permission_classes=[AllowAny])
+    def share(self, request, pk=None):
+        """
+        Record article share with anti-hack / rate-limiting protection.
+        POST /api/v1/public/articles/{id}/share/
+        
+        Payload (optional):
+            {
+                "platform": "whatsapp" | "facebook" | "twitter" | "email" | "copy_link"
+            }
+        """
+        article = self.get_object()
+        
+        # Only allow shares on published articles
+        if article.status != Article.STATUS_PUBLISHED or not article.is_published:
+            return Response(
+                {
+                    'success': False,
+                    'share_count': article.share_count,
+                    'share_recorded': False,
+                    'message': 'Sharing only allowed for published articles'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        try:
+            user = request.user if request.user.is_authenticated else None
+            ip_address = self._get_client_ip(request)
+            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            platform = request.data.get('platform', 'copy_link')
+            
+            result = article.increment_share_count(
+                user=user,
+                ip_address=ip_address,
+                platform=platform,
+                user_agent=user_agent
+            )
+            
+            if 'error' in result:
+                return Response(
+                    {
+                        'success': False,
+                        'share_count': article.share_count,
+                        'share_recorded': False,
+                        'message': result['error']
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            # Log in audit trail if share was newly recorded
+            if result.get('share_recorded'):
+                try:
+                    AuditService.log_action(
+                        user=user,
+                        action='share',
+                        content_type='Article',
+                        content_id=article.id,
+                        content_display=article.title_en or article.title_id,
+                        changes={'platform': platform},
+                        ip_address=ip_address,
+                        user_agent=user_agent
+                    )
+                except Exception:
+                    pass
+                    
+            return Response({
+                'success': True,
+                'share_count': result['share_count'],
+                'share_recorded': result['share_recorded'],
+                'message': result.get('message', 'Share processed successfully')
+            })
+        except Exception as e:
+            return Response(
+                {
+                    'success': False,
+                    'share_count': article.share_count,
+                    'share_recorded': False,
+                    'message': f'Error recording share: {str(e)}'
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
     
     @action(detail=False, methods=['get'])
     def trending(self, request):
@@ -561,4 +644,89 @@ def preview_file(request, file_id):
     response['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, Accept, X-Requested-With'
     response['Access-Control-Expose-Headers'] = 'Content-Length, Content-Range, Accept-Ranges'
     return response
+
+
+from rest_framework.views import APIView
+from apps.content.constants import (
+    KNOWLEDGE_CLUSTER_MAP,
+    KNOWLEDGE_TYPE_DETAILS,
+)
+
+
+class KnowledgeTypesView(APIView):
+    """
+    Public endpoint returning the standardized knowledge classification
+    based on PERATURAN SEKRETARIS JENDERAL DPD RI NOMOR 8 TAHUN 2026 BAB II PASAL 7.
+    Includes active published article counts for each type and cluster.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        user = request.user
+        base_qs = Article.objects.filter(
+            version_type='published',
+            is_published=True,
+            status='published'
+        )
+        if user and user.is_authenticated:
+            primary_role = user.get_primary_role()
+            if primary_role and primary_role.code == 'public':
+                base_qs = base_qs.filter(access_level='public')
+            else:
+                base_qs = base_qs.filter(
+                    Q(access_level='public') |
+                    Q(access_level='internal') |
+                    Q(access_level='role_based', allowed_roles__in=user.roles.all())
+                )
+        else:
+            base_qs = base_qs.filter(access_level='public')
+
+        # Count articles per type
+        from django.db.models import Count
+        type_counts = dict(
+            base_qs.values_list('knowledge_type')
+                   .annotate(count=Count('id'))
+                   .values_list('knowledge_type', 'count')
+        )
+
+        clusters_result = []
+        for cluster_code, cluster_info in KNOWLEDGE_CLUSTER_MAP.items():
+            cluster_types = []
+            cluster_total = 0
+            for ktype in cluster_info['types']:
+                details = KNOWLEDGE_TYPE_DETAILS.get(ktype, {})
+                count = type_counts.get(ktype, 0)
+                cluster_total += count
+                cluster_types.append({
+                    'id': ktype,
+                    'name_id': details.get('name_id', ktype),
+                    'name_en': details.get('name_en', ktype),
+                    'cluster': cluster_code,
+                    'icon': details.get('icon', 'file-text'),
+                    'color': details.get('color', '#0d9488'),
+                    'pasal_reference': details.get('pasal_reference', ''),
+                    'article_count': count
+                })
+            
+            clusters_result.append({
+                'code': cluster_code,
+                'title_id': cluster_info['title_id'],
+                'title_en': cluster_info['title_en'],
+                'pasal_reference': cluster_info['pasal_reference'],
+                'icon': cluster_info['icon'],
+                'color': cluster_info['color'],
+                'article_count': cluster_total,
+                'types': cluster_types
+            })
+
+        return Response({
+            'regulation': {
+                'title': 'PERATURAN SEKRETARIS JENDERAL DEWAN PERWAKILAN DAERAH REPUBLIK INDONESIA NOMOR 8 TAHUN 2026',
+                'topic': 'MANAJEMEN PENGETAHUAN DI LINGKUNGAN SEKRETARIAT JENDERAL DEWAN PERWAKILAN DAERAH REPUBLIK INDONESIA',
+                'chapter': 'Bab II Bentuk dan Sumber Pengetahuan',
+                'article': 'Pasal 7 (Bentuk Pengetahuan yang terdokumentasi dan terstandardisasi)',
+            },
+            'clusters': clusters_result
+        })
+
 

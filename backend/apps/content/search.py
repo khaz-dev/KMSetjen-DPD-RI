@@ -169,11 +169,44 @@ def build_article_search_q(term):
         # Attachments (article-attachments)
         Q(files__original_filename__icontains=term) |
         Q(files__description_id__icontains=term) |
-        Q(files__description_en__icontains=term)
+        Q(files__description_en__icontains=term) |
+
+        # Bentuk Pengetahuan (Persekjen No. 8/2026 Bab II Pasal 7)
+        Q(knowledge_type__icontains=term)
     )
 
-    # Access level keywords
+    # Bentuk Pengetahuan keywords (Persekjen No. 8/2026 Pasal 7)
     term_lower = term.lower()
+    if term_lower in ('buku', 'book', 'books'):
+        q |= Q(knowledge_type='buku')
+    elif term_lower in ('peraturan', 'regulation', 'regulations'):
+        q |= Q(knowledge_type='peraturan')
+    elif term_lower in ('kajian', 'study', 'research', 'penelitian'):
+        q |= Q(knowledge_type='kajian')
+    elif term_lower in ('jurnal', 'journal', 'journals'):
+        q |= Q(knowledge_type='jurnal')
+    elif term_lower in ('policy', 'brief', 'policy brief', 'policy_brief', 'ringkasan', 'kebijakan', 'ringkasan kebijakan'):
+        q |= Q(knowledge_type='policy_brief')
+    elif term_lower in ('laporan', 'resmi', 'laporan resmi', 'report', 'official report'):
+        q |= Q(knowledge_type='laporan_resmi')
+    elif term_lower in ('buletin', 'bulletin', 'buletin pengetahuan'):
+        q |= Q(knowledge_type='buletin')
+    elif term_lower in ('artikel', 'article', 'artikel pengetahuan'):
+        q |= Q(knowledge_type='artikel')
+    elif term_lower in ('infografis', 'infografik', 'infographic', 'infographics'):
+        q |= Q(knowledge_type='infografis')
+    elif term_lower in ('audiovisual', 'audio-visual', 'audio', 'video', 'podcast', 'rekaman'):
+        q |= Q(knowledge_type='audiovisual')
+    elif term_lower in ('klaster a', 'cluster a', 'klaster_a', 'cluster_a', 'huruf a'):
+        q |= Q(knowledge_type__in=['buku', 'peraturan', 'kajian', 'jurnal'])
+    elif term_lower in ('klaster b', 'cluster b', 'klaster_b', 'cluster_b', 'huruf b'):
+        q |= Q(knowledge_type='policy_brief')
+    elif term_lower in ('klaster c', 'cluster c', 'klaster_c', 'cluster_c', 'huruf c'):
+        q |= Q(knowledge_type__in=['laporan_resmi', 'buletin', 'artikel'])
+    elif term_lower in ('klaster d', 'cluster d', 'klaster_d', 'cluster_d', 'huruf d'):
+        q |= Q(knowledge_type__in=['infografis', 'audiovisual'])
+
+    # Access level keywords
     if term_lower in ('publik', 'public'):
         q |= Q(access_level='public')
     elif term_lower == 'internal':

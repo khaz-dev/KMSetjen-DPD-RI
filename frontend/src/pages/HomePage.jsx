@@ -10,11 +10,17 @@ import { useLanguage } from '../hooks/useLanguage';
 import { 
   FiEye, FiHeart, FiFileText, FiBell, FiBook, 
   FiBarChart2, FiRss, FiFolder, FiTag, FiHome, FiUsers,
-  FiLayers, FiActivity, FiTrendingUp, FiExternalLink, FiChevronLeft, FiChevronRight
+  FiLayers, FiActivity, FiTrendingUp, FiExternalLink, FiChevronLeft, FiChevronRight,
+  FiBookmark, FiAward
 } from 'react-icons/fi';
 import ImageWithFallback from '../components/ImageWithFallback';
 import ArticleMetaLine from '../components/ArticleMetaLine';
 import { getDefaultImages, getAssetPath } from '../utils/imageUtils';
+import { 
+  KNOWLEDGE_CLUSTERS, 
+  KNOWLEDGE_TYPES, 
+  getKnowledgeTypeInfo 
+} from '../constants/knowledgeTypes';
 import './HomePage.css';
 
 /**
@@ -129,6 +135,7 @@ const HomePage = () => {
   const { user, loading: authLoading } = useAuth();
   const [featuredArticles, setFeaturedArticles] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [knowledgeClustersStats, setKnowledgeClustersStats] = useState({});
   const [initialLoading, setInitialLoading] = useState(true);
   const [articlesLoading, setArticlesLoading] = useState(false);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
@@ -153,20 +160,19 @@ const HomePage = () => {
         setArticlesLoading(true);
         setCategoriesLoading(true);
         
-        // Load featured/popular articles
-        const articlesRes = await publicAPI.getPopularArticles();
+        // Load featured/popular articles, categories, and knowledge types in parallel
+        const [articlesRes, categoriesRes, knowledgeTypesRes] = await Promise.all([
+          publicAPI.getPopularArticles(),
+          publicAPI.getCategories({ page_size: 6 }),
+          publicAPI.getKnowledgeTypes().catch(() => ({ data: { clusters: {} } })),
+        ]);
         
         // Only update state if the request wasn't aborted
         if (!abortController.signal.aborted) {
           setFeaturedArticles(articlesRes.data.results?.slice(0, 6) || []);
-          setArticlesLoading(false);
-        }
-        
-        // Load categories
-        const categoriesRes = await publicAPI.getCategories({ page_size: 6 });
-        
-        if (!abortController.signal.aborted) {
           setCategories(categoriesRes.data.results || []);
+          setKnowledgeClustersStats(knowledgeTypesRes.data?.clusters || {});
+          setArticlesLoading(false);
           setCategoriesLoading(false);
         }
       } catch (error) {
@@ -406,26 +412,44 @@ const HomePage = () => {
                             className="article-image"
                             type="article"
                           />
-                          {/* Category Badge on Image Overlay */}
-                          {article.category && (
-                            <div 
-                              className="article-category-badge"
-                              style={{
-                                backgroundColor: article.category.color || '#0d9488',
-                                color: getContrastColor(article.category.color || '#0d9488')
-                              }}
-                              title={isIndonesian ? (article.category?.name_id || article.category?.name_en) : (article.category?.name_en || article.category?.name_id)}
-                            >
-                              {article.category.icon && (
-                                <span className="badge-icon">
-                                  {renderCategoryIcon(article.category.icon, 16)}
+                          {/* Badges on Image Overlay */}
+                          <div className="article-badges-overlay">
+                            {article.category && (
+                              <div 
+                                className="article-category-badge"
+                                style={{
+                                  backgroundColor: article.category.color || '#0d9488',
+                                  color: getContrastColor(article.category.color || '#0d9488')
+                                }}
+                                title={isIndonesian ? (article.category?.name_id || article.category?.name_en) : (article.category?.name_en || article.category?.name_id)}
+                              >
+                                {article.category.icon && (
+                                  <span className="badge-icon">
+                                    {renderCategoryIcon(article.category.icon, 16)}
+                                  </span>
+                                )}
+                                <span className="badge-text">
+                                  {isIndonesian ? (article.category?.name_id || article.category?.name_en) : (article.category?.name_en || article.category?.name_id)}
                                 </span>
-                              )}
-                              <span className="badge-text">
-                                {isIndonesian ? (article.category?.name_id || article.category?.name_en) : (article.category?.name_en || article.category?.name_id)}
-                              </span>
-                            </div>
-                          )}
+                              </div>
+                            )}
+                            {article.knowledge_type && (() => {
+                              const typeInfo = getKnowledgeTypeInfo(article.knowledge_type);
+                              return (
+                                <div 
+                                  className="article-knowledge-badge-home"
+                                  style={{
+                                    backgroundColor: typeInfo?.color || '#2563eb',
+                                    color: '#ffffff'
+                                  }}
+                                  title={`Bentuk Pengetahuan: ${isIndonesian ? typeInfo?.name_id : typeInfo?.name_en}`}
+                                >
+                                  <span>{typeInfo?.emoji || '📄'}</span>
+                                  <span>{isIndonesian ? typeInfo?.name_id : typeInfo?.name_en}</span>
+                                </div>
+                              );
+                            })()}
+                          </div>
                         </div>
                         <Card.Body className="d-flex flex-column">
                           <h5 className="card-title" title={isIndonesian ? article.title_id : article.title_en}>{isIndonesian ? article.title_id : article.title_en}</h5>
@@ -488,6 +512,82 @@ const HomePage = () => {
               </div>
             )}
           </div>
+        </Container>
+      </section>
+
+      {/* Bentuk Pengetahuan */}
+      <section className="py-5 knowledge-clusters-section">
+        <Container>
+          <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4">
+            <div>
+              <h2 className="mb-2 fw-bold">
+                {isIndonesian ? 'Bentuk Pengetahuan' : 'Knowledge Forms'}
+              </h2>
+              <p className="text-muted mb-0" style={{ maxWidth: '800px' }}>
+                {isIndonesian 
+                  ? 'Temukan berbagai format dokumentasi pengetahuan yang tersedia di lingkungan Sekretariat Jenderal DPD RI untuk menunjang produktivitas dan wawasan kerja.'
+                  : 'Explore various knowledge formats available across the Secretariat General of DPD RI to support productivity and insights.'}
+              </p>
+            </div>
+            <div className="mt-3 mt-md-0">
+              <Link to="/knowledges" className="btn btn-outline-primary px-3 py-2 fw-semibold">
+                {t('buttons.view')} {t('articles.title')} →
+              </Link>
+            </div>
+          </div>
+
+          <Row className="g-4">
+            {KNOWLEDGE_CLUSTERS.map((cluster) => {
+              const stats = knowledgeClustersStats[cluster.code] || {};
+              const count = stats.count ?? 0;
+              return (
+                <Col lg={3} md={6} key={cluster.code}>
+                  <div 
+                    className="knowledge-cluster-card h-100 d-flex flex-column"
+                    style={{
+                      '--cluster-accent': cluster.color,
+                      '--cluster-bg': cluster.bgLight
+                    }}
+                  >
+                    <div className="cluster-card-header d-flex align-items-center justify-content-between mb-3">
+                      <span className="cluster-header-pill">
+                        {isIndonesian ? cluster.short_title_id : cluster.short_title_en}
+                      </span>
+                      <span className="cluster-count-badge">
+                        <strong>{count}</strong> {t('nav.articles', 'Pengetahuan')}
+                      </span>
+                    </div>
+
+                    <h4 className="cluster-title mb-2">
+                      {isIndonesian ? cluster.title_id : cluster.title_en}
+                    </h4>
+
+                    <p className="cluster-desc text-secondary small flex-grow-1 mb-3">
+                      {isIndonesian ? cluster.description_id : cluster.description_en}
+                    </p>
+
+                    <div className="cluster-types-pills d-flex flex-wrap gap-1 mb-3">
+                      {cluster.types.map((typeKey) => {
+                        const typeInfo = KNOWLEDGE_TYPES[typeKey];
+                        return (
+                          <span key={typeKey} className="cluster-sub-pill">
+                            {typeInfo?.emoji} {isIndonesian ? typeInfo?.name_id : typeInfo?.name_en}
+                          </span>
+                        );
+                      })}
+                    </div>
+
+                    <Link
+                      to={`/knowledges?knowledge_cluster=${cluster.code}`}
+                      className="btn btn-sm cluster-action-btn mt-auto text-center"
+                    >
+                      {isIndonesian ? 'Jelajahi' : 'Explore'} →
+                    </Link>
+                  </div>
+                </Col>
+              );
+            })}
+          </Row>
         </Container>
       </section>
 

@@ -15,12 +15,17 @@ import PdfViewer from '../components/PdfViewer';
 import { publicAPI, internalAPI } from '../services/api';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTheme } from '../hooks/useTheme';
-import { 
-  ACCESS_LEVELS, 
+import {
+  ACCESS_LEVELS,
   ACCESS_LEVEL_DEFAULTS,
   getAvailableAccessLevels,
-  canAccessArticleEditor 
+  canAccessArticleEditor
 } from '../constants/accessLevels';
+import {
+  KNOWLEDGE_CLUSTERS,
+  KNOWLEDGE_TYPES
+} from '../constants/knowledgeTypes';
+import { getMediaEmbedInfo, extractDomain } from '../utils/mediaUtils';
 import './ArticleEditorPage.css';
 
 /**
@@ -38,6 +43,17 @@ import './ArticleEditorPage.css';
  * - Submit for review workflow
  * - Save as draft functionality
  */
+
+// Helper to normalize any response into a pure array of infographic slides
+const normalizeSlidesArray = (raw) => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  if (Array.isArray(raw.data)) return raw.data;
+  if (Array.isArray(raw.results)) return raw.results;
+  if (Array.isArray(raw.data?.results)) return raw.data.results;
+  return [];
+};
+
 const ArticleEditor = () => {
   const { t } = useTranslation();
   const { isIndonesian } = useLanguage();
@@ -84,6 +100,18 @@ const ArticleEditor = () => {
   const [isSearchingCreator, setIsSearchingCreator] = useState(false);
   const [showCreatorDropdown, setShowCreatorDropdown] = useState(false);
 
+  const [attachmentMode, setAttachmentMode] = useState('upload'); // 'upload' or 'link'
+  const [linkAttachment, setLinkAttachment] = useState({ url: '', name: '', description: '' });
+  const [linkAdding, setLinkAdding] = useState(false);
+
+  // Infographic slides states (Multi-image Infographic Slides / Gambar Berantai)
+  const [infographicSlides, setInfographicSlides] = useState([]);
+  const [initialInfographicSlides, setInitialInfographicSlides] = useState([]);
+  const [isUploadingSlide, setIsUploadingSlide] = useState(false);
+  const [infographicMode, setInfographicMode] = useState('upload'); // 'upload' or 'link'
+  const [slideLinkInput, setSlideLinkInput] = useState({ url: '', caption: '' });
+  const [pendingInfographicFiles, setPendingInfographicFiles] = useState([]); // for unsaved articles
+
   const [formData, setFormData] = useState({
     id: null,
     // Indonesian fields
@@ -100,8 +128,11 @@ const ArticleEditor = () => {
     creator_user_id: null,
     // Common fields
     category_id: '',
+    knowledge_type: 'artikel',
     featured_image: '',
     featured_image_file: null,
+    featured_image_url: '',
+    media_url: '',
     slug: '',
     status: 'draft',
     access_level: 'public'  // Default to public access
@@ -114,7 +145,7 @@ const ArticleEditor = () => {
       // Use internalAPI instead of native fetch to benefit from token refresh interceptor
       const response = await internalAPI.getArticle(id);
       const data = response.data || response;
-      
+
       // Determine image source: 'upload' if image field exists, 'url' if image_url exists
       let source = null;
       if (data.image) {
@@ -123,7 +154,7 @@ const ArticleEditor = () => {
         source = 'url'; // Has URL only
       }
       setImageSource(source);
-      
+
       setFormData({
         id: data.id || null,
         // Indonesian fields
@@ -140,9 +171,11 @@ const ArticleEditor = () => {
         creator_user_id: data.creator_user_id || (data.creator_user?.id) || null,
         // Common fields
         category_id: data.category?.id || data.category_id || '',
+        knowledge_type: data.knowledge_type || 'artikel',
         featured_image: data.image || data.image_url || '',
         featured_image_file: null,
         featured_image_url: data.image_url || '',
+        media_url: data.media_url || '',
         slug: data.slug || '',
         status: data.status || 'draft',
         access_level: data.access_level || 'public'  // Load access level from API
@@ -171,7 +204,7 @@ const ArticleEditor = () => {
 
       const tagsArray = data.tags?.map(t => t.id) || [];
       setSelectedTags(tagsArray);
-      
+
       // Store initial state for change detection
       const initialState = {
         id: data.id || null,
@@ -185,16 +218,18 @@ const ArticleEditor = () => {
         creator_name: data.creator_name || data.author_name || '',
         creator_user_id: data.creator_user_id || (data.creator_user?.id) || null,
         category_id: data.category?.id || data.category_id || '',
+        knowledge_type: data.knowledge_type || 'artikel',
         featured_image: data.image || data.image_url || '',
         featured_image_file: null,
         featured_image_url: data.image_url || '',
+        media_url: data.media_url || '',
         slug: data.slug || '',
         status: data.status || 'draft',
         access_level: data.access_level || 'public'
       };
       setInitialFormData(initialState);
       setInitialSelectedTags(tagsArray);
-      
+
       // Load associated files
       try {
         const filesResponse = await internalAPI.getArticleFiles(id);
@@ -206,6 +241,18 @@ const ArticleEditor = () => {
         console.error('Failed to load files:', filesErr);
         setFiles([]);
         setInitialFiles([]);
+      }
+
+      // Load associated infographic slides (gambar berantai)
+      try {
+        const infoResponse = await internalAPI.getArticleInfographics(id);
+        const infoArray = normalizeSlidesArray(infoResponse);
+        setInfographicSlides(infoArray);
+        setInitialInfographicSlides(infoArray.map(s => ({ id: s.id })));
+      } catch (infoErr) {
+        console.error('Failed to load infographic slides:', infoErr);
+        setInfographicSlides([]);
+        setInitialInfographicSlides([]);
       }
     } catch (err) {
       console.error('Load article error:', err);
@@ -237,7 +284,7 @@ const ArticleEditor = () => {
       // Prepare payload with all fields
       // CRITICAL: Use internalAPI instead of fetch() to get token refresh on 401
       const payload = formData.featured_image_file ? new FormData() : {};
-      
+
       if (formData.featured_image_file) {
         // Use FormData for file upload
         payload.append('title_id', formData.title_id);
@@ -247,6 +294,7 @@ const ArticleEditor = () => {
         payload.append('summary_id', formData.description_id);
         payload.append('summary_en', formData.description_en);
         payload.append('category', formData.category_id);
+        payload.append('knowledge_type', formData.knowledge_type || 'artikel');
         payload.append('access_level', formData.access_level);
         payload.append('creator_type', formData.creator_type || 'internal');
         payload.append('creator_name', (formData.creator_name || '').trim());
@@ -256,8 +304,9 @@ const ArticleEditor = () => {
         }
         payload.append('status', formData.status || 'draft');
         payload.append('slug', formData.slug || '');
+        payload.append('media_url', (formData.media_url || '').trim());
         payload.append('image', formData.featured_image_file);
-        
+
         // Add tags
         selectedTags.forEach((tagId) => {
           payload.append('tags', tagId);
@@ -277,12 +326,14 @@ const ArticleEditor = () => {
         payload.creators_data = creators;
         payload.status = formData.status || 'draft';
         payload.category = formData.category_id;
+        payload.knowledge_type = formData.knowledge_type || 'artikel';
         payload.access_level = formData.access_level;
         payload.slug = formData.slug;
-        
+        payload.media_url = (formData.media_url || '').trim() || null;
+
         // ALWAYS send image_url (even if empty) to allow clearing the featured image
         payload.image_url = formData.featured_image_url || null;
-        
+
         // CRITICAL FIX: Send image: null when featured_image is cleared
         if (formData.featured_image === null || formData.featured_image === '') {
           payload.image = null;
@@ -300,7 +351,7 @@ const ArticleEditor = () => {
         const response = await internalAPI.createArticle(payload);
         data = response.data;
       }
-      
+
       // Handle successful response
       if (!data) {
         throw new Error('No response data from server');
@@ -308,7 +359,7 @@ const ArticleEditor = () => {
 
       setLastSaved(new Date());
       success(t('editor.draft_saved_success'));
-      
+
       setFormData(prev => ({
         ...prev,
         id: data.id,
@@ -318,7 +369,7 @@ const ArticleEditor = () => {
         featured_image_file: null,  // CRITICAL: Clear the file reference after successful upload
         featured_image_url: data.image_url || prev.featured_image_url  // Update with saved URL field
       }));
-      
+
       // CRITICAL: Update initialFormData to the newly saved state
       // This ensures hasFormChanged() uses the new saved state as baseline
       // Otherwise buttons would stay disabled even after saving changes
@@ -337,21 +388,47 @@ const ArticleEditor = () => {
         featured_image: data.image || formData.featured_image,  // Use actual saved image URL
         featured_image_file: null,  // File is null after save (no File object to track)
         featured_image_url: data.image_url || formData.featured_image_url,  // Use actual saved URL field
+        media_url: formData.media_url,
         slug: data.slug,
         status: data.status,
         access_level: formData.access_level
       };
       setInitialFormData(newInitialState);
-      
+
       // Update initialSelectedTags to the currently selected tags
       // This ensures the change detection compares against the saved tags
       setInitialSelectedTags([...selectedTags]);
-      
+
       // Update initialFiles to the currently uploaded files
       // This ensures the change detection compares against the saved files
       setInitialFiles(files.map(f => ({ id: f.id })));
 
-      
+      // Upload any pending infographic slides for newly created article
+      if (!id && pendingInfographicFiles.length > 0) {
+        try {
+          for (const pSlide of pendingInfographicFiles) {
+            if (pSlide.file) {
+              const form = new FormData();
+              form.append('image', pSlide.file);
+              form.append('caption', pSlide.caption || '');
+              await internalAPI.uploadInfographicImage(data.id, form);
+            } else if (pSlide.image_url) {
+              await internalAPI.addInfographicLink(data.id, {
+                image_url: pSlide.image_url,
+                caption: pSlide.caption || ''
+              });
+            }
+          }
+          setPendingInfographicFiles([]);
+          const infoRes = await internalAPI.getArticleInfographics(data.id);
+          const loadedSlides = normalizeSlidesArray(infoRes);
+          setInfographicSlides(loadedSlides);
+          setInitialInfographicSlides(loadedSlides.map(s => ({ id: s.id })));
+        } catch (slideErr) {
+          console.error('Failed to upload pending infographic slides:', slideErr);
+        }
+      }
+
       // Update URL if creating new article
       // Use navigate() to keep React Router in sync with URL
       // This ensures useParams() updates and file section renders immediately
@@ -363,11 +440,11 @@ const ArticleEditor = () => {
     } catch (err) {
       console.error('=== BACKEND VALIDATION ERROR ===');
       console.error('Save draft error:', err);
-      
+
       // Extract error information from the response
       const errorData = err.response?.data || {};
       const status = err.response?.status;
-      
+
       if (status) {
         console.error('Status Code:', status);
       }
@@ -387,10 +464,10 @@ const ArticleEditor = () => {
         slug: formData.slug
       });
       console.error('=== END ERROR ===');
-      
+
       // Extract user-friendly error message (with bilingual support)
       let errorMessage = t('errors.failed_save_draft');
-      
+
       // Try bilingual detail_id (Indonesian) first
       if (errorData.detail_id) {
         errorMessage = errorData.detail_id;
@@ -433,7 +510,7 @@ const ArticleEditor = () => {
       else if (errorData.error) {
         errorMessage = errorData.error;
       }
-      
+
       setError(errorMessage);
       showError(errorMessage);
     }
@@ -480,7 +557,7 @@ const ArticleEditor = () => {
 
         const response = await internalAPI.checkSlug(formData.slug, formData.id, 'draft');
         const data = response.data || response;
-        
+
         setSlugValidation({
           isChecking: false,
           isAvailable: data.available,
@@ -512,7 +589,7 @@ const ArticleEditor = () => {
       // - If we DON'T have an ID, we're CREATING a new article → buttons should be enabled
       return !id;
     }
-    
+
     // Compare all form fields
     const fieldsChanged = (
       formData.title_id !== initialFormData.title_id ||
@@ -522,24 +599,26 @@ const ArticleEditor = () => {
       formData.description_en !== initialFormData.description_en ||
       formData.content_en !== initialFormData.content_en ||
       formData.category_id !== initialFormData.category_id ||
+      formData.knowledge_type !== initialFormData.knowledge_type ||
       formData.featured_image !== initialFormData.featured_image ||
       formData.featured_image_file !== initialFormData.featured_image_file ||
       formData.featured_image_url !== initialFormData.featured_image_url ||
+      formData.media_url !== initialFormData.media_url ||
       formData.slug !== initialFormData.slug ||
       formData.access_level !== initialFormData.access_level ||
       formData.creator_type !== initialFormData.creator_type ||
       formData.creator_name !== initialFormData.creator_name ||
       formData.creator_user_id !== initialFormData.creator_user_id
     );
-    
+
     // Compare tags
     const tagsChanged = selectedTags.length !== initialSelectedTags.length ||
-                       selectedTags.some((tag, idx) => tag !== initialSelectedTags[idx]);
-    
+      selectedTags.some((tag, idx) => tag !== initialSelectedTags[idx]);
+
     // Compare files - check if file count changed or file IDs differ
     const filesChanged = files.length !== initialFiles.length ||
-                         files.some((file, idx) => !initialFiles[idx] || file.id !== initialFiles[idx].id);
-    
+      files.some((file, idx) => !initialFiles[idx] || file.id !== initialFiles[idx].id);
+
     return fieldsChanged || tagsChanged || filesChanged;
   }, [formData, initialFormData, selectedTags, initialSelectedTags, files, initialFiles, id]);
 
@@ -685,7 +764,7 @@ const ArticleEditor = () => {
     if (user && user.primary_role) {
       const levels = getAvailableAccessLevels(user.primary_role);
       setAvailableAccessLevels(levels);
-      
+
       // If current access level is not available, reset to the first available level
       if (!levels.includes(formData.access_level) && levels.length > 0) {
         setFormData(prev => ({
@@ -806,6 +885,169 @@ const ArticleEditor = () => {
     setImageSource(null); // Clear image source
   };
 
+  // ===== INFOGRAPHIC MULTI-SLIDE HANDLERS (GAMBAR BERANTAI) =====
+  const handleInfographicMultiUpload = async (e) => {
+    const uploadedFiles = e.target.files
+      ? Array.from(e.target.files)
+      : (e.dataTransfer?.files ? Array.from(e.dataTransfer.files) : []);
+
+    if (!uploadedFiles || uploadedFiles.length === 0) return;
+
+    // Filter only image files
+    const imageFiles = uploadedFiles.filter(f => f.type.startsWith('image/'));
+    if (imageFiles.length === 0) {
+      showError('Harap pilih berkas dengan format gambar (PNG, JPG, WebP, GIF)');
+      return;
+    }
+
+    const articleId = id || formData.id;
+    if (articleId) {
+      setIsUploadingSlide(true);
+      try {
+        for (const file of imageFiles) {
+          const form = new FormData();
+          form.append('image', file);
+          form.append('caption', file.name.replace(/\.[^/.]+$/, ""));
+          await internalAPI.uploadInfographicImage(articleId, form);
+        }
+        const resp = await internalAPI.getArticleInfographics(articleId);
+        const updatedSlides = normalizeSlidesArray(resp);
+        setInfographicSlides(updatedSlides);
+        if (updatedSlides.length > 0 && !formData.featured_image) {
+          setFormData(prev => ({
+            ...prev,
+            featured_image: updatedSlides[0].image || updatedSlides[0].image_url
+          }));
+        }
+        success(`${imageFiles.length} slide infografis berhasil ditambahkan`);
+      } catch (err) {
+        console.error('Failed to upload infographic slides:', err);
+        showError('Gagal mengunggah slide infografis');
+      } finally {
+        setIsUploadingSlide(false);
+      }
+    } else {
+      // Local pending slides before article is created
+      const currentList = normalizeSlidesArray(infographicSlides);
+      const newPending = imageFiles.map((file, idx) => ({
+        id: `pending-${Date.now()}-${idx}`,
+        file,
+        image: URL.createObjectURL(file),
+        caption: file.name.replace(/\.[^/.]+$/, ""),
+        order_index: currentList.length + idx,
+        isPending: true
+      }));
+      setPendingInfographicFiles(prev => [...prev, ...newPending]);
+      setInfographicSlides(prev => {
+        const combined = [...normalizeSlidesArray(prev), ...newPending];
+        if (combined.length > 0 && !formData.featured_image) {
+          setFormData(f => ({ ...f, featured_image: combined[0].image }));
+        }
+        return combined;
+      });
+      success(`${imageFiles.length} slide infografis siap disimpan saat draf dibuat`);
+    }
+  };
+
+  const handleAddInfographicLink = async () => {
+    if (!slideLinkInput.url || !slideLinkInput.url.trim()) return;
+    const articleId = id || formData.id;
+
+    if (articleId) {
+      setIsUploadingSlide(true);
+      try {
+        await internalAPI.addInfographicLink(articleId, {
+          image_url: slideLinkInput.url.trim(),
+          caption: slideLinkInput.caption.trim()
+        });
+        const resp = await internalAPI.getArticleInfographics(articleId);
+        const updatedSlides = normalizeSlidesArray(resp);
+        setInfographicSlides(updatedSlides);
+        setSlideLinkInput({ url: '', caption: '' });
+        success('Tautan slide infografis berhasil ditambahkan');
+      } catch (err) {
+        showError('Gagal menambahkan tautan slide');
+      } finally {
+        setIsUploadingSlide(false);
+      }
+    } else {
+      const currentList = normalizeSlidesArray(infographicSlides);
+      const newPending = {
+        id: `pending-${Date.now()}`,
+        image: slideLinkInput.url.trim(),
+        image_url: slideLinkInput.url.trim(),
+        caption: slideLinkInput.caption.trim(),
+        order_index: currentList.length,
+        isPending: true
+      };
+      setPendingInfographicFiles(prev => [...prev, newPending]);
+      setInfographicSlides(prev => [...normalizeSlidesArray(prev), newPending]);
+      setSlideLinkInput({ url: '', caption: '' });
+      success('Tautan slide infografis siap disimpan saat draf dibuat');
+    }
+  };
+
+  const handleDeleteInfographicSlide = async (index) => {
+    const currentList = normalizeSlidesArray(infographicSlides);
+    const slide = currentList[index];
+    if (!slide) return;
+    const articleId = id || formData.id;
+
+    if (slide.id && !String(slide.id).startsWith('pending-') && articleId) {
+      try {
+        await internalAPI.deleteInfographicImage(articleId, slide.id);
+        const resp = await internalAPI.getArticleInfographics(articleId);
+        const updatedSlides = normalizeSlidesArray(resp);
+        setInfographicSlides(updatedSlides);
+        if (updatedSlides.length > 0 && index === 0) {
+          setFormData(prev => ({
+            ...prev,
+            featured_image: updatedSlides[0].image || updatedSlides[0].image_url
+          }));
+        }
+        success('Slide berhasil dihapus');
+      } catch (err) {
+        showError('Gagal menghapus slide');
+      }
+    } else {
+      setInfographicSlides(prev => normalizeSlidesArray(prev).filter((_, idx) => idx !== index));
+      setPendingInfographicFiles(prev => prev.filter(p => p.id !== slide.id));
+    }
+  };
+
+  const handleMoveSlide = async (index, direction) => {
+    const currentList = normalizeSlidesArray(infographicSlides);
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= currentList.length) return;
+
+    const newSlides = [...currentList];
+    const [moved] = newSlides.splice(index, 1);
+    newSlides.splice(newIndex, 0, moved);
+    setInfographicSlides(newSlides);
+
+    // If moved to first place, update featured_image
+    if (newIndex === 0) {
+      setFormData(prev => ({
+        ...prev,
+        featured_image: moved.image || moved.image_url
+      }));
+    }
+
+    const articleId = id || formData.id;
+    if (articleId && newSlides.every(s => !String(s.id).startsWith('pending-'))) {
+      try {
+        await internalAPI.reorderInfographicImages(articleId, newSlides.map(s => s.id));
+      } catch (err) {
+        console.error('Failed to reorder slides:', err);
+      }
+    }
+  };
+
+  const handleSetSlideAsCover = async (index) => {
+    if (index === 0) return;
+    await handleMoveSlide(index, -index);
+  };
+
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) {
@@ -908,6 +1150,54 @@ const ArticleEditor = () => {
     }
   };
 
+  const handleAddLinkAttachment = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!linkAttachment.url || !linkAttachment.url.trim()) {
+      setError('Mohon masukkan URL tautan lampiran yang valid');
+      return;
+    }
+
+    const trimmedUrl = linkAttachment.url.trim();
+    if (!/^https?:\/\//i.test(trimmedUrl)) {
+      setError('Tautan harus diawali dengan http:// atau https://');
+      return;
+    }
+
+    let articleId = id || formData.id;
+    if (!articleId) {
+      try {
+        const savedData = await saveDraft();
+        articleId = savedData?.id;
+        if (!articleId) {
+          setError('t:errors.failed_create_article_for_upload');
+          return;
+        }
+      } catch (err) {
+        console.error('[AddLinkAttachment] Auto-save failed:', err);
+        return;
+      }
+    }
+
+    try {
+      setLinkAdding(true);
+      const response = await internalAPI.addFileLink(articleId, {
+        link_url: trimmedUrl,
+        original_filename: linkAttachment.name?.trim() || trimmedUrl,
+        description: linkAttachment.description?.trim() || ''
+      });
+      const newFile = response.data || response;
+      setFiles(prev => [...prev, newFile]);
+      setLinkAttachment({ url: '', name: '', description: '' });
+      setError('');
+      success('Tautan lampiran berhasil ditambahkan');
+    } catch (err) {
+      console.error('Error adding link attachment:', err);
+      setError('Gagal menambahkan tautan lampiran');
+    } finally {
+      setLinkAdding(false);
+    }
+  };
+
   const toggleFilePreview = (fileId) => {
     setExpandedFilePreview(prev => ({
       ...prev,
@@ -944,40 +1234,44 @@ const ArticleEditor = () => {
 
   const validateSlugFormat = (slug) => {
     if (!slug) return { valid: false, messageKey: null };
-    
+
     if (slug.length < 3 || slug.length > 255) {
       return { valid: false, messageKey: 'slug_invalid_length' };
     }
-    
+
     if (!/^[a-z0-9-]+$/.test(slug)) {
       return { valid: false, messageKey: 'slug_invalid_format' };
     }
-    
+
     if (slug.startsWith('-')) {
       return { valid: false, messageKey: 'slug_starts_with_hyphen' };
     }
-    
+
     if (slug.endsWith('-')) {
       return { valid: false, messageKey: 'slug_ends_with_hyphen' };
     }
-    
+
     if (slug.includes('--')) {
       return { valid: false, messageKey: 'slug_consecutive_hyphens' };
     }
-    
+
     return { valid: true, messageKey: null };
   };
 
-  const getFileIcon = (mimeType) => {
-    if (!mimeType) return 'text-secondary';
+  const getFileIcon = (fileOrMimeType) => {
+    const mimeType = typeof fileOrMimeType === 'object' ? (fileOrMimeType.mime_type || '') : (fileOrMimeType || '');
+    const isLink = typeof fileOrMimeType === 'object' ? (fileOrMimeType.is_link || !!fileOrMimeType.link_url || mimeType === 'link') : mimeType === 'link';
+    if (isLink) return 'bi-link-45deg text-primary';
+    if (!mimeType) return 'bi-file-earmark text-secondary';
     if (mimeType.includes('pdf')) return 'bi-file-pdf text-danger';
     if (mimeType.includes('word')) return 'bi-file-word text-primary';
     if (mimeType.includes('sheet') || mimeType.includes('excel')) return 'bi-file-earmark-spreadsheet text-success';
     if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) return 'bi-file-earmark-ppt text-warning';
     if (mimeType.includes('image')) return 'bi-file-image text-info';
     if (mimeType.includes('video')) return 'bi-file-play text-danger';
+    if (mimeType.includes('audio')) return 'bi-file-music text-warning';
     if (mimeType.includes('zip') || mimeType.includes('rar')) return 'bi-file-zip text-secondary';
-    return 'text-secondary';
+    return 'bi-file-earmark text-secondary';
   };
 
   const formatFileSize = (bytes) => {
@@ -989,7 +1283,11 @@ const ArticleEditor = () => {
   };
 
   const getFilePreviewUrl = (file) => {
-    if (!file || !file.file) {
+    if (!file) return null;
+    if (file.is_link || file.link_url || file.mime_type === 'link') {
+      return file.link_url || file.file;
+    }
+    if (!file.file) {
       console.warn('[FilePreview] No file or file.file property', file);
       return null;
     }
@@ -1011,7 +1309,11 @@ const ArticleEditor = () => {
     return null;
   };
 
-  const hasPreview = (mimeType) => {
+  const hasPreview = (fileOrMimeType) => {
+    if (!fileOrMimeType) return false;
+    const mimeType = typeof fileOrMimeType === 'object' ? (fileOrMimeType.mime_type || '') : fileOrMimeType;
+    const isLink = typeof fileOrMimeType === 'object' ? (fileOrMimeType.is_link || !!fileOrMimeType.link_url || mimeType === 'link') : mimeType === 'link';
+    if (isLink) return false;
     if (!mimeType) return false;
     // Images
     if (mimeType.includes('image')) return true;
@@ -1039,18 +1341,18 @@ const ArticleEditor = () => {
   const handleTitleChange = (e) => {
     const title = e.target.value;
     const fieldName = activeLanguageTab === 'id' ? 'title_id' : 'title_en';
-    
+
     // Update the title in state
     setFormData(prev => {
       const updated = { ...prev, [fieldName]: title };
-      
+
       // Auto-generate slug if:
       // 1. This is a new article (no id) OR
       // 2. Article is in draft status and we're editing Indonesian title
       if ((!prev.id || prev.status === 'draft') && activeLanguageTab === 'id') {
         updated.slug = generateSlug(title);
       }
-      
+
       return updated;
     });
   };
@@ -1082,7 +1384,7 @@ const ArticleEditor = () => {
       }
 
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002/api';
-      
+
       // Use the dedicated submit-review endpoint
       const payload = {
         comment: ''  // Optional comment for reviewer
@@ -1103,7 +1405,7 @@ const ArticleEditor = () => {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         let errorMessage = t('errors.submit_article_failed');
-        
+
         if (errorData.detail) {
           if (typeof errorData.detail === 'string') {
             errorMessage = errorData.detail;
@@ -1119,7 +1421,7 @@ const ArticleEditor = () => {
         } else if (errorData.error) {
           errorMessage = errorData.error;
         }
-        
+
         setError(errorMessage);
         showError(errorMessage);
         throw new Error('submit_article_failed');
@@ -1137,6 +1439,9 @@ const ArticleEditor = () => {
     return <LoadingSpinner message={t('loading.loading_article')} />;
   }
 
+  const isInfografis = formData.knowledge_type === 'infografis';
+  const isAudiovisual = formData.knowledge_type === 'audiovisual';
+
   return (
     <Container className="article-editor-page py-4">
       <div className="editor-header mb-4">
@@ -1150,7 +1455,7 @@ const ArticleEditor = () => {
       </div>
 
       {error && (
-        <ErrorAlert 
+        <ErrorAlert
           message={error}
           onDismiss={() => setError('')}
           className="mb-4"
@@ -1159,12 +1464,12 @@ const ArticleEditor = () => {
 
       {/* Success Toast - Uses Portal to render outside form hierarchy */}
       {ReactDOM.createPortal(
-        <ToastContainer 
-          position="top-end" 
-          className="p-3" 
-          style={{ 
-            position: 'fixed', 
-            top: '20px', 
+        <ToastContainer
+          position="top-end"
+          className="p-3"
+          style={{
+            position: 'fixed',
+            top: '20px',
             right: '20px',
             left: 'auto',
             zIndex: 9999,
@@ -1225,14 +1530,14 @@ const ArticleEditor = () => {
           {/* Title */}
           <Form.Group className="mb-4">
             <Form.Label>
-              {activeLanguageTab === 'id' ? t('editor.article_title') : 'Knowledge Title (English)'} <strong style={{color: '#ff6b6b'}}>*</strong>
+              {activeLanguageTab === 'id' ? t('editor.article_title') : 'Knowledge Title (English)'} <strong style={{ color: '#ff6b6b' }}>*</strong>
             </Form.Label>
             <Form.Control
               type="text"
               value={activeLanguageTab === 'id' ? formData.title_id : formData.title_en}
               onChange={handleTitleChange}
               placeholder={activeLanguageTab === 'id' ? t('editor.article_title_placeholder') : 'Enter knowledge title in English'}
-              required={activeLanguageTab === 'id'} 
+              required={activeLanguageTab === 'id'}
               maxLength={200}
             />
             <Form.Text className="text-muted">
@@ -1290,12 +1595,11 @@ const ArticleEditor = () => {
               onChange={handleSlugChange}
               placeholder={t('editor.slug_placeholder')}
               disabled={formData.id && formData.status !== 'draft'}
-              className={`slug-field ${
-                !formData.slug ? '' : 
+              className={`slug-field ${!formData.slug ? '' :
                 slugValidation.isAvailable === true ? 'is-valid' :
-                slugValidation.isAvailable === false ? 'is-invalid' :
-                ''
-              }`}
+                  slugValidation.isAvailable === false ? 'is-invalid' :
+                    ''
+                }`}
             />
             {formData.id && formData.status !== 'draft' ? (
               <Form.Text className="text-warning slug-locked-warning">
@@ -1325,7 +1629,7 @@ const ArticleEditor = () => {
 
           {/* Category */}
           <Form.Group className="mb-4">
-            <Form.Label>{t('editor.category')} <strong style={{color: '#ff6b6b'}}>*</strong></Form.Label>
+            <Form.Label>{t('editor.category')} <strong style={{ color: '#ff6b6b' }}>*</strong></Form.Label>
             <Form.Select
               name="category_id"
               value={formData.category_id}
@@ -1337,6 +1641,58 @@ const ArticleEditor = () => {
                 <option key={cat.id} value={cat.id}>{isIndonesian ? cat.name_id : cat.name_en}</option>
               ))}
             </Form.Select>
+          </Form.Group>
+
+          {/* Bentuk Pengetahuan */}
+          <Form.Group className="mb-4">
+            <Form.Label className="mb-2 fw-semibold">
+              📑 {t('articles.knowledge_form')} <strong style={{ color: '#ff6b6b' }}>*</strong>
+            </Form.Label>
+            <Form.Select
+              name="knowledge_type"
+              value={formData.knowledge_type || 'artikel'}
+              onChange={handleChange}
+              required
+            >
+              {KNOWLEDGE_CLUSTERS.map(cluster => (
+                <optgroup
+                  key={cluster.code}
+                  label={isIndonesian ? cluster.title_id : cluster.title_en}
+                >
+                  {cluster.types.map(typeKey => {
+                    const typeInfo = KNOWLEDGE_TYPES[typeKey];
+                    return (
+                      <option key={typeKey} value={typeKey}>
+                        {typeInfo?.emoji} {isIndonesian ? typeInfo?.name_id : typeInfo?.name_en}
+                      </option>
+                    );
+                  })}
+                </optgroup>
+              ))}
+            </Form.Select>
+            <Form.Text className="text-muted d-block mt-1">
+              Pilih format dokumen atau ragam media dari pengetahuan yang Anda buat.
+            </Form.Text>
+
+            {/* Context Notice for Infografis */}
+            {isInfografis && (
+              <Alert variant="info" className="mt-2 py-2 px-3 d-flex align-items-center gap-2 border-0 shadow-sm" style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)', color: '#b45309' }}>
+                <span className="fs-5">📊</span>
+                <small>
+                  <strong>Format Khusus Infografis:</strong> Halaman pembaca akan menampilkan karya grafis utuh tanpa crop, tombol zoom interaktif (lightbox), dan tombol unduh resolusi tinggi.
+                </small>
+              </Alert>
+            )}
+
+            {/* Context Notice for Audiovisual */}
+            {isAudiovisual && (
+              <Alert variant="warning" className="mt-2 py-2 px-3 d-flex align-items-center gap-2 border-0 shadow-sm" style={{ backgroundColor: 'rgba(234, 88, 12, 0.1)', color: '#c2410c' }}>
+                <span className="fs-5">🎥</span>
+                <small>
+                  <strong>Format Khusus Produk Audiovisual:</strong> Sediakan tautan video/audio di bawah untuk menampilkan pemutar media langsung (YouTube, Vimeo, Google Drive, MP4/MP3) di bagian atas artikel.
+                </small>
+              </Alert>
+            )}
           </Form.Group>
 
           {/* Access Level */}
@@ -1531,7 +1887,7 @@ const ArticleEditor = () => {
             <Form.Label className="fw-semibold d-flex justify-content-between align-items-center">
               <span>
                 📋 {t('editor.creator_list') || 'Daftar Penyusun Terpilih'} ({creators.length})
-                <strong style={{color: '#ff6b6b'}}> *</strong>
+                <strong style={{ color: '#ff6b6b' }}> *</strong>
               </span>
               {creators.length > 0 && (
                 <small className="text-muted">
@@ -1596,157 +1952,539 @@ const ArticleEditor = () => {
           </div>
         </div>
 
-        {/* FEATURED IMAGE SECTION */}
-        <div className="form-section">
-          <div className="form-section-title">
-            <i className="bi bi-image"></i>
-            <h3>{t('editor.featured_image_section') || 'Featured Image'}</h3>
-          </div>
+        {/* KHUSUS PRODUK AUDIOVISUAL: MEDIA URL & LIVE PLAYER PREVIEW */}
+        {isAudiovisual && (
+          <div className="form-section audiovisual-highlight-section border-warning border-opacity-50">
+            <div className="form-section-title">
+              <i className="bi bi-camera-reels text-warning"></i>
+              <div>
+                <div className="d-flex align-items-center gap-2 flex-wrap">
+                  <h3 className="mb-0">Media Tayangan Audiovisual</h3>
+                  <span className="badge bg-warning text-dark">Klaster d (Pasal 7)</span>
+                </div>
+                <p className="section-subtitle text-muted mb-0">
+                  Sematkan video atau rekaman audio/podcast utama yang dapat langsung ditonton atau didengarkan oleh pengguna.
+                </p>
+              </div>
+            </div>
 
-          <Form.Group className="mb-4">
-            <Form.Label>{t('editor.featured_image')}</Form.Label>
-            
-            {/* Upload options */}
-            <div className="featured-image-upload-container">
-              {/* File Upload with drag-and-drop */}
-              <div 
-                className={`featured-image-upload-area ${formData.featured_image_file ? 'has-file' : ''} ${isDraggingImage ? 'dragging' : ''}`}
-                onDrop={handleImageDrop}
-                onDragOver={handleImageDragOver}
-                onDragEnter={handleImageDragEnter}
-                onDragLeave={handleImageDragLeave}
-                onClick={() => document.getElementById('image-upload').click()}
-              >
-                <input
-                  type="file"
-                  id="image-upload"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  style={{ display: 'none' }}
-                />
-                <label htmlFor="image-upload" className="upload-label">
-                  <div className="upload-content">
-                    <i className="bi bi-cloud-upload"></i>
-                    <p>{t('editor.drag_drop_image') || 'Drag & drop image here or click to browse'}</p>
-                    <small>{t('editor.image_size_hint') || 'Max 5MB, PNG/JPG/GIF'}</small>
-                    {formData.featured_image_file && (
-                      <div className="upload-file-info">
-                        <i className="bi bi-check-circle-fill text-success"></i>
-                        <span>{formData.featured_image_file.name}</span>
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-semibold">
+                <i className="bi bi-link-45deg me-1 text-primary"></i> Tautan Media Video / Audio
+              </Form.Label>
+              <Form.Control
+                type="url"
+                name="media_url"
+                value={formData.media_url || ''}
+                onChange={handleChange}
+                placeholder="Contoh: https://www.youtube.com/watch?v=... atau https://drive.google.com/file/d/.../view"
+                className="media-url-input"
+              />
+              <Form.Text className="text-muted d-block mt-1">
+                Mendukung YouTube (termasuk Shorts), Vimeo, Google Drive Video (tautan pratinjau), URL Video langsung (.mp4, .webm), dan URL Podcast/Audio (.mp3).
+              </Form.Text>
+            </Form.Group>
+
+            {/* Live Media Player Preview in Editor */}
+            {formData.media_url && (() => {
+              const mediaInfo = getMediaEmbedInfo(formData.media_url);
+              if (!mediaInfo) return null;
+              return (
+                <div className="audiovisual-preview-card mt-3 p-3 rounded border bg-light">
+                  <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                    <span className="fw-semibold small text-primary d-flex align-items-center gap-2">
+                      <i className="bi bi-play-circle-fill fs-5"></i> Pratinjau Media ({mediaInfo.title})
+                    </span>
+                    <a
+                      href={mediaInfo.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-sm btn-outline-secondary py-0 px-2"
+                      style={{ fontSize: '0.8rem' }}
+                    >
+                      <i className="bi bi-box-arrow-up-right me-1"></i> Buka Tautan Asli
+                    </a>
+                  </div>
+
+                  <div className="audiovisual-player-wrapper">
+                    {(mediaInfo.type === 'youtube' || mediaInfo.type === 'vimeo' || mediaInfo.type === 'gdrive') && (
+                      <div className="ratio ratio-16x9 rounded overflow-hidden shadow-sm" style={{ maxHeight: '360px', backgroundColor: '#000' }}>
+                        <iframe
+                          src={mediaInfo.embedUrl}
+                          title="Audiovisual Preview"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        ></iframe>
+                      </div>
+                    )}
+                    {mediaInfo.type === 'video' && (
+                      <video
+                        controls
+                        className="w-100 rounded shadow-sm"
+                        style={{ maxHeight: '360px', backgroundColor: '#000' }}
+                        src={mediaInfo.embedUrl}
+                      >
+                        Browser Anda tidak mendukung tag video.
+                      </video>
+                    )}
+                    {mediaInfo.type === 'audio' && (
+                      <div className="p-3 bg-white border rounded text-center">
+                        <audio controls className="w-100" src={mediaInfo.embedUrl}>
+                          Browser Anda tidak mendukung tag audio.
+                        </audio>
+                      </div>
+                    )}
+                    {mediaInfo.type === 'spotify' && (
+                      <iframe
+                        src={mediaInfo.embedUrl}
+                        width="100%"
+                        height="152"
+                        frameBorder="0"
+                        allow="encrypted-media"
+                        title="Spotify Preview"
+                      ></iframe>
+                    )}
+                    {mediaInfo.type === 'generic_link' && (
+                      <div className="alert alert-secondary mb-0 d-flex align-items-center justify-content-between py-2">
+                        <span className="small">
+                          <i className="bi bi-globe me-2"></i> Tautan eksternal: {formData.media_url}
+                        </span>
+                        <span className="badge bg-secondary">Tautan Eksternal</span>
                       </div>
                     )}
                   </div>
-                </label>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* FEATURED IMAGE & INFOGRAPHIC SLIDES SECTION */}
+        <div className="form-section">
+          {isInfografis ? (
+            /* KHUSUS BENTUK PENGETAHUAN: INFOGRAFIS (GAMBAR BERANTAI / MULTI-SLIDE) */
+            <>
+              <div className="form-section-title d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div className="d-flex align-items-center gap-2">
+                  <i className="bi bi-images text-warning fs-4"></i>
+                  <div>
+                    <div className="d-flex align-items-center gap-2 flex-wrap">
+                      <h3 className="mb-0">Rangkaian Visual Grafis Infografis (Gambar Berantai)</h3>
+                      <span className="badge bg-warning text-dark">Multi-Slide</span>
+                    </div>
+                    <p className="section-subtitle text-muted mb-0">
+                      Unggah lembar infografis (bisa lebih dari satu gambar secara berantai). Slide #1 otomatis dijadikan sampul utama artikel.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Mode Switcher: Upload File vs Attach Link */}
+                <div className="btn-group btn-group-sm infographic-mode-toggle" role="group">
+                  <button
+                    type="button"
+                    className={`btn ${infographicMode === 'upload' ? 'btn-warning text-dark fw-semibold' : 'btn-outline-secondary'}`}
+                    onClick={() => setInfographicMode('upload')}
+                  >
+                    <i className="bi bi-cloud-arrow-up me-1"></i> Unggah Gambar (Bisa Banyak)
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn ${infographicMode === 'link' ? 'btn-warning text-dark fw-semibold' : 'btn-outline-secondary'}`}
+                    onClick={() => setInfographicMode('link')}
+                  >
+                    <i className="bi bi-link-45deg me-1"></i> Tautkan Link Gambar (URL)
+                  </button>
+                </div>
               </div>
 
-              {/* URL Input */}
-              <div className="featured-image-url-section">
-                <Form.Control
-                type="url"
-                placeholder={t('editor.featured_image_placeholder')}
-                value={formData.featured_image_url || ''}
-                onChange={(e) => {
-                  const url = e.target.value;
-                  setFormData(prev => ({
-                    ...prev,
-                    featured_image_url: url,
-                    // Only update featured_image if no file is uploaded
-                    featured_image: prev.featured_image_file ? prev.featured_image : url
-                  }));
-                  // Set image source to 'url' when user enters a URL
-                  if (url && !formData.featured_image_file) {
-                    setImageSource('url');
-                  } else if (!url && imageSource === 'url') {
-                    setImageSource(null);
-                  }
-                }}
-                disabled={!!formData.featured_image_file}
-              />
-              <small className="text-muted d-block mt-2">
-                {formData.featured_image_file 
-                  ? t('editor.url_disabled_file_active') || 'URL field disabled (file upload takes priority)'
-                  : t('editor.or_enter_image_url') || 'OR enter an image URL'
-                }
-              </small>
-            </div>
-          </div>
+              {infographicMode === 'upload' ? (
+                /* Multi File Upload Area */
+                <div className="mb-3">
+                  <div
+                    className="featured-image-upload-area p-4 text-center border rounded-3 bg-light"
+                    onClick={() => document.getElementById('infographic-multi-upload').click()}
+                    style={{ cursor: 'pointer', borderStyle: 'dashed', borderWidth: '2px', borderColor: '#d97706' }}
+                  >
+                    <input
+                      type="file"
+                      id="infographic-multi-upload"
+                      multiple
+                      accept="image/*"
+                      onChange={handleInfographicMultiUpload}
+                      style={{ display: 'none' }}
+                    />
+                    <div className="upload-content py-3">
+                      <i className="bi bi-cloud-arrow-up-fill fs-1 text-warning mb-2 d-block"></i>
+                      <p className="fw-semibold mb-1">
+                        {isUploadingSlide ? 'Sedang mengunggah slide...' : 'Klik atau seret beberapa berkas gambar slide infografis ke sini'}
+                      </p>
+                      <small className="text-muted d-block">
+                        Mendukung pemilihan banyak gambar sekaligus (PNG, JPG, WebP, GIF). Maks. 10MB per slide.
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Add Slide via URL */
+                <div className="mb-3 p-3 bg-light rounded-3 border">
+                  <Row className="g-2 align-items-end">
+                    <Col md={6}>
+                      <Form.Label className="small fw-semibold mb-1">URL Gambar Slide Infografis</Form.Label>
+                      <Form.Control
+                        type="url"
+                        placeholder="https://... URL gambar publik"
+                        value={slideLinkInput.url}
+                        onChange={(e) => setSlideLinkInput(prev => ({ ...prev, url: e.target.value }))}
+                        size="sm"
+                      />
+                    </Col>
+                    <Col md={4}>
+                      <Form.Label className="small fw-semibold mb-1">Keterangan / Judul Slide (Opsional)</Form.Label>
+                      <Form.Control
+                        type="text"
+                        placeholder="Contoh: Slide 1 - Ringkasan Eksekutif"
+                        value={slideLinkInput.caption}
+                        onChange={(e) => setSlideLinkInput(prev => ({ ...prev, caption: e.target.value }))}
+                        size="sm"
+                      />
+                    </Col>
+                    <Col md={2}>
+                      <Button
+                        variant="warning"
+                        size="sm"
+                        className="w-100 fw-semibold text-dark"
+                        onClick={handleAddInfographicLink}
+                        disabled={!slideLinkInput.url || !slideLinkInput.url.trim() || isUploadingSlide}
+                      >
+                        <i className="bi bi-plus-lg me-1"></i> Tambah
+                      </Button>
+                    </Col>
+                  </Row>
+                </div>
+              )}
 
-          {/* Preview */}
-          {formData.featured_image && (
-            <div className="featured-image-preview-container mt-3">
-              <div className="featured-image-preview">
-                <img 
-                  src={formData.featured_image} 
-                  alt="Featured Preview"
-                  loading="lazy"
-                  decoding="async"
-                  onError={(e) => {
-                    console.error('Featured image preview failed to load');
-                    e.target.src = '/default-article-image.svg';
-                  }}
-                />
-                <div className="image-source-badge">
-                  {imageSource === 'upload' ? (
-                    <>
-                      <i className="bi bi-upload"></i> {t('editor.source_upload') || 'Uploaded'}
-                    </>
-                  ) : (
-                    <>
-                      <i className="bi bi-link-45deg"></i> {t('editor.source_url') || 'From URL'}
-                    </>
+              {/* Slides List / Order Management */}
+              {(() => {
+                const currentSlides = normalizeSlidesArray(infographicSlides);
+                return (
+                  <div className="infographic-slides-container mt-3">
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <h6 className="fw-bold mb-0 text-secondary">
+                        <i className="bi bi-collection-play me-1"></i> Urutan Lembar Slide Infografis ({currentSlides.length} Slide)
+                      </h6>
+                      <span className="small text-muted">
+                        Urutan di bawah adalah urutan tayang pada Artikel View
+                      </span>
+                    </div>
+
+                    {currentSlides.length === 0 ? (
+                      <div className="alert alert-light border text-center py-4 text-muted mb-0">
+                        <i className="bi bi-images fs-2 d-block mb-2 text-secondary opacity-50"></i>
+                        Belum ada lembaran visual infografis yang ditambahkan. Silakan unggah satu atau beberapa gambar slide di atas.
+                      </div>
+                    ) : (
+                      <div className="infographic-slides-list d-flex flex-column gap-2">
+                        {currentSlides.map((slide, idx) => {
+                          const slideSrc = slide.image || slide.image_url;
+                          const isCover = idx === 0;
+
+                          return (
+                            <div
+                              key={slide.id || `slide-${idx}`}
+                              className={`infographic-slide-card p-2 rounded border bg-white d-flex align-items-center gap-3 shadow-sm ${isCover ? 'border-warning bg-warning bg-opacity-10' : ''}`}
+                            >
+                              {/* Order / Cover Badge */}
+                              <div className="slide-badge-column text-center" style={{ minWidth: '85px' }}>
+                                <span className={`badge ${isCover ? 'bg-warning text-dark' : 'bg-secondary'} px-2 py-1 d-block`}>
+                                  {isCover ? '★ Sampul' : `Slide ${idx + 1}`}
+                                </span>
+                                <small className="text-muted d-block mt-1" style={{ fontSize: '0.72rem' }}>
+                                  Urutan #{idx + 1}
+                                </small>
+                              </div>
+
+                              {/* Thumbnail */}
+                              <div
+                                className="slide-thumbnail-box rounded overflow-hidden bg-dark position-relative flex-shrink-0"
+                                style={{ width: '80px', height: '60px' }}
+                              >
+                                <img
+                                  src={slideSrc}
+                                  alt={slide.caption || `Slide ${idx + 1}`}
+                                  className="w-100 h-100 object-fit-cover"
+                                  onError={(e) => {
+                                    e.target.src = '/default-article-image.svg';
+                                  }}
+                                />
+                              </div>
+
+                              {/* Caption & Info */}
+                              <div className="slide-info-box flex-grow-1 overflow-hidden">
+                                <div className="fw-semibold text-truncate small" title={slide.caption || `Lembar Infografis ${idx + 1}`}>
+                                  {slide.caption || `Lembar Infografis ${idx + 1}`}
+                                </div>
+                                <small className="text-muted d-block text-truncate" style={{ fontSize: '0.75rem' }}>
+                                  {slide.image ? (
+                                    <><i className="bi bi-file-earmark-image me-1"></i> Berkas Gambar</>
+                                  ) : (
+                                    <><i className="bi bi-link-45deg me-1"></i> {slide.image_url}</>
+                                  )}
+                                  {slide.isPending && <span className="ms-2 text-warning fw-bold">(Belum tersimpan)</span>}
+                                </small>
+                              </div>
+
+                              {/* Action Controls */}
+                              <div className="slide-actions-box d-flex align-items-center gap-1 flex-shrink-0">
+                                {/* Move Up */}
+                                <Button
+                                  variant="outline-secondary"
+                                  size="sm"
+                                  className="px-2 py-1"
+                                  disabled={idx === 0}
+                                  onClick={() => handleMoveSlide(idx, -1)}
+                                  title="Geser Naik (Maju Urutan)"
+                                >
+                                  <i className="bi bi-arrow-up"></i>
+                                </Button>
+
+                                {/* Move Down */}
+                                <Button
+                                  variant="outline-secondary"
+                                  size="sm"
+                                  className="px-2 py-1"
+                                  disabled={idx === currentSlides.length - 1}
+                                  onClick={() => handleMoveSlide(idx, 1)}
+                                  title="Geser Turun (Mundur Urutan)"
+                                >
+                                  <i className="bi bi-arrow-down"></i>
+                                </Button>
+
+                                {/* Set as Cover */}
+                                {!isCover && (
+                                  <Button
+                                    variant="outline-warning"
+                                    size="sm"
+                                    className="px-2 py-1 text-dark"
+                                    onClick={() => handleSetSlideAsCover(idx)}
+                                    title="Jadikan Slide ini sebagai Sampul Utama"
+                                  >
+                                    <i className="bi bi-star me-1"></i> Sampul
+                                  </Button>
+                                )}
+
+                                {/* Delete Slide */}
+                                <Button
+                                  variant="outline-danger"
+                                  size="sm"
+                                  className="px-2 py-1 ms-1"
+                                  onClick={() => handleDeleteInfographicSlide(idx)}
+                                  title="Hapus Slide"
+                                >
+                                  <i className="bi bi-trash"></i>
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Information Note */}
+              <Alert variant="info" className="mt-3 py-2 px-3 small border-0 shadow-sm" style={{ backgroundColor: 'rgba(217, 119, 6, 0.08)', color: '#92400e' }}>
+                <i className="bi bi-info-circle-fill me-2 text-warning"></i>
+                <strong>Panduan Infografis Berantai:</strong> Slide pertama (urutan #1) akan otomatis menjadi thumbnail dan poster artikel di seluruh daftar katalog dan pencarian. Pada halaman pembaca artikel, pengguna dapat berpindah antar slide atau melihat seluruh lembar secara bersambung.
+              </Alert>
+            </>
+          ) : (
+            /* NON-INFOGRAFIS: FEATURED IMAGE SINGLE UPLOADER BIASA */
+            <>
+              <div className="form-section-title">
+                <i className={`bi ${isAudiovisual ? 'bi-film text-primary' : 'bi-image'}`}></i>
+                <div>
+                  <h3>
+                    {isAudiovisual ? 'Poster / Sampul Tayangan (Opsional)' : (t('editor.featured_image_section') || 'Featured Image')}
+                  </h3>
+                  {isAudiovisual && (
+                    <p className="section-subtitle text-muted mb-0">
+                      Poster atau gambar cuplikan yang tampil sebelum tayangan video/audio diputar.
+                    </p>
                   )}
                 </div>
               </div>
-              <div className="image-actions">
-                {formData.featured_image_file && (
-                  <Button 
-                    variant="warning" 
-                    size="sm" 
-                    onClick={() => {
-                      setFormData(prev => ({
-                        ...prev,
-                        featured_image_file: null,
-                        featured_image_url: '',
-                        featured_image: ''
-                      }));
-                    }}
-                    className="mb-2"
-                  >
-                    <i className="bi bi-arrow-counterclockwise"></i> {t('buttons.change_image') || 'Change'}
-                  </Button>
-                )}
-                <Button 
-                  variant="danger" 
-                  size="sm" 
-                  onClick={handleImageRemove}
-                >
-                  <i className="bi bi-trash"></i> {t('buttons.remove')}
-                </Button>
-              </div>
-            </div>
-          )}
 
-            {/* Info text about priority */}
-            <Alert variant="info" className="mt-3 py-2">
-              <small>
-                <i className="bi bi-info-circle"></i> {t('editor.image_priority_hint') || 'File upload takes priority over URL. Upload a file to override URL image.'}
-              </small>
-            </Alert>
-          </Form.Group>
+              <Form.Group className="mb-4">
+                <Form.Label>{t('editor.featured_image')}</Form.Label>
+
+                {/* Upload options */}
+                <div className="featured-image-upload-container">
+                  {/* File Upload with drag-and-drop */}
+                  <div
+                    className={`featured-image-upload-area ${formData.featured_image_file ? 'has-file' : ''} ${isDraggingImage ? 'dragging' : ''}`}
+                    onDrop={handleImageDrop}
+                    onDragOver={handleImageDragOver}
+                    onDragEnter={handleImageDragEnter}
+                    onDragLeave={handleImageDragLeave}
+                    onClick={() => document.getElementById('image-upload').click()}
+                  >
+                    <input
+                      type="file"
+                      id="image-upload"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      style={{ display: 'none' }}
+                    />
+                    <label htmlFor="image-upload" className="upload-label">
+                      <div className="upload-content">
+                        <i className="bi bi-cloud-upload"></i>
+                        <p>{t('editor.drag_drop_image') || 'Drag & drop image here or click to browse'}</p>
+                        <small>{t('editor.image_size_hint') || 'Max 5MB, PNG/JPG/GIF'}</small>
+                        {formData.featured_image_file && (
+                          <div className="upload-file-info">
+                            <i className="bi bi-check-circle-fill text-success"></i>
+                            <span>{formData.featured_image_file.name}</span>
+                          </div>
+                        )}
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* URL Input */}
+                  <div className="featured-image-url-section">
+                    <Form.Control
+                      type="url"
+                      placeholder={t('editor.featured_image_placeholder')}
+                      value={formData.featured_image_url || ''}
+                      onChange={(e) => {
+                        const url = e.target.value;
+                        setFormData(prev => ({
+                          ...prev,
+                          featured_image_url: url,
+                          // Only update featured_image if no file is uploaded
+                          featured_image: prev.featured_image_file ? prev.featured_image : url
+                        }));
+                        // Set image source to 'url' when user enters a URL
+                        if (url && !formData.featured_image_file) {
+                          setImageSource('url');
+                        } else if (!url && imageSource === 'url') {
+                          setImageSource(null);
+                        }
+                      }}
+                      disabled={!!formData.featured_image_file}
+                    />
+                    <small className="text-muted d-block mt-2">
+                      {formData.featured_image_file
+                        ? t('editor.url_disabled_file_active') || 'URL field disabled (file upload takes priority)'
+                        : t('editor.or_enter_image_url') || 'OR enter an image URL'
+                      }
+                    </small>
+                  </div>
+                </div>
+
+                {/* Preview */}
+                {formData.featured_image && (
+                  <div className="featured-image-preview-container mt-3">
+                    <div className="featured-image-preview">
+                      <img
+                        src={formData.featured_image}
+                        alt="Featured Preview"
+                        loading="lazy"
+                        decoding="async"
+                        onError={(e) => {
+                          console.error('Featured image preview failed to load');
+                          e.target.src = '/default-article-image.svg';
+                        }}
+                      />
+                      <div className="image-source-badge">
+                        {imageSource === 'upload' ? (
+                          <>
+                            <i className="bi bi-upload"></i> {t('editor.source_upload') || 'Uploaded'}
+                          </>
+                        ) : (
+                          <>
+                            <i className="bi bi-link-45deg"></i> {t('editor.source_url') || 'From URL'}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="image-actions">
+                      {formData.featured_image_file && (
+                        <Button
+                          variant="warning"
+                          size="sm"
+                          onClick={() => {
+                            setFormData(prev => ({
+                              ...prev,
+                              featured_image_file: null,
+                              featured_image_url: '',
+                              featured_image: ''
+                            }));
+                          }}
+                          className="mb-2"
+                        >
+                          <i className="bi bi-arrow-counterclockwise"></i> {t('buttons.change_image') || 'Change'}
+                        </Button>
+                      )}
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={handleImageRemove}
+                      >
+                        <i className="bi bi-trash"></i> {t('buttons.remove')}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Info text about priority */}
+                <Alert variant="info" className="mt-3 py-2">
+                  <small>
+                    <i className="bi bi-info-circle"></i> {t('editor.image_priority_hint') || 'File upload takes priority over URL. Upload a file to override URL image.'}
+                  </small>
+                </Alert>
+              </Form.Group>
+            </>
+          )}
         </div>
 
-        {/* FILE ATTACHMENTS SECTION */}
+        {/* FILE & LINK ATTACHMENTS SECTION */}
         <div className="form-section">
-          <div className="form-section-title">
-            <i className="bi bi-paperclip"></i>
-            <h3>{t('editor.attachments_section') || 'Attachments & Files'}</h3>
+          <div className="form-section-title d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div className="d-flex align-items-center gap-2">
+              <i className="bi bi-paperclip"></i>
+              <div>
+                <h3 className="mb-0">{t('editor.attachments_section') || 'Lampiran Berkas & Tautan Sumber'}</h3>
+                <small className="text-muted d-block">
+                  Unggah berkas fisik dokumen atau sematkan link sumber (Google Drive, portal resmi, dll).
+                </small>
+              </div>
+            </div>
+
+            {/* Mode Switcher: Upload File vs Attach Link */}
+            <div className="btn-group btn-group-sm attachment-mode-toggle" role="group">
+              <button
+                type="button"
+                className={`btn ${attachmentMode === 'upload' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                onClick={() => setAttachmentMode('upload')}
+              >
+                <i className="bi bi-cloud-arrow-up me-1"></i> {t('editor.upload_file') || 'Unggah Berkas'}
+              </button>
+              <button
+                type="button"
+                className={`btn ${attachmentMode === 'link' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                onClick={() => setAttachmentMode('link')}
+              >
+                <i className="bi bi-link-45deg me-1"></i> {t('editor.attach_link') || 'Lampirkan Link Saja'}
+              </button>
+            </div>
           </div>
-          {(
-            <Form.Group className="mb-4">
-              <Form.Label>{t('editor.file_attachments')}</Form.Label>
-              
-              {/* File Upload */}
-              <div 
+
+          <Form.Group className="mb-4">
+            {/* MODE A: UPLOAD FILE */}
+            {attachmentMode === 'upload' && (
+              <div
                 className={`file-upload-section mb-3 ${isDraggingFiles ? 'dragging' : ''}`}
                 onDrop={handleFileDrop}
                 onDragOver={handleFileDragOver}
@@ -1758,41 +2496,146 @@ const ArticleEditor = () => {
                   type="file"
                   id="file-upload"
                   onChange={handleFileUpload}
-                disabled={fileUploading}
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.7z,.jpg,.jpeg,.png,.gif,.mp4,.avi,.mov,.mkv"
-              />
-              <label htmlFor="file-upload" className={`file-upload-label ${fileUploading ? 'uploading' : ''}`}>
-                <i className={`bi ${fileUploading ? 'bi-hourglass-split' : 'bi-cloud-upload'}`}></i>
-                {fileUploading ? t('editor.uploading_file') : t('editor.upload_file')}
-              </label>
-              <small className="text-muted d-block mt-2">
-                {t('editor.file_upload_hint')} (Max 50MB)
-              </small>
-            </div>
+                  disabled={fileUploading}
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.7z,.jpg,.jpeg,.png,.gif,.mp4,.avi,.mov,.mkv"
+                />
+                <label htmlFor="file-upload" className={`file-upload-label ${fileUploading ? 'uploading' : ''}`}>
+                  <i className={`bi ${fileUploading ? 'bi-hourglass-split' : 'bi-cloud-upload'}`}></i>
+                  {fileUploading ? (t('editor.uploading_file') || 'Mengunggah...') : (t('editor.upload_file') || 'Klik atau seret berkas ke sini')}
+                </label>
+                <small className="text-muted d-block mt-2">
+                  {t('editor.file_upload_hint') || 'Mendukung PDF, Office, Gambar, Video, Arsip'} (Max 50MB)
+                </small>
+              </div>
+            )}
 
-            {/* Files List */}
+            {/* MODE B: ATTACH LINK ONLY */}
+            {attachmentMode === 'link' && (
+              <div className="link-attachment-card p-3 mb-3 border rounded bg-light">
+                <div className="d-flex align-items-center gap-2 mb-3">
+                  <i className="bi bi-link-45deg text-primary fs-4"></i>
+                  <div>
+                    <strong className="d-block">Lampirkan Tautan / Link Eksternal</strong>
+                    <small className="text-muted">
+                      Tautkan dokumen di Google Drive, OneDrive, portal dokumen DPD RI, atau sumber data eksternal tanpa mengunggah berkas fisik.
+                    </small>
+                  </div>
+                </div>
+
+                <Row className="g-2">
+                  <Col md={6}>
+                    <Form.Group className="mb-2">
+                      <Form.Label className="small fw-semibold mb-1">
+                        URL / Tautan Link <span className="text-danger">*</span>
+                      </Form.Label>
+                      <Form.Control
+                        type="url"
+                        size="sm"
+                        placeholder="https://drive.google.com/... atau https://..."
+                        value={linkAttachment.url}
+                        onChange={(e) => setLinkAttachment(prev => ({ ...prev, url: e.target.value }))}
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group className="mb-2">
+                      <Form.Label className="small fw-semibold mb-1">
+                        Judul / Nama Tautan (Opsional)
+                      </Form.Label>
+                      <Form.Control
+                        type="text"
+                        size="sm"
+                        placeholder="Contoh: Dokumen Paparan Lengkap (Google Drive)"
+                        value={linkAttachment.name}
+                        onChange={(e) => setLinkAttachment(prev => ({ ...prev, name: e.target.value }))}
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={12}>
+                    <Form.Group className="mb-2">
+                      <Form.Label className="small fw-semibold mb-1">
+                        Keterangan Dokumen (Opsional)
+                      </Form.Label>
+                      <Form.Control
+                        type="text"
+                        size="sm"
+                        placeholder="Contoh: Lampiran notulensi rapat dan data tabular resmi Setjen DPD RI"
+                        value={linkAttachment.description}
+                        onChange={(e) => setLinkAttachment(prev => ({ ...prev, description: e.target.value }))}
+                      />
+                    </Form.Group>
+                  </Col>
+                </Row>
+
+                <div className="d-flex justify-content-end mt-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleAddLinkAttachment}
+                    disabled={linkAdding || !linkAttachment.url.trim()}
+                    className="d-flex align-items-center gap-1"
+                  >
+                    {linkAdding ? (
+                      <>
+                        <i className="bi bi-hourglass-split"></i> Menyimpan...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-plus-circle"></i> Tambahkan Tautan Lampiran
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Files & Links List */}
             {files.length > 0 ? (
               <div className="file-list">
-                {files.map((file, index) => {
-                  const fileHasPreview = hasPreview(file.mime_type);
+                {files.map((file) => {
+                  const isLink = file.is_link || !!file.link_url || file.mime_type === 'link';
+                  const fileHasPreview = hasPreview(file);
                   const previewType = getPreviewType(file.mime_type);
                   const previewUrl = getFilePreviewUrl(file);
                   const showPreview = expandedFilePreview[file.id] || false;
+                  const targetUrl = file.link_url || file.file;
 
                   return (
                     <div key={file.id} className="file-item-wrapper">
                       <div className="file-item">
                         <div className="file-info">
-                          <i className={`bi ${getFileIcon(file.mime_type)}`}></i>
+                          <i className={`bi ${isLink ? 'bi-link-45deg text-primary fs-4' : getFileIcon(file)}`}></i>
                           <div className="file-details">
-                            <div className="file-name">{file.original_filename}</div>
+                            <div className="file-name d-flex align-items-center gap-2 flex-wrap">
+                              <span>{file.original_filename}</span>
+                              {isLink && (
+                                <span className="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25" style={{ fontSize: '0.72rem' }}>
+                                  🔗 {extractDomain(file.link_url || file.file) || 'Tautan Eksternal'}
+                                </span>
+                              )}
+                            </div>
                             <small className="file-meta">
-                              {formatFileSize(file.file_size)} • {new Date(file.created_at).toLocaleDateString()}
+                              {isLink ? 'Tautan Eksternal' : formatFileSize(file.file_size)} • {new Date(file.created_at).toLocaleDateString(isIndonesian ? 'id-ID' : 'en-US')}
+                              {(file.description_id || file.description_en) && (
+                                <span className="ms-2 fst-italic">({file.description_id || file.description_en})</span>
+                              )}
                             </small>
                           </div>
                         </div>
                         <div className="file-actions">
-                          {fileHasPreview && previewUrl && (
+                          {isLink && targetUrl && (
+                            <a
+                              href={targetUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn-file-preview text-decoration-none d-inline-flex align-items-center gap-1"
+                              title="Buka tautan di tab baru"
+                            >
+                              <i className="bi bi-box-arrow-up-right"></i>
+                              <span className="btn-text">Buka Link</span>
+                            </a>
+                          )}
+                          {!isLink && fileHasPreview && previewUrl && (
                             <button
                               type="button"
                               className="btn-file-preview"
@@ -1815,12 +2658,12 @@ const ArticleEditor = () => {
                         </div>
                       </div>
                       {/* File Preview */}
-                      {showPreview && fileHasPreview && previewUrl && (
+                      {!isLink && showPreview && fileHasPreview && previewUrl && (
                         <div className="file-preview-container">
                           {previewType === 'image' && (
                             <>
-                              <img 
-                                src={previewUrl} 
+                              <img
+                                src={previewUrl}
                                 alt={file.original_filename}
                                 className="file-preview-image"
                                 loading="lazy"
@@ -1869,7 +2712,7 @@ const ArticleEditor = () => {
                             </audio>
                           )}
                           {previewType === 'presentation' && previewUrl && (
-                            <PptxViewer 
+                            <PptxViewer
                               fileUrl={previewUrl}
                               fileName={file.original_filename}
                               onError={(err) => console.error('[FilePreview] PptxViewer error:', err)}
@@ -1884,11 +2727,10 @@ const ArticleEditor = () => {
             ) : (
               <div className="no-files-message">
                 <i className="bi bi-file-earmark"></i>
-                <p>{t('editor.no_files_uploaded')}</p>
+                <p>{t('editor.no_files_uploaded') || 'Belum ada berkas atau tautan lampiran'}</p>
               </div>
             )}
-            </Form.Group>
-          )}
+          </Form.Group>
         </div>
 
         {/* CONTENT SECTION */}
@@ -1913,12 +2755,22 @@ const ArticleEditor = () => {
           {/* Content Editor */}
           <Form.Group>
             <Form.Label>
-              {activeLanguageTab === 'id' ? t('editor.content') : 'Content (English)'} <strong style={{color: '#ff6b6b'}}>*</strong>
+              {activeLanguageTab === 'id'
+                ? (isInfografis ? 'Ringkasan & Poin Kunci Infografis' : (isAudiovisual ? 'Sinopsis & Catatan Tayangan' : t('editor.content')))
+                : 'Content (English)'} <strong style={{ color: '#ff6b6b' }}>*</strong>
             </Form.Label>
             <RichTextEditor
               value={activeLanguageTab === 'id' ? formData.content_id : formData.content_en}
               onChange={handleContentChange}
-              placeholder={activeLanguageTab === 'id' ? t('editor.write_article_content') : 'Write knowledge content in English'}
+              placeholder={
+                activeLanguageTab === 'id'
+                  ? (isInfografis
+                    ? 'Tuliskan ringkasan pokok informasi, data statistik kunci, metodologi, dan sumber data resmi dari infografis ini...'
+                    : (isAudiovisual
+                      ? 'Tuliskan sinopsis tayangan, pokok bahasan, narasumber/pembicara, dan catatan notulensi/transkrip tayangan...'
+                      : t('editor.write_article_content')))
+                  : 'Write knowledge content in English'
+              }
               height="400px"
             />
             <Form.Text className="text-muted d-block mb-3">
@@ -1934,14 +2786,14 @@ const ArticleEditor = () => {
               <small className="text-muted d-block mb-2">
                 {t('editor.content_helper_text')}
               </small>
-              <pre className="mb-0 small bg-white p-2 rounded" style={{ 
-                fontSize: '0.85rem', 
-                maxHeight: '200px', 
+              <pre className="mb-0 small bg-white p-2 rounded" style={{
+                fontSize: '0.85rem',
+                maxHeight: '200px',
                 overflowY: 'auto',
                 whiteSpace: 'pre-wrap',
                 wordWrap: 'break-word'
               }}>
-{t('editor.content_guide_text').split('\\n').join('\n')}
+                {t('editor.content_guide_text').split('\\n').join('\n')}
               </pre>
             </div>
           </Form.Group>
@@ -1965,7 +2817,7 @@ const ArticleEditor = () => {
               >
                 <FiEye /> {t('editor.preview_draft')}
               </Button>
-              
+
               {formData.status === 'published' && (
                 <Button
                   variant="outline-info"
@@ -2003,7 +2855,7 @@ const ArticleEditor = () => {
                 onClick={() => setShowSubmitModal(true)}
                 disabled={!id || (formData.status === 'review' || formData.status === 'approved')}
                 title={
-                  !id 
+                  !id
                     ? t('editor.save_first') || 'Save article first'
                     : formData.status === 'review'
                       ? 'Article is already submitted for review'

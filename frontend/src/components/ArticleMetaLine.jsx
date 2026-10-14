@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { id as idLocale, enUS } from 'date-fns/locale';
-import { FiEye } from 'react-icons/fi';
+import { FiEye, FiHeart, FiShare2 } from 'react-icons/fi';
 import { useLanguage } from '../hooks/useLanguage';
 import './ArticleMetaLine.css';
 
@@ -15,6 +15,8 @@ import './ArticleMetaLine.css';
  *     ✍️ Dibuat oleh: [Nama Pembuat] | 🌐 Diterbitkan oleh: [Nama Pengunggah] | 📅 [Tanggal Publish]
  * - Optional showViews:
  *     | 👁️ [view_count] tampilan
+ * - Optional showShares:
+ *     | 🔗 [share_count] dibagikan
  */
 const ArticleMetaLine = ({
   article,
@@ -22,6 +24,8 @@ const ArticleMetaLine = ({
   showDate = true,
   compact = false,
   showViews = false,
+  showLikes = false,
+  showShares = false,
   children
 }) => {
   const { t } = useTranslation();
@@ -125,6 +129,32 @@ const ArticleMetaLine = ({
             <span className="meta-views-text">
               {article.view_count}{' '}
               {t('articles.views', isIndonesian ? 'tampilan' : 'views')}
+            </span>
+          </span>
+        </>
+      )}
+
+      {showLikes && article.like_count !== undefined && (
+        <>
+          <span className="meta-separator-pipe">|</span>
+          <span className="meta-part meta-likes">
+            <FiHeart className="meta-likes-icon text-danger" size={compact ? 13 : 14} />{' '}
+            <span className="meta-likes-text">
+              {article.like_count}{' '}
+              {t('articles.likes', isIndonesian ? 'suka' : 'likes')}
+            </span>
+          </span>
+        </>
+      )}
+
+      {showShares && article.share_count !== undefined && (
+        <>
+          <span className="meta-separator-pipe">|</span>
+          <span className="meta-part meta-shares">
+            <FiShare2 className="meta-shares-icon text-primary" size={compact ? 13 : 14} />{' '}
+            <span className="meta-shares-text">
+              {article.share_count}{' '}
+              {t('articles.shares', isIndonesian ? 'dibagikan' : 'shares')}
             </span>
           </span>
         </>
