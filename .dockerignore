@@ -1,0 +1,21 @@
+# Host environments & dependencies
+backend/venv/
+backend/logs/
+frontend/node_modules/
+frontend/dist/
+frontend/cypress/
+
+# Backups & dumps
+backups/
+*.sql
+*.dump
+
+# Logs
+logs/
+*.log*
+
+# Git & docs
+.git/
+.gitignore
+docs/
+*.md

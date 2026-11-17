@@ -1,0 +1,32 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environment (CRITICAL: prevents sending 200MB+ host venv to Docker daemon)
+venv/
+.venv/
+env/
+ENV/
+
+# Local logs and media
+logs/
+*.log*
+staticfiles/
+media/
+backups/
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+tests/
+
+# Git and IDE
+.git/
+.gitignore
+.vscode/
+.idea/
+*.md

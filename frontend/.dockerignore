@@ -1,0 +1,26 @@
+# Node modules (CRITICAL: prevents sending 200MB+ host node_modules to Docker daemon)
+node_modules/
+
+# Local build output
+dist/
+build/
+
+# Testing
+cypress/
+cypress.config.js
+setupTests.js
+test-utils.jsx
+__mocks__/
+*.test.*
+*.spec.*
+
+# Environment
+.env.local
+.env.*.local
+
+# Git and IDE
+.git/
+.gitignore
+.vscode/
+.idea/
+*.md
