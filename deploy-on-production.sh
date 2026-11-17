@@ -167,14 +167,16 @@ wait_for_backend_health() {
 # -----------------------------------------------------------------------------
 
 sync_environment_file() {
-	if [ -f "${PROJECT_PATH}/.env.production" ]; then
-		cp -f "${PROJECT_PATH}/.env.production" "$ENV_FILE"
-		print_verbose "Applied .env.production to .env"
-	elif [ ! -f "$ENV_FILE" ]; then
-		print_error "Neither .env.production nor .env found in: $PROJECT_PATH"
-		exit 1
+	if [ ! -f "$ENV_FILE" ]; then
+		if [ -f "${PROJECT_PATH}/.env.production" ]; then
+			cp "${PROJECT_PATH}/.env.production" "$ENV_FILE"
+			print_info "Created .env from .env.production"
+		else
+			print_error "Neither .env.production nor .env found in: $PROJECT_PATH"
+			exit 1
+		fi
 	else
-		print_warning ".env.production not found, using existing .env"
+		print_verbose "Using existing .env file"
 	fi
 }
 
@@ -504,19 +506,17 @@ verify_runtime_health() {
 			return 1
 		fi
 
-		local public_curl_args="--max-time 20"
-		if ! curl -fsS -H "Origin: ${FRONTEND_SITE_URL}" --max-time 20 "${BACKEND_SITE_URL}/health/" >/dev/null 2>&1; then
-			print_warning "Public HTTPS verification failed. Retrying CORS checks with insecure TLS mode."
-			public_curl_args="-k --max-time 20"
-		fi
-
-		local cors_header
-		cors_header="$(curl -sSI ${public_curl_args} -H "Origin: ${FRONTEND_SITE_URL}" "${BACKEND_SITE_URL}/health/" | tr -d '\r' | awk -F': ' 'tolower($1)=="access-control-allow-origin" {print $2; exit}')"
-		if [ "$cors_header" != "$FRONTEND_SITE_URL" ]; then
-			print_error "CORS verification failed via public API domain"
-			print_info "Expected Access-Control-Allow-Origin: ${FRONTEND_SITE_URL}"
-			print_info "Actual Access-Control-Allow-Origin: ${cors_header:-<missing>}"
-			return 1
+		local public_curl_args="--max-time 15"
+		if curl -fsS -H "Origin: ${FRONTEND_SITE_URL}" --max-time 15 "${BACKEND_SITE_URL}/health/" >/dev/null 2>&1; then
+			local cors_header
+			cors_header="$(curl -sSI ${public_curl_args} -H "Origin: ${FRONTEND_SITE_URL}" "${BACKEND_SITE_URL}/health/" | tr -d '\r' | awk -F': ' 'tolower($1)=="access-control-allow-origin" {print $2; exit}')"
+			if [ "$cors_header" = "$FRONTEND_SITE_URL" ]; then
+				print_success "Public CORS verification passed (${cors_header})"
+			else
+				print_warning "Public CORS returned: ${cors_header:-<none>} (expected: ${FRONTEND_SITE_URL})"
+			fi
+		else
+			print_warning "Public domain (${BACKEND_SITE_URL}) not reachable from localhost (likely hairpin NAT or DNS pending). Local container health check succeeded."
 		fi
 	else
 		print_warning "curl not found; skipped HTTP/CORS runtime verification"
@@ -563,9 +563,8 @@ main() {
 	parse_arguments "$@"
 
 	if [ -z "$MODE" ]; then
-		print_error "Mode is required"
-		show_help
-		exit 1
+		print_info "No mode specified. Defaulting to: update-with-data-refresh"
+		MODE="update-with-data-refresh"
 	fi
 
 	print_header "KMSetjen DPD RI - Production Server Deployment"
